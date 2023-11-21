@@ -88,7 +88,8 @@
         <field name="mode">extension</field>
         <field name="arch" type="xml">
             <field name="kanban_state" position="after">
-                <field name="matching_score" string="Matching" widget="progressbar" options="{'overflow_class': 'bg-success'}" invisible="not matching_score" column_invisible="context.get('default_talent_pool_ids', False)"/>
+                <!-- TEST ONLY: Semantic coloring demo (will be removed) -->
+                <field name="matching_score" string="Matching" widget="progressbar" decoration-success="matching_score >= 60" decoration-warning="matching_score >= 30 and matching_score &lt; 60" decoration-danger="matching_score &lt; 30" invisible="not matching_score" column_invisible="context.get('default_talent_pool_ids', False)"/>
             </field>
             <xpath expr="//list" position="inside">
                 <field name="current_applicant_skill_ids" widget="many2many_tags" options="{'color_field': 'color'}" optional="hide" string="Skills"/>

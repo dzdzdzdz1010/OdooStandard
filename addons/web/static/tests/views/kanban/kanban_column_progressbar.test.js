@@ -319,11 +319,11 @@ test("filter on progressbar in new groups", async () => {
     expect(queryAll(".o_kanban_record", { root: getKanbanColumn(2) })).toHaveCount(1);
     expect(queryAll(".o_kanban_record", { root: getKanbanColumn(3) })).toHaveCount(1);
 
-    expect(".o_kanban_group_show_200").toHaveCount(0);
+    expect(".o_kanban_group_show_300").toHaveCount(0);
 
     await contains(".o_column_progress .progress-bar", { root: getKanbanColumn(2) }).click();
-    expect(".o_kanban_group_show_200").toHaveCount(1);
-    expect(getKanbanColumn(2)).toHaveClass("o_kanban_group_show_200");
+    expect(".o_kanban_group_show_300").toHaveCount(1);
+    expect(getKanbanColumn(2)).toHaveClass("o_kanban_group_show_300");
 });
 
 test('column progressbars: "false" bar is clickable', async () => {
@@ -355,19 +355,19 @@ test('column progressbars: "false" bar is clickable', async () => {
     expect(".o_kanban_group").toHaveCount(2);
     expect(getKanbanCounters()).toEqual(["1", "4"]);
     expect(".o_kanban_group:last-child .o_column_progress .progress-bar").toHaveCount(4);
-    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-200").toHaveCount(1, {
+    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-300").toHaveCount(1, {
         message: "should have false kanban color",
     });
-    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-200:first").toHaveClass(
-        "bg-200"
+    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-300:first").toHaveClass(
+        "bg-300"
     );
 
-    await contains(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-200").click();
+    await contains(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-300").click();
 
-    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-200:first").toHaveClass(
+    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-300:first").toHaveClass(
         "progress-bar-animated"
     );
-    expect(".o_kanban_group:last-child").toHaveClass("o_kanban_group_show_200");
+    expect(".o_kanban_group:last-child").toHaveClass("o_kanban_group_show_300");
     expect(getKanbanCounters()).toEqual(["1", "1"]);
     expect.verifySteps([
         "/web/webclient/translations",
@@ -411,9 +411,9 @@ test('column progressbars: "false" bar with sum_field', async () => {
     expect(".o_kanban_group").toHaveCount(2);
     expect(getKanbanCounters()).toEqual(["-4", "51"]);
 
-    await contains(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-200").click();
+    await contains(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-300").click();
 
-    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-200:first").toHaveClass(
+    expect(".o_kanban_group:last-child .o_column_progress .progress-bar.bg-300:first").toHaveClass(
         "progress-bar-animated"
     );
     expect(getKanbanCounters()).toEqual(["-4", "15"]);

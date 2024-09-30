@@ -24,6 +24,9 @@ inclusion of rating directly within the customer portal discuss widget.
             'portal_rating/static/src/interactions/**/*',
             'portal_rating/static/src/xml/portal_rating_composer.xml',
             'portal_rating/static/src/xml/portal_tools.xml',
+            # The field definitions are processed once when the page loads. This part is necessary
+            # for fields that may be used when a common scope is lazily loaded in the frontend.
+            'portal_rating/static/src/core/common_frontend/**/*',
         ],
         'web.assets_unit_tests_setup': [
             'portal_rating/static/src/interactions/**/*',

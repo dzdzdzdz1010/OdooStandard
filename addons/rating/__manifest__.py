@@ -18,20 +18,23 @@ This module allows a customer to give rating.
     ],
     'assets': {
         'web.assets_backend': [
-            "rating/static/src/core/common/**/*",
+            "rating/static/src/core/common_frontend/**/*",
             "rating/static/src/core/web/**/*",
         ],
         'web.assets_frontend': [
             'rating/static/src/scss/rating_templates.scss',
+            # The field definitions are processed once when the page loads. This part is necessary
+            # for fields that may be used when a common scope is lazily loaded in the frontend.
+            "mail/static/src/model/**.*",
+            "mail/static/src/utils/common/local_storage.js",
+            "mail/static/src/utils/common/misc.js",
+            "rating/static/src/core/common_frontend/**/*",
         ],
         'web.assets_unit_tests': [
             'rating/static/tests/**/*',
         ],
         "mail.assets_public": [
-            "rating/static/src/core/common/**/*",
-        ],
-        "portal.assets_chatter": [
-            "rating/static/src/core/common/**/*",
+            "rating/static/src/core/common_frontend/**/*",
         ],
     },
     'author': 'Odoo S.A.',

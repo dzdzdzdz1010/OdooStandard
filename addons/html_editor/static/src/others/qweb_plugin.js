@@ -1,8 +1,8 @@
 import { Plugin } from "@html_editor/plugin";
-import { closestElement, selectElements } from "@html_editor/utils/dom_traversal";
+import { selectElements } from "@html_editor/utils/dom_traversal";
 import { leftPos, rightPos } from "@html_editor/utils/position";
 import { QWebPicker } from "./qweb_picker";
-import { isElement } from "@html_editor/utils/dom_info";
+import { getQwebNode, isElement } from "@html_editor/utils/dom_info";
 
 const isUnsplittableQWebElement = (node) =>
     isElement(node) &&
@@ -68,11 +68,7 @@ export class QWebPlugin extends Plugin {
     }
 
     isValidTargetForDomListener(ev) {
-        if (
-            ev.type === "click" &&
-            ev.target &&
-            closestElement(ev.target, PROTECTED_QWEB_SELECTOR)
-        ) {
+        if (ev.type === "click" && ev.target && getQwebNode(ev.target)) {
             // Allow clicking on a protected QWEB node to open the custom toolbar.
             return true;
         }
@@ -153,10 +149,7 @@ export class QWebPlugin extends Plugin {
         if (ev.detail > 1) {
             const selectionData = this.dependencies.selection.getSelectionData();
             const selection = selectionData.documentSelection;
-            const qwebNode =
-                selection &&
-                selection.anchorNode &&
-                closestElement(selection.anchorNode, "[t-field],[t-esc],[t-out]");
+            const qwebNode = selection && selection.anchorNode && getQwebNode(selection.anchorNode);
             if (qwebNode && this.editable.contains(qwebNode)) {
                 // select the whole qweb node
                 const [anchorNode, anchorOffset] = leftPos(qwebNode);

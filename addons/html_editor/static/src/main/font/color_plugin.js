@@ -11,6 +11,7 @@ import {
 } from "@html_editor/utils/color";
 import { fillEmpty, unwrapContents } from "@html_editor/utils/dom";
 import {
+    getQwebNode,
     isEmptyBlock,
     isEmptyTextNode,
     isRedundantElement,
@@ -182,9 +183,11 @@ export class ColorPlugin extends Plugin {
                         .getTargetedNodes()
                         .filter(
                             (n) =>
-                                isTextNode(n) ||
-                                (mode === "backgroundColor" &&
-                                    n.classList.contains("o_selected_td"))
+                                (isTextNode(n) ||
+                                    n.matches("t, [t-field], [t-out], [t-esc], [t-raw]") ||
+                                    (mode === "backgroundColor" &&
+                                        n.classList.contains("o_selected_td"))) &&
+                                this.dependencies.selection.isNodeEditable(n)
                         );
                     return hasAnyNodesColor(nodes, mode);
                 };
@@ -263,10 +266,7 @@ export class ColorPlugin extends Plugin {
                 : targetedNodes;
 
         const targetedFieldNodes = new Set(
-            this.dependencies.selection
-                .getTargetedNodes()
-                .map((n) => closestElement(n, "*[t-field],*[t-out],*[t-esc]"))
-                .filter(Boolean)
+            this.dependencies.selection.getTargetedNodes().map(getQwebNode).filter(Boolean)
         );
 
         const getFonts = (selectedNodes) => {

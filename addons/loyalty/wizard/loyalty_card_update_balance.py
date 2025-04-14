@@ -20,20 +20,32 @@ class LoyaltyCardUpdateBalance(models.TransientModel):
     def action_update_card_point(self):
         if self.old_balance == self.new_balance or self.new_balance < 0:
             raise ValidationError(
-                _("New Balance should be positive and different then old balance.")
+                _("New Balance should be positive and different then old balance."),
             )
-        difference = self.new_balance - self.old_balance
-        used = 0
-        issued = 0
-        if difference > 0:
-            issued = difference
-        else:
-            used = abs(difference)
 
-        self.env['loyalty.history'].create({
+        difference = self.new_balance - self.old_balance
+        is_increase = difference > 0
+        points_to_process = abs(difference)
+
+        loyalty_history = self.env['loyalty.history']
+        history_vals = {
             'card_id': self.card_id.id,
-            'description': self.description or _("Gift for customer"),
-            'used': used,
-            'issued': issued,
-        })
+            'description': self.description,
+            'issued': points_to_process if is_increase else 0,
+            'available_issued_points': points_to_process if is_increase else 0,
+            'used': 0 if is_increase else points_to_process,
+        }
+        history_line = loyalty_history.create(history_vals)
+
+        loyalty_records = {
+            'card_id': self.card_id.id,
+            'redeemer_history_line_id': history_line.id,
+        }
+
+        if is_increase:
+            loyalty_history.compensate_existing_debts([loyalty_records])
+        else:
+            loyalty_records['points_to_redeem'] = points_to_process
+            loyalty_history.redeem_loyalty_points([loyalty_records])
+
         self.card_id.points = self.new_balance

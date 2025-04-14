@@ -107,6 +107,8 @@ class SaleOrder(models.Model):
             points_per_coupon[line.coupon_id]['cost'] += line.points_cost
 
         create_values = []
+        compensation_records = []
+        reward_records = []
         base_values = {
             'order_id': self.id,
             'order_model': self._name,
@@ -120,9 +122,33 @@ class SaleOrder(models.Model):
                 'card_id': coupon.id,
                 'used': cost,
                 'issued': issued,
+                'available_issued_points': issued,
             })
+            if cost:
+                # for redemption of loyalty points used as reward
+                reward_records.append({
+                    'card_id': coupon.id,
+                    'points_to_redeem': cost,
+                })
+            if issued and coupon.points < 0:
+                # for compensating the negative card balance to cover debt
+                compensation_records.append({
+                    'card_id': coupon.id,
+                    'points_to_redeem': abs(coupon.points),
+                })
 
-        self.env['loyalty.history'].create(create_values)
+        loyalty_history = self.env['loyalty.history']
+        created_lines = loyalty_history.create(create_values)
+
+        for history_line in created_lines:
+            for record in reward_records + compensation_records:
+                if record['card_id'] == history_line.card_id.id:
+                    record['redeemer_history_line_id'] = history_line.id
+
+        if reward_records:
+            loyalty_history.redeem_loyalty_points(reward_records)
+        if compensation_records:
+            loyalty_history.compensate_existing_debts(compensation_records)
 
     def _get_no_effect_on_threshold_lines(self):
         """Return the lines that have no effect on the minimum amount to reach."""
@@ -163,7 +189,8 @@ class SaleOrder(models.Model):
             lambda pe: pe.coupon_id.program_id.applies_on == 'current' and pe.coupon_id not in reward_coupons
         ).coupon_id.sudo().unlink()
         # Add/remove the points to our coupons
-        for coupon, change in self.filtered(lambda s: s.state != 'sale')._get_point_changes().items():
+        for coupon, points in self.filtered(lambda s: s.state != 'sale')._get_point_changes().items():
+            change = points['issued'] - points['used']
             coupon.points += change
         res = super().action_confirm()
         # Prioritize any action from super()
@@ -182,27 +209,125 @@ class SaleOrder(models.Model):
         return res
 
     def _action_cancel(self):
+        """
+        Cancel orders and adjust loyalty points, handling:
+        - Refunding used points back to non-expired issuers
+        - Re-allocating points for dependent redeemers
+        - Recalculating card balance based on remaining history lines and debts
+        """
         previously_confirmed = self.filtered(lambda s: s.state == 'sale')
         res = super()._action_cancel()
+        loyalty_history = self.env['loyalty.history']
+        history_lines_mapping = self.env['loyalty.history.link'].sudo()
+        today = fields.Date.today()
 
-        order_history_lines = self.env['loyalty.history'].search([
-            ('order_model', '=', self._name),
+        # Track which cards need balance recalculation
+        affected_cards = set()
+
+        # Get all redeemer lines being cancelled
+        redeemer_lines_being_cancelled = loyalty_history.with_context(active_test=False).search([
             ('order_id', 'in', previously_confirmed.ids),
-        ])
-        if order_history_lines:
-            order_history_lines.sudo().unlink()
+            ('order_model', '=', self._name),
+        ]).ids
 
-        # Add/remove the points to our coupons
-        for coupon, changes in previously_confirmed.filtered(
-            lambda s: s.state != 'sale'
+        for coupon, points in previously_confirmed.filtered(
+            lambda s: s.state != 'sale',
         )._get_point_changes().items():
-            coupon.points -= changes
-        # Remove any rewards
-        self.order_line.filtered(lambda l: l.is_reward_line).unlink()
+
+            affected_cards.add(coupon)
+
+            order_history_lines = loyalty_history.with_context(active_test=False).search([
+                ('card_id', '=', coupon.id),
+                ('order_model', '=', self._name),
+                ('order_id', 'in', previously_confirmed.ids),
+            ])
+
+            order_history_lines = order_history_lines.sorted(key=lambda line: line.id)
+
+            for order_history_line in order_history_lines:
+
+                # Refund used points (if this line was a redeemer)
+                if order_history_line.used > 0:
+                    # Get mappings to see where points came from
+                    mappings = history_lines_mapping.search([
+                        ('redeemer_line_id', '=', order_history_line.id),
+                    ], order='id asc')
+
+                    for mapping in mappings:
+                        if mapping.points < 0:
+                            # This is a debt mapping will be deleted, reducing debt
+                            pass
+                        elif mapping.points > 0:
+                            # This is a normal allocation
+                            if mapping.issuer_line_id:
+                                issuer = mapping.issuer_line_id
+                                issuer_expired = (
+                                    issuer.expiration_date
+                                    and issuer.expiration_date < today
+                                )
+
+                                if not issuer_expired:
+                                    # Restore points to non-expired issuer
+                                    issuer.available_issued_points += mapping.points
+                                    issuer.active = True
+
+                        mapping.sudo().unlink()
+
+                # Find active redeemers that depend on this issuer
+                issuer_mappings = history_lines_mapping.search([
+                    ('issuer_line_id', '=', order_history_line.id),
+                ])
+
+                dependent_redeemers = {}
+                for mapping in issuer_mappings:
+                    redeemer_id = mapping.redeemer_line_id.id
+                    if redeemer_id not in redeemer_lines_being_cancelled:
+                        # This redeemer is still active and needs reallocation
+                        dependent_redeemers[redeemer_id] = (
+                            dependent_redeemers.get(redeemer_id, 0.0) + mapping.points
+                        )
+
+                # Re-allocate points for dependent redeemers
+                for redeemer_id, needed_points in dependent_redeemers.items():
+                    if needed_points <= 0:
+                        continue
+
+                    # Try to reallocate from other available issuers
+                    # This will either find available issuers or create debt
+                    loyalty_history.redeem_loyalty_points([{
+                        'card_id': coupon.id,
+                        'points_to_redeem': needed_points,
+                        'redeemer_history_line_id': redeemer_id,
+                        'exclude_issuer_ids': [order_history_line.id],
+                    }])
+
+                # Clean up mappings for this cancelled issuer
+                issuer_mappings_to_delete = history_lines_mapping.search([
+                    ('issuer_line_id', '=', order_history_line.id),
+                ])
+                issuer_mappings_to_delete.unlink()
+                order_history_line.sudo().unlink()
+
+        # Recalculate balance for all affected cards
+        for coupon in affected_cards:
+            card_total = sum(coupon.history_ids.mapped('available_issued_points'))
+
+            debt_mappings = history_lines_mapping.search([
+                ('issuer_line_id', '=', False),
+                ('points', '<', 0),
+                ('redeemer_line_id.card_id', '=', coupon.id),
+            ])
+
+            # Sum up all debts (negative values)
+            total_debt = sum(abs(debt.points) for debt in debt_mappings)
+            coupon.points = card_total - total_debt
+
+        self.order_line.filtered(lambda line: line.is_reward_line).unlink()
         self.coupon_point_ids.coupon_id.sudo().filtered(
-            lambda c: not c.program_id.is_nominative and c.order_id in self and not c.use_count)\
-            .unlink()
+            lambda c: not c.program_id.is_nominative and c.order_id in self and not c.use_count,
+        ).unlink()
         self.coupon_point_ids.unlink()
+
         return res
 
     def action_open_reward_wizard(self):
@@ -758,17 +883,17 @@ class SaleOrder(models.Model):
 
     def _get_point_changes(self):
         """
-        Returns the changes in points per coupon as a dict.
+        Returns the issued and used points per coupon as a dict.
 
         Used when validating/cancelling an order
         """
-        points_per_coupon = defaultdict(lambda: 0)
+        points_per_coupon = defaultdict(lambda: {'issued': 0, 'used': 0})
         for coupon_point in self.coupon_point_ids:
-            points_per_coupon[coupon_point.coupon_id] += coupon_point.points
+            points_per_coupon[coupon_point.coupon_id]['issued'] += coupon_point.points
         for line in self.order_line:
             if not line.reward_id or not line.coupon_id:
                 continue
-            points_per_coupon[line.coupon_id] -= line.points_cost
+            points_per_coupon[line.coupon_id]['used'] += line.points_cost
         return points_per_coupon
 
     def _get_real_points_for_coupon(self, coupon, post_confirm=False):
@@ -809,7 +934,7 @@ class SaleOrder(models.Model):
 
     def _update_loyalty_history(self, coupon_id, points):
         self.ensure_one()
-        order_coupon_history = self.env['loyalty.history'].search([
+        order_coupon_history = self.env['loyalty.history'].with_context(active_test=False).search([
             ('card_id', '=', coupon_id.id),
             ('order_model', '=', self._name),
             ('order_id', '=', self.id),
@@ -817,6 +942,11 @@ class SaleOrder(models.Model):
         order_coupon_history.update({
             'used': order_coupon_history.used + points,
         })
+        order_coupon_history.redeem_loyalty_points([{
+            'card_id': coupon_id.id,
+            'points_to_redeem': points,
+            'redeemer_history_line_id': order_coupon_history.id,
+        }])
 
     def _remove_program_from_points(self, programs):
         self.coupon_point_ids.filtered(lambda p: p.coupon_id.program_id in programs).sudo().unlink()

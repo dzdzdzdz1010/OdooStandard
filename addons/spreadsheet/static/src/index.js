@@ -31,6 +31,7 @@ import {
 } from "@spreadsheet/chart/index"; // Odoochart depends on filter for its getters
 import { PivotCoreGlobalFilterPlugin } from "./pivot/plugins/pivot_core_global_filter_plugin";
 import { PivotOdooUIPlugin } from "./pivot/plugins/pivot_odoo_ui_plugin";
+import { LoggingUIPlugin } from "@spreadsheet/logging/logging_ui_plugin";
 
 corePluginRegistry.add("OdooGlobalFiltersCorePlugin", GlobalFiltersCorePlugin);
 corePluginRegistry.add("PivotOdooCorePlugin", PivotOdooCorePlugin);
@@ -43,8 +44,15 @@ coreViewsPluginRegistry.add("OdooGlobalFiltersCoreViewPlugin", GlobalFiltersCore
 coreViewsPluginRegistry.add("OdooPivotGlobalFiltersCoreViewPlugin", PivotCoreViewGlobalFilterPlugin);
 coreViewsPluginRegistry.add("OdooListCoreViewPlugin", ListCoreViewPlugin);
 coreViewsPluginRegistry.add("odooChartUIPlugin", OdooChartUIPlugin);
+<<<<<<< 7c8de60b9eb243dcbd41bb439c6a98240f4ecade
 
 featurePluginRegistry.add("OdooPivotGlobalFilterUIPlugin", PivotUIGlobalFilterPlugin);
 featurePluginRegistry.add("OdooGlobalFiltersUIPlugin", GlobalFiltersUIPlugin);
 featurePluginRegistry.add("odooPivotUIPlugin", PivotOdooUIPlugin);
 featurePluginRegistry.add("odooListUIPlugin", ListUIPlugin);
+||||||| c4b1ca0d3948f830b78193df9a4d95c2b68b8a72
+coreViewsPluginRegistry.add("odooPivotUIPlugin", PivotOdooUIPlugin);
+=======
+coreViewsPluginRegistry.add("odooPivotUIPlugin", PivotOdooUIPlugin);
+coreViewsPluginRegistry.add("OdooLoggingUIPlugin", LoggingUIPlugin);
+>>>>>>> 9df2f8890384481775a258a1d7c7f09ec613506e

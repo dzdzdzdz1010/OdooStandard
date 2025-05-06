@@ -9,7 +9,13 @@ class DashboardTestCommon(TransactionCase):
         super().setUpClass()
         cls.group = cls.env["res.groups"].create({"name": "test group"})
         cls.user = new_test_user(cls.env, login="Raoul")
+<<<<<<< 7c8de60b9eb243dcbd41bb439c6a98240f4ecade
         cls.user.group_ids |= cls.group
+||||||| c4b1ca0d3948f830b78193df9a4d95c2b68b8a72
+        cls.user.groups_id |= cls.group
+=======
+        cls.user.groups_id |= cls.group + cls.env.ref('base.group_allow_export', raise_if_not_found=False)
+>>>>>>> 9df2f8890384481775a258a1d7c7f09ec613506e
 
     def create_dashboard(self, group=None):
         dashboard_group = group or self.env["spreadsheet.dashboard.group"].create({

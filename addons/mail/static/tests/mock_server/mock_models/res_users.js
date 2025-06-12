@@ -208,6 +208,7 @@ export class ResUsers extends webModels.ResUsers {
 
     _get_store_avatar_card_fields() {
         return [
+            "active",
             "share",
             mailDataHelpers.Store.one(
                 "partner_id",

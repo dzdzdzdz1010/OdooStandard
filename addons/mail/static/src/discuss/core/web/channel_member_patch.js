@@ -24,7 +24,8 @@ patch(ChannelMember.prototype, {
         }
         if (!this.avatarCard.isOpen) {
             this.avatarCard.open(ev.currentTarget, {
-                id: this.member.partner_id.main_user_id?.id,
+                id: this.member.partner_id.id,
+                model: "res.partner",
                 channelMember: this.member,
             });
             this.state.isAvatarCardOpen = true;

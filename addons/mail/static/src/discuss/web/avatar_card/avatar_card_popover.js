@@ -137,6 +137,10 @@ export class AvatarCardPopover extends Component {
         return this.partner?.name;
     }
 
+    get showImStatus() {
+        return this.partner?.eq(this.store.odoobot) || !this.user || this.user?.active;
+    }
+
     get email() {
         return this.partner?.email;
     }

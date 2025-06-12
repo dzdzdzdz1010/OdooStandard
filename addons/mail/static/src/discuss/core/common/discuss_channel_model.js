@@ -433,7 +433,12 @@ export class DiscussChannel extends Record {
         return false;
     }
     get showImStatus() {
-        return this.channel_type === "chat" && this.correspondent;
+        return (
+            this.channel_type === "chat" &&
+            this.correspondent &&
+            this.correspondent.im_status &&
+            this.correspondent.im_status !== "im_partner"
+        );
     }
     get showUnreadBanner() {
         return this.self_member_id?.message_unread_counter_ui > 0;

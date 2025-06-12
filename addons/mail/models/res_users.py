@@ -487,7 +487,7 @@ class ResUsers(models.Model):
         return list(user_activities.values())
 
     def _store_avatar_card_fields(self, res: Store.FieldList):
-        res.attr("share")
+        res.extend(["active", "share"])
         res.one("partner_id", "_store_avatar_card_fields")
 
     # ------------------------------------------------------------

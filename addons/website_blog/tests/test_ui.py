@@ -144,3 +144,34 @@ class TestWebsiteBlogUi(odoo.tests.HttpCase, TestWebsiteBlogCommon):
 
     def test_blog_posts_dynamic_snippet_options(self):
         self.start_tour(self.env['website'].get_client_action_url('/'), 'blog_posts_dynamic_snippet_options', login='admin')
+
+    def test_next_article(self):
+        # Test next article is correctly displayed.
+        Blog = self.env['blog.blog'].create({"name": 'Blog Test'})
+        self.env['blog.post'].create({
+            "name": "Post Test 1",
+            "blog_id": Blog.id,
+            "author_id": self.env.user.id,
+            "is_published": True,
+        })
+        self.env['blog.post'].create({
+            "name": "Post Test 2",
+            "blog_id": Blog.id,
+            "author_id": self.env.user.id,
+            "is_published": True,
+        })
+        self.env['blog.post'].create({
+            "name": "Post Test 3",
+            "blog_id": Blog.id,
+            "author_id": self.env.user.id,
+            "is_published": False,
+        })
+        self.env['blog.post'].create({
+            "name": "Post Test 4",
+            "blog_id": Blog.id,
+            "author_id": self.env.user.id,
+            "is_published": True,
+            "recommended_post_id": self.env['blog.post'].search([('name', '=', 'Post Test 3')]).id,
+        })
+        self.start_tour("/blog", "check_blog_next_article_with_admin", login="admin")
+        self.start_tour("/blog", "check_blog_next_article_with_user")

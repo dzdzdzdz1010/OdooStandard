@@ -11,6 +11,7 @@ import { markup } from "@odoo/owl";
 
 const DEFAULT_NUMBER_OF_ELEMENTS = 4;
 const DEFAULT_NUMBER_OF_ELEMENTS_SM = 1;
+const DEFAULT_CHUNK_SIZE = 16;
 
 export class DynamicSnippet extends Interaction {
     static selector = ".s_dynamic_snippet";
@@ -21,7 +22,13 @@ export class DynamicSnippet extends Interaction {
         _window: { "t-on-resize": this.throttled(this.render) },
         ".missing_option_warning": {
             "t-att-class": () => ({
-                "d-none": !!this.data.length,
+                "d-none": !!this.lastFetchedRecords.length,
+            }),
+        },
+        ".s_dynamic_snippet_load_more": {
+            "t-on-click": this.locked(this.onLoadMore, true),
+            "t-att-class": () => ({
+                "d-none": !this.hasMore,
             }),
         },
     };
@@ -34,11 +41,16 @@ export class DynamicSnippet extends Interaction {
          *
          * @type {*|jQuery.fn.init|jQuery|HTMLElement}
          */
-        this.data = [];
+        this.lastFetchedRecords = [];
         this.renderedContentNode = document.createDocumentFragment();
         this.uniqueId = uniqueId("s_dynamic_snippet_");
         this.templateKey = "website.s_dynamic_snippet.grid";
         this.withSample = false;
+        this.offset = 0;
+        this.totalToFetch = parseInt(this.el.dataset.numberOfRecords) || 0;
+        this.hasMore = false;
+        this.fetchedData = [];
+        this.chunkSize = DEFAULT_CHUNK_SIZE;
     }
 
     async willStart() {
@@ -56,6 +68,17 @@ export class DynamicSnippet extends Interaction {
         const templateAreaEl = this.el.querySelector(".dynamic_snippet_template");
         // Nested interactions are stopped implicitly.
         templateAreaEl.replaceChildren();
+    }
+
+    /**
+     * Handles the "Load More" action.
+     *
+     * Fetches the next batch of records from the server and appends them to the
+     * existing snippet content.
+     */
+    async onLoadMore() {
+        await this.fetchData();
+        this.appendContent();
     }
 
     /**
@@ -94,6 +117,8 @@ export class DynamicSnippet extends Interaction {
 
     async fetchData() {
         if (this.isConfigComplete()) {
+            const remaining = this.totalToFetch - this.fetchedData.length;
+            const limit = Math.min(this.chunkSize, remaining);
             const nodeData = this.el.dataset;
             const filterFragments = await this.waitFor(
                 rpc(
@@ -102,7 +127,8 @@ export class DynamicSnippet extends Interaction {
                         {
                             filter_id: parseInt(nodeData.filterId),
                             template_key: nodeData.templateKey,
-                            limit: parseInt(nodeData.numberOfRecords),
+                            limit,
+                            offset: this.offset,
                             search_domain: this.getSearchDomain(),
                             with_sample: this.withSample,
                         },
@@ -111,25 +137,35 @@ export class DynamicSnippet extends Interaction {
                     )
                 )
             );
-            this.data = filterFragments.map(markup);
+            this.lastFetchedRecords = filterFragments.map(markup);
+            this.fetchedData.push(...this.lastFetchedRecords);
+            this.offset += limit;
+            this.hasMore =
+                this.fetchedData.length < this.totalToFetch &&
+                this.lastFetchedRecords.length === limit;
         } else {
-            this.data = [];
+            this.lastFetchedRecords = [];
         }
     }
 
     /**
      * To be overridden
      * Prepare the content before rendering.
+     * @param {Object[]} data The data items to be rendered in the snippet.
      */
-    prepareContent() {
-        this.renderedContentNode = renderToFragment(this.templateKey, this.getQWebRenderOptions());
+    prepareContent(data) {
+        this.renderedContentNode = renderToFragment(
+            this.templateKey,
+            this.getQWebRenderOptions(data)
+        );
     }
 
     /**
      * To be overridden
      * Prepare QWeb options.
+     * @param {Object[]} data The data items to be rendered in the snippet.
      */
-    getQWebRenderOptions() {
+    getQWebRenderOptions(data) {
         const dataset = this.el.dataset;
         const numberOfRecords = parseInt(dataset.numberOfRecords);
         let numberOfElements;
@@ -142,7 +178,7 @@ export class DynamicSnippet extends Interaction {
         const chunkSize = numberOfRecords < numberOfElements ? numberOfRecords : numberOfElements;
         return {
             chunkSize: chunkSize,
-            data: this.data,
+            data,
             unique_id: this.uniqueId,
             extraClasses: dataset.extraClasses || "",
             columnClasses: dataset.columnClasses || "",
@@ -150,8 +186,8 @@ export class DynamicSnippet extends Interaction {
     }
 
     render() {
-        if (this.data.length > 0 || this.withSample) {
-            this.prepareContent();
+        if (this.lastFetchedRecords.length > 0 || this.withSample) {
+            this.prepareContent(this.fetchedData);
         } else {
             this.renderedContentNode = document.createDocumentFragment();
         }
@@ -160,6 +196,31 @@ export class DynamicSnippet extends Interaction {
         // for (const childEl of this.el.children) {
         //     this.services["public.interactions"].startInteractions(childEl);
         // }
+    }
+
+    /**
+     * Appends the newly fetched records to the existing snippet content.
+     *
+     * This method:
+     *  - Renders only the latest batch of data(`this.lastFetchedRecords`).
+     *  - Extracts the rendered item elements.
+     *  - Appends those items to the snippet’s existing container.
+     *
+     * This incremental update is used by “Load More” behavior, allowing the
+     * snippet to grow as additional data is fetched while preserving the
+     * current DOM structure.
+     */
+    appendContent() {
+        const templateAreaEl = this.el.querySelector(".dynamic_snippet_template");
+        this.prepareContent(this.lastFetchedRecords);
+        if (this.el.dataset.columnClasses) {
+            const currentContentEl = templateAreaEl.firstElementChild;
+            const newContentEl = this.renderedContentNode.firstElementChild;
+            currentContentEl.append(...newContentEl.children);
+        } else {
+            templateAreaEl.append(this.renderedContentNode);
+        }
+        this.services["public.interactions"].startInteractions(templateAreaEl);
     }
 
     renderContent() {

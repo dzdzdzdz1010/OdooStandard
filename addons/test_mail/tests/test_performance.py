@@ -1341,14 +1341,15 @@ class TestMailAccessPerformance(BaseMailPerformance):
     @warmup
     def test_message_read(self):
         # queries
-        # fetch messages: 1
+        # search messages: 1
         # filter records: 1 / model (except the one with _get_mail_message_access)
         # _get_mail_message_access: 2 on custom implementation, no prefetching (one unreachable)
+        # fetch body: 1
         # 'read': 1
         self.env.invalidate_all()
         self.env.transaction.clear_access_cache()
         profile = self.profile() if self.warm else nullcontext()
-        with self.assertQueryCount(employee=5), profile:
+        with self.assertQueryCount(employee=6), profile:
             content = (self.messages - self.messages_emp_nope).with_env(self.env).read(['body'])
         self.assertEqual(len(content), len(self.messages - self.messages_emp_nope))
 

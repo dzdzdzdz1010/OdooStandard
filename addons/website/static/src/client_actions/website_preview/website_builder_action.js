@@ -142,6 +142,7 @@ export class WebsiteBuilderClientAction extends Component {
         onMounted(() => {
             this.addListeners(document);
             this.addSystrayItems();
+            this.websiteService.context.newInstalledModule = router.current.module_installed;
             const edition = !!(this.enableEditor || this.editTranslations);
             if (edition) {
                 this.onEditPage();

@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class FleetVehicleLogServices(models.Model):
@@ -23,7 +23,9 @@ class FleetVehicleLogServices(models.Model):
         compute="_get_odometer", inverse='_set_odometer', string='Odometer Value',
         help='Odometer measure of the vehicle at the moment of this log')
     odometer_unit = fields.Selection(related='vehicle_id.odometer_unit', string="Unit", readonly=True)
-    date = fields.Date(help='Date when the cost has been executed', default=fields.Date.context_today)
+    date_from = fields.Date(string='Start of Service', help='Date when the cost has been executed',
+        default=fields.Date.context_today)
+    date_to = fields.Date(string='End of Service')
     company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company)
     currency_id = fields.Many2one('res.currency', related='company_id.currency_id')
     purchaser_id = fields.Many2one('res.partner', string="Driver", compute='_compute_purchaser_id', readonly=False, store=True)
@@ -53,10 +55,22 @@ class FleetVehicleLogServices(models.Model):
                 raise UserError(_('Emptying the odometer value of a vehicle is not allowed.'))
             odometer = self.env['fleet.vehicle.odometer'].create({
                 'value': record.odometer,
-                'date': record.date or fields.Date.context_today(record),
+                'date': record.date_from or fields.Date.context_today(record),
                 'vehicle_id': record.vehicle_id.id
             })
             self.odometer_id = odometer
+
+    @api.constrains('date_from', 'date_to')
+    def _check_service_dates(self):
+        for service in self:
+            if not service.date_from and service.date_to:
+                raise ValidationError(
+                    self.env._("Start of Service date must be set if End of Service date is set.")
+                )
+            if service.date_from and service.date_to and service.date_to < service.date_from:
+                raise ValidationError(
+                    self.env._("End of Service date must be greater than or equal to Start of Service date.")
+                )
 
     @api.model_create_multi
     def create(self, vals_list):

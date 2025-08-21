@@ -232,8 +232,34 @@ class ProductProduct(models.Model):
         # pre-compute bom lines and identify missing kit components to prefetch
         bom_sub_lines_per_kit = {}
         prefetch_component_ids = set()
-        for product in bom_kits:
-            __, bom_sub_lines = bom_kits[product].explode(product, 1)
+        # memoize explode calls as we are using bom_sub_lines that depends only on the bom.
+        exploded_values = {}
+        should_explode_bom_cache = {}
+
+        def should_explode_bom(bom):
+            # Helper to check whether to use memoized value or explode current bom.
+            if bom in should_explode_bom_cache:
+                return should_explode_bom_cache[bom]
+            if not bom.bom_line_ids or not exploded_values.get(bom):
+                return True
+            line_by_product = {}
+            conflicting_line = self.env['mrp.bom.line']
+            for line in bom.bom_line_ids:
+                seen_line = line_by_product.get(line.product_id)
+                if not seen_line:
+                    line_by_product[line.product_id] = line
+                else:
+                    line_qty = line.product_uom_id._compute_quantity(line.product_qty, seen_line.product_uom_id, raise_if_failure=False)
+                    if line_qty != seen_line.product_qty and seen_line.bom_product_template_attribute_value_ids != line.bom_product_template_attribute_value_ids:
+                        conflicting_line = line
+                        break
+            should_explode_bom_cache[bom] = bool(conflicting_line)
+            return conflicting_line
+
+        for product, bom in bom_kits.items():
+            if should_explode_bom(bom):
+                exploded_values[bom] = bom_kits[product].explode(product, 1)
+            __, bom_sub_lines = exploded_values[bom]
             bom_sub_lines_per_kit[product] = bom_sub_lines
             for bom_line, __ in bom_sub_lines:
                 if bom_line.product_id.id not in qties:

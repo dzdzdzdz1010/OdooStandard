@@ -1,6 +1,6 @@
 import { AccountProductCatalogSearchModel } from "@account/components/product_catalog/search/search_model";
 import { useSubEnv } from "@odoo/owl";
-import { getSuggestToggleState } from "../utils";
+import { getSuggestToggleState, getMonthlyDemandRange } from "../utils";
 
 export class PurchaseStockProductCatalogSearchModel extends AccountProductCatalogSearchModel {
     setup() {
@@ -116,7 +116,8 @@ export class PurchaseStockProductCatalogSearchModel extends AccountProductCatalo
     }
 
     /**
-     * Adds / Removes suggest parameters from globalContext depending if suggest feature is activated
+     * Adds / Removes suggest parameters from globalContext depending if suggest feature is activated.
+     * (The computation and display of suggestion is based on these context keys existence)
      * @returns {Object} base context if suggest is OFF or base + suggest context
      */
     _editSuggestContext() {
@@ -126,6 +127,7 @@ export class PurchaseStockProductCatalogSearchModel extends AccountProductCatalo
             suggest_days: this.suggest.numberOfDays,
             suggest_percent: this.suggest.percentFactor,
             sectionId: this.selectedSection.sectionId ?? false,
+            ...getMonthlyDemandRange(this.suggest.basedOn),
         };
         if (!this.suggest.suggestToggle.isOn) {
             for (const k of new Set([...Object.keys(suggestContext)])) {

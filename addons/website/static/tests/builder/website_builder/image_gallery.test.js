@@ -4,7 +4,7 @@ import {
     waitForEndOfOperation,
 } from "@html_builder/../tests/helpers";
 import { expect, test } from "@odoo/hoot";
-import { click, queryAll, queryOne, waitFor } from "@odoo/hoot-dom";
+import { click, queryAll, queryOne, waitFor, press } from "@odoo/hoot-dom";
 import { contains, dataURItoBlob, onRpc, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { uniqueId } from "@web/core/utils/functions";
 import {
@@ -158,7 +158,9 @@ test("Change gallery layout when images have a link", async () => {
 
     await contains("[data-label='Your URL'] [data-action-id='setUrl'] > input").fill(
         "http://odoo.com"
+        // { confirm: false }
     );
+    await press("Tab");
     expect(":iframe section a[href='http://odoo.com'] > img[data-index='1']").toHaveCount(1);
 
     await contains("[data-label='Mode'] .dropdown-toggle").click();

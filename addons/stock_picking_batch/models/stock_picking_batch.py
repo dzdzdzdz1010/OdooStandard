@@ -10,7 +10,7 @@ class StockPickingBatch(models.Model):
     _name = 'stock.picking.batch'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = "Batch Transfer"
-    _order = "name desc"
+    _order = "priority desc, name desc"
 
     name = fields.Char(
         string='Batch Transfer', default='New',
@@ -44,6 +44,9 @@ class StockPickingBatch(models.Model):
         ('cancel', 'Cancelled')], default='draft',
         store=True, compute='_compute_state',
         copy=False, tracking=True, required=True, readonly=True, index=True)
+    priority = fields.Selection([
+        ('0', 'Normal'),
+        ('1', 'Urgent')], string='Priority', default='0')
     picking_type_id = fields.Many2one(
         'stock.picking.type', 'Operation Type', check_company=True, copy=False,
         index=True)

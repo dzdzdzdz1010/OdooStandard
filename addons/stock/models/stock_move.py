@@ -196,6 +196,7 @@ class StockMove(models.Model):
     show_quant = fields.Boolean("Show Quant", compute="_compute_show_info")
     show_lots_m2o = fields.Boolean("Show lot_id", compute="_compute_show_info")
     show_lots_text = fields.Boolean("Show lot_name", compute="_compute_show_info")
+    weight = fields.Float(compute='_compute_move_weight', digits='Stock Weight', store=True, compute_sudo=True)
 
     _product_location_index = models.Index("(product_id, location_id, location_dest_id, company_id, state)")
 
@@ -730,6 +731,11 @@ Please change the quantity done or the rounding precision in your settings.""",
                 move.description_picking = product._get_picking_description(move.picking_type_id) or move._get_description()
             else:
                 move.description_picking = ""
+
+    @api.depends('product_id', 'product_uom_qty', 'product_uom', 'product_id.weight')
+    def _compute_move_weight(self):
+        for move in self:
+            move.weight = (move.product_qty * move.product_id.weight)
 
     def _get_description(self):
         product = self.product_id.with_context(lang=self._get_lang())

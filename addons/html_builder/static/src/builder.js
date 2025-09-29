@@ -179,12 +179,8 @@ export class Builder extends Component {
                     key: this.env.localOverlayContainerKey,
                     ref: this.props.overlayRef,
                 },
-                saveSnippet: (snippetEl, cleanForSaveHandlers, wrapWithSaveSnippetHandlers) =>
-                    this.snippetModel.saveSnippet(
-                        snippetEl,
-                        cleanForSaveHandlers,
-                        wrapWithSaveSnippetHandlers
-                    ),
+                saveSnippet: (snippetEl, cloneAndPrepareForSave) =>
+                    this.snippetModel.saveSnippet(snippetEl, cloneAndPrepareForSave),
                 snippetModel: this.snippetModel,
                 updateInvisibleElementsPanel: () => this.updateInvisibleEls(),
                 allowCustomStyle: true,

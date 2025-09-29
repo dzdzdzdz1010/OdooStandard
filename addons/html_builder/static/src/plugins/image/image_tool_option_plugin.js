@@ -28,7 +28,7 @@ export class ImageAndFaOption extends BaseOptionComponent {
     static exclude = `[data-oe-type='image'] > img, [data-oe-xpath], ${socialMediaElementsSelector}`;
     static name = "imageAndFaOption";
 }
-class ImageToolOptionPlugin extends Plugin {
+export class ImageToolOptionPlugin extends Plugin {
     static id = "imageToolOption";
     static dependencies = [
         "history",

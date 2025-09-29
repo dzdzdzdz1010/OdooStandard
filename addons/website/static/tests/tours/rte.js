@@ -294,6 +294,9 @@ registerWebsitePreviewTour(
             trigger:
                 ":iframe body:not(:has(#wrap p font:first:text(paragraphs <b>describing</b>)))",
         },
+        // TODO: fix this. We are not on the translated page anymore, we should
+        // be able to use `clickOnEditAndWaitEditMode`. But the systray takes
+        // time to reload after switching pages.
         ...clickOnEditAndWaitEditModeInTranslatedPage(),
         {
             content: "select text",

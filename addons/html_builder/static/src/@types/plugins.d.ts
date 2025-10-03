@@ -10,6 +10,7 @@ declare module "plugins" {
     import { dropzone_selector, DropZoneShared, filter_for_sibling_dropzone_predicates } from "@html_builder/core/drop_zone_plugin";
     import { after_replication_handlers } from "@html_builder/core/field_change_replication_plugin";
     import { MediaWebsiteShared } from "@html_builder/core/media_website_plugin";
+    import { device_view_switched_handlers } from "@html_builder/core/mobile_preview_plugin";
     import { OperationShared } from "@html_builder/core/operation_plugin";
     import { get_overlay_buttons, OverlayButtonsShared } from "@html_builder/core/overlay_buttons/overlay_buttons_plugin";
     import { empty_node_predicates, is_unremovable_selector, on_removed_handlers, on_will_remove_handlers, RemoveShared } from "@html_builder/core/remove_plugin";
@@ -70,6 +71,7 @@ declare module "plugins" {
         before_setup_editor_handlers: before_setup_editor_handlers;
         change_current_options_containers_listeners: change_current_options_containers_listeners;
         default_shape_handlers: default_shape_handlers;
+        device_view_switched_handlers: device_view_switched_handlers;
         image_shape_groups_providers: image_shape_groups_providers;
         on_bg_image_hide_handlers: on_bg_image_hide_handlers;
         on_cloned_handlers: on_cloned_handlers;

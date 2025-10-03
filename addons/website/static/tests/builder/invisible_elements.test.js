@@ -462,6 +462,45 @@ describe("drop invisible elements", () => {
             expect(":iframe .s_desktop_test").toHaveClass("o_snippet_override_invisible");
         });
     });
+
+    describe("preview of snippet with invisible elements", () => {
+        test("elements with o_conditional_hidden are visible in snippet preview", async () => {
+            await setupWebsiteBuilder(`<section>test</section>`, {
+                snippets: snippetsInfoWithSnippet(snippetConditionalInvisible),
+            });
+            await contains(
+                ".o-snippets-menu #snippet_groups .o_snippet_thumbnail .o_snippet_thumbnail_area"
+            ).click();
+            await waitForSnippetDialog();
+            expect(
+                ".o_add_snippet_dialog :iframe .s_conditional_test span:contains(Sometimes)"
+            ).toBeVisible();
+        });
+        test("snippet which are desktop invisible are visible in snippet preview", async () => {
+            await setupWebsiteBuilder(`<section>test</section>`, {
+                snippets: snippetsInfoWithSnippet(snippetDesktopInvisible),
+            });
+            await contains(
+                ".o-snippets-menu #snippet_groups .o_snippet_thumbnail .o_snippet_thumbnail_area"
+            ).click();
+            await waitForSnippetDialog();
+            expect(
+                ".o_add_snippet_dialog :iframe .s_desktop_test span:contains(Hello Mobile)"
+            ).toBeVisible();
+        });
+        test("elements which are desktop invisible inside a snippet are invisible in snippet preview", async () => {
+            await setupWebsiteBuilder(`<section>test</section>`, {
+                snippets: snippetsInfoWithSnippet(snippetInnerDesktopInvisible),
+            });
+            await contains(
+                ".o-snippets-menu #snippet_groups .o_snippet_thumbnail .o_snippet_thumbnail_area"
+            ).click();
+            await waitForSnippetDialog();
+            expect(
+                ".o_add_snippet_dialog :iframe .s_desktop_test span:contains(Mobile)"
+            ).not.toBeVisible();
+        });
+    });
 });
 
 describe("clone invisible elements", () => {

@@ -2,7 +2,6 @@ import { Plugin } from "@html_editor/plugin";
 import { browser } from "@web/core/browser/browser";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
-import { AttributeTranslateDialog } from "../../translation_components/attributeTranslateDialog";
 import { SelectTranslateDialog } from "../../translation_components/selectTranslateDialog";
 import {
     localStorageNoDialogKey,
@@ -13,7 +12,22 @@ import { withSequence } from "@html_editor/utils/resource";
 import { makeContentsInline, unwrapContents } from "@html_editor/utils/dom";
 
 /**
+ * @typedef {Map<HTMLElement, ElementTranslationInfo} ElToTranslationInfoMap
+ *
+ * @typedef {{[attributeName: string]: AttributeTranslationInfo}} ElementTranslationInfo
+ *
+ * @typedef {Object} AttributeTranslationInfo
+ * @property {string} oeModel
+ * @property {string} oeId
+ * @property {string} oeField
+ * @property {string} oeTranslationState
+ * @property {string} oeTranslationSourceSha
+ * @property {string} translation
+ */
+
+/**
  * @typedef {Object} TranslationShared
+ * @property {TranslationPlugin["getTranslationInfo"]} getTranslationInfo
  * @property {TranslationPlugin["updateTranslationMap"]} updateTranslationMap
  */
 
@@ -60,7 +74,7 @@ function findOEditable(containerEl) {
 export class TranslationPlugin extends Plugin {
     static id = "translation";
     static dependencies = ["builderOptions", "history"];
-    static shared = ["updateTranslationMap"];
+    static shared = ["getTranslationInfo", "updateTranslationMap"];
 
     /** @type {import("plugins").WebsiteResources} */
     resources = {
@@ -169,6 +183,7 @@ export class TranslationPlugin extends Plugin {
         }
         // Keep the original values of elToTranslationInfoMap so that we know
         // which translations have been updated.
+        /** @type {ElToTranslationInfoMap} */
         this.originalElToTranslationInfoMap = new Map();
         for (const [translateEl, translationInfo] of this.elToTranslationInfoMap) {
             this.originalElToTranslationInfoMap.set(
@@ -177,24 +192,27 @@ export class TranslationPlugin extends Plugin {
             );
         }
     }
-
     /**
      * Creates a map that links html elements to their attributes to translate.
-     * It has the form:
-     * {translateEl1: {
-     *     attribute1: {
-     *         oeModel: "ir.ui.view",
-     *         oeId: "5",
-     *         oeField: "arch_db",
-     *         oeTranslationState: "translated",
-     *         oeTranslationSourceSha: "123",
-     *         translation: "traduction",
-     *     },
-     * }};
+     * It has the form `Map<HTMLElement, ElementTranslationInfo>`:
+     *
+     *     Map(
+     *         translateEl1 => {
+     *             attribute1: {
+     *                 oeModel: "ir.ui.view",
+     *                 oeId: "5",
+     *                 oeField: "arch_db",
+     *                 oeTranslationState: "translated",
+     *                 oeTranslationSourceSha: "123",
+     *                 translation: "traduction",
+     *             },
+     *         }
+     *     );
      *
      * @param {HTMLElement[]} editableEls
      */
     buildTranslationInfoMap(editableEls) {
+        /** @type {ElToTranslationInfoMap} */
         this.elToTranslationInfoMap = new Map();
         const translationRegex =
             /<span [^>]*data-oe-translation-source-sha="([^"]+)"[^>]*>(.*)<\/span>/;
@@ -308,16 +326,6 @@ export class TranslationPlugin extends Plugin {
                     );
                 }
             }
-            this.addDomListener(translateEl, "click", (ev) => {
-                const translateEl = ev.target;
-                const elToTranslationInfoMap = this.elToTranslationInfoMap;
-                this.dialogService.add(AttributeTranslateDialog, {
-                    node: translateEl,
-                    elToTranslationInfoMap: elToTranslationInfoMap,
-                    addStep: this.dependencies.history.addStep,
-                    applyCustomMutation: this.dependencies.history.applyCustomMutation,
-                });
-            });
         }
         for (const translateSelectEl of this.translateSelectEls) {
             this.addDomListener(translateSelectEl, "click", (ev) => {
@@ -329,7 +337,20 @@ export class TranslationPlugin extends Plugin {
         }
         this.dispatchTo("mark_translatable_nodes", this.editableEls);
     }
-
+    /**
+     * @param {HTMLElement} translateEl - the element whose attribute
+     * translations we want to get.
+     * @returns {ElementTranslationInfo} translationInfo
+     */
+    getTranslationInfo(translateEl) {
+        return this.elToTranslationInfoMap.get(translateEl);
+    }
+    /**
+     * @param {HTMLElement} translateEl - element on which the translatable
+     * attribute is
+     * @param {string} translation - current translation
+     * @param {string} attrName - attribute to translate
+     */
     setupTranslationMap(translateEl, translation, attrName) {
         const parser = new DOMParser();
         const dummyDoc = parser.parseFromString(translation, "text/html");

@@ -81,7 +81,7 @@ TRANSLATED_ATTRS = {
 # These attributes must not be translated by automated tools. That means they
 # must not be exported to .po(t) files, `t-attf-` attributes should not be
 # translated, and AI translation should ignore them.
-USER_ONLY_TRANSLATED_ATTRS = {'src'}
+USER_ONLY_TRANSLATED_ATTRS = {'src', 'data-oe-expression'}
 
 TRANSLATED_ATTRS.update(
     {f't-attf-{attr}' for attr in TRANSLATED_ATTRS},

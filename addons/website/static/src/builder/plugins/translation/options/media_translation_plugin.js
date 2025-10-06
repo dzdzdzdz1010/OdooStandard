@@ -1,14 +1,17 @@
 import { BuilderAction } from "@html_builder/core/builder_action";
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
-import { TranslateImageOption } from "@website/builder/plugins/translation/options/media_translation_option";
+import {
+    TranslateImageOption,
+    TranslateVideoOption,
+} from "@website/builder/plugins/translation/options/media_translation_option";
 
 export class MediaTranslationPlugin extends Plugin {
     static id = "mediaTranslation";
     static dependencies = ["translation"];
     /** @type {import("plugins").WebsiteResources} */
     resources = {
-        builder_options: [TranslateImageOption],
+        builder_options: [TranslateImageOption, TranslateVideoOption],
         builder_actions: {
             TranslateMediaSrcAction,
         },
@@ -29,11 +32,12 @@ registry.category("translation-plugins").add(MediaTranslationPlugin.id, MediaTra
 
 export class TranslateMediaSrcAction extends BuilderAction {
     static id = "translateMediaSrc";
-    static dependencies = ["imagePostProcess", "media"];
+    static dependencies = ["history", "imagePostProcess", "media", "translation"];
 
     setup() {
         this.savingMap = {
             images: this.saveImage.bind(this),
+            videos: this.saveVideo.bind(this),
         };
     }
 
@@ -77,5 +81,25 @@ export class TranslateMediaSrcAction extends BuilderAction {
         });
         updateImageAttributes();
         editingElement.classList.add("oe_translated");
+    }
+
+    saveVideo(editingElement, newVideoEl) {
+        const originalLink =
+            this.dependencies.translation.getTranslationInfo(editingElement)["data-oe-expression"]
+                .translation;
+        const newSrc = newVideoEl.querySelector("iframe").getAttribute("src");
+        editingElement.setAttribute("data-oe-expression", newSrc);
+        editingElement.querySelector("iframe").setAttribute("src", newSrc);
+        editingElement.classList.add("oe_translated");
+
+        const updateTranslationMap = this.dependencies.translation.updateTranslationMap;
+        this.dependencies.history.applyCustomMutation({
+            apply: () => {
+                updateTranslationMap(editingElement, newSrc, "data-oe-expression");
+            },
+            revert: () => {
+                updateTranslationMap(editingElement, originalLink, "data-oe-expression");
+            },
+        });
     }
 }

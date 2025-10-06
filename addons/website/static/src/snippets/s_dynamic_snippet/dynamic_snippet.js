@@ -10,6 +10,7 @@ import { verifyHttpsUrl } from "@website/utils/misc";
 import { markup } from "@odoo/owl";
 
 const DEFAULT_NUMBER_OF_ELEMENTS = 4;
+const DEFAULT_NUMBER_OF_ELEMENTS_IN_TITLE_LEFT = 2;
 const DEFAULT_NUMBER_OF_ELEMENTS_SM = 1;
 
 export class DynamicSnippet extends Interaction {
@@ -137,7 +138,13 @@ export class DynamicSnippet extends Interaction {
             numberOfElements =
                 parseInt(dataset.numberOfElementsSmallDevices) || DEFAULT_NUMBER_OF_ELEMENTS_SM;
         } else {
-            numberOfElements = parseInt(dataset.numberOfElements) || DEFAULT_NUMBER_OF_ELEMENTS;
+            const isContentWidthMax = !!this.el.querySelector(".container-fluid");
+            const hasTitleAside = !!this.el.querySelector(".s_dynamic_snippet_title_aside");
+            const numberOfElementsInRow =
+                !isContentWidthMax && hasTitleAside
+                    ? DEFAULT_NUMBER_OF_ELEMENTS_IN_TITLE_LEFT
+                    : DEFAULT_NUMBER_OF_ELEMENTS;
+            numberOfElements = parseInt(dataset.numberOfElements) || numberOfElementsInRow;
         }
         const chunkSize = numberOfRecords < numberOfElements ? numberOfRecords : numberOfElements;
         return {

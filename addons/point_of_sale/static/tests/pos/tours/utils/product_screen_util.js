@@ -243,7 +243,7 @@ export function customerIsSelected(name) {
     ];
 }
 export function clickRefund() {
-    return [clickReview(), ...clickControlButton("Refund")];
+    return [clickReview(), Chrome.clickOrders(), ...selectFilter("Paid")];
 }
 export function controlButtonTrigger(name = "") {
     return `.control-buttons button:contains("${name}")`;
@@ -1037,7 +1037,6 @@ export function clickFastPaymentButton(paymentMethodName) {
         },
     ];
 }
-
 export function longPressOrderline(productName, delay = 500) {
     return [
         {
@@ -1103,6 +1102,22 @@ export function clickBreakCombo() {
         {
             content: "Click break combo button",
             trigger: ".break-combo-button",
+            run: "click",
+        },
+    ];
+}
+
+export function selectFilter(name) {
+    return [
+        {
+            trigger: `.pos-search-bar .filter`,
+            run: "click",
+        },
+        {
+            trigger: `.pos-search-bar .filter ul`,
+        },
+        {
+            trigger: `.pos-search-bar .filter ul li:contains("${name}")`,
             run: "click",
         },
     ];

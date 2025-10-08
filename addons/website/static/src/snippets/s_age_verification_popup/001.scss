@@ -1,0 +1,6 @@
+.s_age_verification_popup[data-vcss='001'] {
+    .modal {
+        // always appear on top in case of multiple popups
+        z-index: 9999 !important;
+    }
+}

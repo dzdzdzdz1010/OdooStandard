@@ -96,7 +96,7 @@ export class PopupVisibilityPlugin extends Plugin {
     }
 
     cleanForSave({ root: rootEl }) {
-        for (const modalEl of rootEl.querySelectorAll(".s_popup .modal.show")) {
+        for (const modalEl of rootEl.querySelectorAll(".s_popup:not(:scope) > .modal.show")) {
             // Do not call .hide() directly, because it is queued whereas
             // .dispose() is not.
             modalEl.classList.remove("show");

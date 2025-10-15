@@ -31,7 +31,10 @@ export class ProductListPage extends Component {
             this.selfOrder.computeAvailableCategories();
         }
         const availableCategories = this.selfOrder.availableCategories;
-        const topCategories = availableCategories.filter((category) => !category.parent_id);
+        const topCategories = availableCategories.filter(
+            (category) =>
+                !category.parent_id || !this.selfOrder.isVisibleCategory(category.parent_id)
+        );
         const selectedCategory =
             initCategories && topCategories.length > 0
                 ? topCategories[0]
@@ -94,7 +97,7 @@ export class ProductListPage extends Component {
     selectCategory(category) {
         this.state.selectedCategory = category;
         if (this.selfOrder.kioskMode) {
-            if (!category.parent_id) {
+            if (!category.parent_id || !this.selfOrder.isVisibleCategory(category.parent_id)) {
                 this.toggleSubCategoryPanel();
             }
             this.ensureCategoryVisible();
@@ -124,7 +127,11 @@ export class ProductListPage extends Component {
     }
 
     get topSelectedCategory() {
-        return this.selectedCategory?.parent_id || this.selectedCategory;
+        return (
+            (this.selectedCategory?.parent_id &&
+                this.selfOrder.isVisibleCategory(this.selectedCategory.parent_id)) ||
+            this.selectedCategory
+        );
     }
 
     get selectedCategory() {
@@ -140,10 +147,20 @@ export class ProductListPage extends Component {
         if (!currentCategory) {
             return [];
         }
-        if (currentCategory.parent_id) {
-            return currentCategory.parent_id.child_ids;
+        if (
+            currentCategory.parent_id &&
+            this.selfOrder.isVisibleCategory(currentCategory.parent_id)
+        ) {
+            return this.filterVisibleCategories(currentCategory.parent_id.child_ids || []);
         }
-        return currentCategory.child_ids || [];
+        return this.filterVisibleCategories(currentCategory.child_ids || []);
+    }
+
+    filterVisibleCategories(categories) {
+        if (!categories) {
+            return categories;
+        }
+        return categories.filter((c) => this.selfOrder.isVisibleCategory(c));
     }
 
     get productCategories() {

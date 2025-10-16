@@ -4,6 +4,14 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
 
+patch(QRPopup, {
+    props: {
+        ...QRPopup.props,
+        paymentMethod: { type: Object, optional: true, default: {} },
+        line: { type: Object, optional: true, default: null },
+    },
+});
+
 patch(QRPopup.prototype, {
     setup() {
         super.setup(...arguments);

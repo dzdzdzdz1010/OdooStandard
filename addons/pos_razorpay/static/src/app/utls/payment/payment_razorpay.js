@@ -306,4 +306,4 @@ export class PaymentRazorpay extends PaymentInterface {
     }
 }
 
-registry.category("electronic_payment_interfaces").add("razorpay", PaymentRazorpay);
+registry.category("pos_payment_providers").add("razorpay", PaymentRazorpay);

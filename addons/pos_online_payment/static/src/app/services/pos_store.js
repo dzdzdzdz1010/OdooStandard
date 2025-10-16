@@ -103,11 +103,11 @@ patch(PosStore.prototype, {
                 opData["modified_payment_lines"] = true;
             }
             opLine.setAmount(op.amount);
-            opLine.can_be_reversed = false;
             if (opLine.getPaymentStatus() !== "done") {
                 newDoneOnlinePayment = true;
             }
             opLine.setPaymentStatus("done");
+            opLine.canBeReversed = false;
         }
         for (const missingInServerLine of opLinesToUpdate) {
             if (missingInServerLine.getPaymentStatus() === "done") {

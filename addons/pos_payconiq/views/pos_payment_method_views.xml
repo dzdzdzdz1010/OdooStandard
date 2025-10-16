@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_payment_method_view_form_inherit_payconiq" model="ir.ui.view">
+        <field name="name">pos.payment.method.form.inherit.payconiq</field>
+        <field name="model">pos.payment.method</field>
+        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='payment_provider']" position="after">
+                <field name="payconiq_api_key" password="True" invisible="payment_provider != 'payconiq'" required="payment_provider == 'payconiq'"/>
+                <field name="payconiq_ppid" invisible="payment_provider != 'payconiq'" required="payment_provider == 'payconiq'"/>
+                <field name="payconiq_usage" invisible="payment_provider != 'payconiq'"/>
+                <field name="payconiq_sticker_size" invisible="payment_provider != 'payconiq' or payconiq_usage != 'sticker'"/>
+                <field name="payconiq_test_mode" invisible="payment_provider != 'payconiq'" required="payment_provider == 'payconiq'"/>
+                <button name="download_payconiq_sticker" type="object" string="Download Sticker" class="btn btn-primary" invisible="payment_provider != 'payconiq' or payconiq_usage != 'sticker'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

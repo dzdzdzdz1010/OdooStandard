@@ -1,19 +1,32 @@
 import { Dialog } from "@web/core/dialog/dialog";
-import { Component } from "@odoo/owl";
+import { Component, useState } from "@odoo/owl";
 
 export class QRPopup extends Component {
     static template = "point_of_sale.QRPopup";
     static components = { Dialog };
     static props = {
         amount: { type: String },
+        qrCode: { type: String },
         confirm: { type: Function, optional: true, default: false },
+        confirmLabel: { type: String, optional: true },
         cancel: { type: Function, optional: true, default: false },
+        cancelLabel: { type: String, optional: true },
         close: { type: Function, optional: true, default: false },
         isCustomerDisplay: { type: Boolean, optional: true, default: false },
-        paymentMethod: { type: Object, optional: true, default: {} },
-        qrCode: { type: String },
-        line: { type: Object, optional: true, default: null },
+        footer: { type: Boolean, optional: true },
     };
+    static defaultProps = { footer: true, cancelLabel: "Discard", confirmLabel: "Confirm" };
+
+    setup() {
+        this.state = useState({ qrLoaded: false });
+    }
+
+    onQrLoaded() {
+        // Force the skeleton to avoid flashing effect
+        setTimeout(() => {
+            this.state.qrLoaded = true;
+        }, 150);
+    }
 
     confirm() {
         this.props.confirm();

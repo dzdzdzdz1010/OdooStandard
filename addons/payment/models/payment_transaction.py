@@ -1,5 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from collections import defaultdict
 import re
 import unicodedata
 from datetime import datetime
@@ -513,6 +514,12 @@ class PaymentTransaction(models.Model):
             'state': self.state,
             'state_message': self.state_message,
         })
+        # Send notification that will trigger the postprocesing
+        self.env['bus.bus']._sendone(
+            'PAYMENT_PROCESSING_CHANNEL',
+            'PAYMENT_TRIGGER_POST_PROCESSING',
+            {},
+        )
 
         return processing_values
 
@@ -1271,3 +1278,30 @@ class PaymentTransaction(models.Model):
         :rtype: recordset of `payment.transaction`
         """
         return self.filtered(lambda t: t.state != 'draft').sorted()[:1]
+
+    def _get_transaction_status_message(self):
+        validation_status_messages = {
+            'pending': _("Saving your payment method."),
+            'done': _("Your payment method has been saved."),
+            'cancel': _("The saving of your payment method has been canceled."),
+            'error': _(
+                "An error occurred while saving your payment method.\n%(error_message)s",
+                error_message=self.state_message,
+            ),
+        }
+        if self.operation == 'validation' and self.state in validation_status_messages:
+            status_messages = validation_status_messages
+        else:
+            provider_sudo = self.provider_id.sudo()
+            status_messages = {
+                'draft': _("Your payment has not been processed yet."),
+                'pending': provider_sudo.pending_msg,
+                'authorized': provider_sudo.auth_msg,
+                'done': provider_sudo.done_msg,
+                'cancel': provider_sudo.cancel_msg,
+                'error': _(
+                    "An error occurred during the processing of your payment.\n%(error_message)s",
+                    error_message=self.state_message,
+                ),
+            }
+        return status_messages.get(self.state)

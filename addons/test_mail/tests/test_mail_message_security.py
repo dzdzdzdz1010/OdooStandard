@@ -271,6 +271,34 @@ class TestMailMessageAccess(MessageAccessCommon):
                             'body': 'Test',
                         })
 
+    def test_access_create_attachment_post_access(self):
+        """ Test 'mail_post_access' support that allows creating a message with
+        other rights than 'write' access on document """
+        record = self.record_internal_ro
+        for post_value, should_crash in [
+            ('read', False),
+            ('write', True),
+        ]:
+            with self.subTest(post_value=post_value):
+                with patch.object(MailTestAccess, '_mail_post_access', post_value):
+                    if should_crash:
+                        with self.assertRaises(AccessError):
+                            self.env['ir.attachment'].with_user(self.user_employee).create({
+                                'name': 'doc.txt',
+                                'raw': b'My attachment',
+                                'res_model': record._name,
+                                'res_id': record.id
+                            })
+                    else:
+                        attachment = self.env['ir.attachment'].with_user(self.user_employee).create({
+                            'name': 'doc.txt',
+                            'raw': b'My attachment',
+                            'res_model': record._name,
+                            'res_id': record.id
+                        })
+                        attachment.with_user(self.user_employee).write({'name': 'doc2.txt'})
+                        attachment.with_user(self.user_employee).unlink()
+
     @mute_logger('odoo.addons.base.models.ir_rule')
     def test_access_create_portal(self):
         """ Test group_portal creation rules """

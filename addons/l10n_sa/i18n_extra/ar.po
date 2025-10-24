@@ -558,3 +558,8 @@ msgstr "تاريخ تنفيذ توريد السلع والخدمات. في حا�
 #: model_terms:ir.ui.view,arch_db:l10n_sa.view_move_form_inherit_l10n_sa
 msgid "Supply Date"
 msgstr "تاريخ التوريد"
+
+#. module: l10n_sa
+#: model:account.report.line,name:l10n_sa.invoice_total_payable_amount
+msgid "Invoice Total Payable Amount"
+msgstr "إجمالي مبلغ الفاتورة المستحق الدفع"

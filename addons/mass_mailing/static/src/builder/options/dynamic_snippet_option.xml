@@ -1,0 +1,4 @@
+<templates>
+    <!-- Extend this template to add support for additional record-based dynamic snippets. -->
+    <t t-name="mass_mailing.dynamicRecordOption"/>
+</templates>

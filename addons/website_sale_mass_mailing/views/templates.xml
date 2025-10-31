@@ -32,7 +32,7 @@
         </xpath>
     </template>
 
-    <template id="s_dynamic_product_row_fragment" inherit_id="mass_mailing_sale.s_dynamic_product_row_fragment">
+    <template id="s_dynamic_products_aside_fragment" inherit_id="mass_mailing_sale.s_dynamic_products_aside_fragment">
         <xpath expr="//a[@target='_blank']" position="attributes">
             <attribute name="t-attf-href">{{record.website_absolute_url or "#"}}</attribute>
         </xpath>

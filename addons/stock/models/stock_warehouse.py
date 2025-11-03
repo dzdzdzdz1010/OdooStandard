@@ -25,6 +25,7 @@ class StockWarehouse(models.Model):
     _description = "Warehouse"
     _order = 'sequence,id'
     _check_company_auto = True
+    _check_company_domain = models.check_company_domain_parent_of
     # namedtuple used in helper methods generating values for routes
     Routing = namedtuple('Routing', ['from_loc', 'dest_loc', 'picking_type', 'action'])
 

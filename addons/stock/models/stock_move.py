@@ -1845,7 +1845,7 @@ Please change the quantity done or the rounding precision in your settings.""",
         return self.env['stock.quant']._get_available_quantity(self.product_id, location_id, lot_id=lot_id, package_id=package_id, owner_id=owner_id, strict=strict, allow_negative=allow_negative)
 
     def _get_available_move_lines_in(self):
-        move_lines_in = self.move_orig_ids.move_dest_ids.move_orig_ids.filtered(lambda m: m.state == 'done').mapped('move_line_ids')
+        move_lines_in = self.sudo().move_orig_ids.move_dest_ids.move_orig_ids.filtered(lambda m: m.state == 'done').mapped('move_line_ids')
 
         def _keys_in_groupby(ml):
             return (ml.location_dest_id, ml.lot_id, ml.result_package_id, ml.owner_id)
@@ -2049,7 +2049,7 @@ Please change the quantity done or the rounding precision in your settings.""",
         moves_to_cancel.state = 'cancel'
 
         for move in moves_to_cancel:
-            siblings_states = (move.move_dest_ids.mapped('move_orig_ids') - move).mapped('state')
+            siblings_states = (move.sudo().move_dest_ids.mapped('move_orig_ids') - move).mapped('state')
             if move.propagate_cancel:
                 # only cancel the next move if all my siblings are also cancelled
                 if all(state == 'cancel' for state in siblings_states):
@@ -2065,7 +2065,7 @@ Please change the quantity done or the rounding precision in your settings.""",
             else:
                 if all(state in ('done', 'cancel') for state in siblings_states):
                     move_dest_ids = move.move_dest_ids
-                    move_dest_ids.write({
+                    move_dest_ids.sudo().write({
                         'procure_method': 'make_to_stock',
                         'move_orig_ids': [Command.unlink(move.id)]
                     })

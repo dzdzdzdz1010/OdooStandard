@@ -102,7 +102,7 @@
     <record model="ir.rule" id="stock_location_comp_rule">
         <field name="name">Location multi-company</field>
         <field name="model_id" ref="model_stock_location"/>
-        <field name="domain_force">[('company_id', 'in', company_ids + [False])]</field>
+        <field name="domain_force">['|', ('company_id', 'in', company_ids + [False]), '&amp;', '&amp;', ('usage', '=', 'transit'), ('company_id.child_ids', 'in', company_ids), '!', ('id', 'child_of', user.env['stock.warehouse'].search([('company_id.child_ids', 'in', company_ids)]).view_location_id.ids)]</field>
     </record>
 
      <record model="ir.rule" id="stock_move_rule">

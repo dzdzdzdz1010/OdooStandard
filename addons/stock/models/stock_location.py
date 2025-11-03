@@ -18,6 +18,7 @@ class StockLocation(models.Model):
     _order = 'complete_name, id'
     _rec_names_search = ['complete_name', 'barcode']
     _check_company_auto = True
+    _check_company_domain = models.check_company_domain_child_or_parent_of
 
     @api.model
     def default_get(self, fields):
@@ -521,6 +522,7 @@ class StockRoute(models.Model):
     _description = "Inventory Route"
     _order = 'sequence'
     _check_company_auto = True
+    _check_company_domain = models.check_company_domain_child_of
 
     name = fields.Char('Route', required=True, translate=True)
     active = fields.Boolean('Active', default=True, help="If the active field is set to False, it will allow you to hide the route without removing it.")

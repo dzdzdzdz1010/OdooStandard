@@ -62,16 +62,16 @@ class StockReturnPickingLine(models.TransientModel):
                 # link to original move
                 move_orig_to_link |= self.move_id
                 # link to siblings of original move, if any
-                move_orig_to_link |= self.move_id\
+                move_orig_to_link |= self.move_id.sudo()\
                     .move_dest_ids.filtered(lambda m: m.state not in ('cancel'))\
                     .move_orig_ids.filtered(lambda m: m.state not in ('cancel'))
-                move_dest_to_link = self.move_id.move_orig_ids.returned_move_ids
+                move_dest_to_link = self.move_id.sudo().move_orig_ids.returned_move_ids
                 # link to children of originally returned moves, if any. Note that the use of
                 # 'return_line.move_id.move_orig_ids.returned_move_ids.move_orig_ids.move_dest_ids'
                 # instead of 'return_line.move_id.move_orig_ids.move_dest_ids' prevents linking a
                 # return directly to the destination moves of its parents. However, the return of
                 # the return will be linked to the destination moves.
-                move_dest_to_link |= self.move_id.move_orig_ids.returned_move_ids\
+                move_dest_to_link |= self.move_id.sudo().move_orig_ids.returned_move_ids\
                     .move_orig_ids.filtered(lambda m: m.state not in ('cancel'))\
                     .move_dest_ids.filtered(lambda m: m.state not in ('cancel'))
                 vals['move_orig_ids'] = [Command.link(m.id) for m in move_orig_to_link]

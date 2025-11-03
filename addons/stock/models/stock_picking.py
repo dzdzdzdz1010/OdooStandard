@@ -21,6 +21,7 @@ class StockPickingType(models.Model):
     _order = 'is_favorite desc, sequence, id'
     _rec_names_search = ['name', 'warehouse_id.name']
     _check_company_auto = True
+    _check_company_domain = models.check_company_domain_parent_of
 
     name = fields.Char('Operation Type', required=True, translate=True)
     color = fields.Integer('Color')

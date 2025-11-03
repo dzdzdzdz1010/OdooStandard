@@ -71,9 +71,9 @@ class StockWarehouseOrderpoint(models.Model):
         default=lambda self: self.env.company)
     allowed_location_ids = fields.One2many(comodel_name='stock.location', compute='_compute_allowed_location_ids')
 
-    rule_ids = fields.Many2many('stock.rule', string='Rules used', compute='_compute_rules')
-    lead_horizon_date = fields.Date(compute='_compute_lead_days')
-    lead_days = fields.Float(compute='_compute_lead_days')
+    rule_ids = fields.Many2many('stock.rule', string='Rules used', compute='_compute_rules', compute_sudo=True)
+    lead_horizon_date = fields.Date(compute='_compute_lead_days', compute_sudo=True)
+    lead_days = fields.Float(compute='_compute_lead_days', compute_sudo=True)
     route_id = fields.Many2one(
         'stock.route', string='Route',
         domain="['|', ('product_selectable', '=', True), ('rule_ids.action', 'in', ['buy', 'manufacture'])]",
@@ -453,7 +453,7 @@ class StockWarehouseOrderpoint(models.Model):
             ('route_id.active', '!=', False)
         ], ['location_dest_id', 'route_id'])
         for location_dest, route in rules_groups:
-            if route in (self.product_id.route_ids | self.product_id.categ_id.route_ids) and self.location_id == location_dest:
+            if route in (self.product_id.route_ids | self.product_id.categ_id.route_ids | self.warehouse_id.route_ids) and self.location_id == location_dest:
                 return route
         return self.env['stock.route']
 

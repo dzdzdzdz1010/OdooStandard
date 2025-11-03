@@ -49,7 +49,7 @@ class StockMove(models.Model):
         'move_id', 'template_attribute_value_id',
         string="Never attribute Values"
     )
-    description_picking = fields.Text(string="Description Of Picking", compute='_compute_description_picking', inverse='_inverse_description_picking')
+    description_picking = fields.Text(string="Description Of Picking", compute='_compute_description_picking', inverse='_inverse_description_picking', compute_sudo=True)
     description_picking_manual = fields.Text(readonly=True)
     product_qty = fields.Float(
         'Real Quantity', compute='_compute_product_qty', inverse='_set_product_qty',
@@ -837,7 +837,7 @@ Please change the quantity done or the rounding precision in your settings.""",
         domains = []
         for move in self:
             domain_for_move = Domain('product_id', '=', move.product_id.id)
-            wh_ids = move.location_id.warehouse_id.ids + move.location_dest_id.warehouse_id.ids
+            wh_ids = move.sudo().location_id.warehouse_id.ids + move.sudo().location_dest_id.warehouse_id.ids
             if wh_ids:
                 domain_for_move &= Domain('warehouse_id', 'in', wh_ids)
             domains.append(domain_for_move)
@@ -1860,7 +1860,7 @@ Please change the quantity done or the rounding precision in your settings.""",
         return grouped_move_lines_in
 
     def _get_available_move_lines_out(self, assigned_moves_ids, partially_available_moves_ids):
-        move_lines_out_done = (self.move_orig_ids.mapped('move_dest_ids') - self)\
+        move_lines_out_done = (self.move_orig_ids.mapped('move_dest_ids') - self).sudo()\
             .filtered(lambda m: m.state in ['done'])\
             .mapped('move_line_ids')
         # As we defer the write on the stock.move's state at the end of the loop, there
@@ -2167,7 +2167,7 @@ Please change the quantity done or the rounding precision in your settings.""",
                 qty_split = move.uom_id._compute_quantity(move.product_uom_qty - move.quantity, move.product_id.uom_id, rounding_method='HALF-UP')
                 new_move_vals = move._split(qty_split)
                 backorder_moves_vals += new_move_vals
-        backorder_moves = self.env['stock.move'].create(backorder_moves_vals)
+        backorder_moves = self.env['stock.move'].sudo().create(backorder_moves_vals)
         # The backorder moves are not yet in their own picking. We do not want to check entire packs for those
         # ones as it could messed up the result_package_id of the moves being currently validated
         backorder_moves.with_context(bypass_entire_pack=True)._action_confirm(merge=False, create_proc=False)
@@ -2187,8 +2187,8 @@ Please change the quantity done or the rounding precision in your settings.""",
         vals = {
             'product_uom_qty': qty,
             'procure_method': self.procure_method,
-            'move_dest_ids': [(4, x.id) for x in self.move_dest_ids if x.state not in ('done', 'cancel')],
-            'move_orig_ids': [(4, x.id) for x in self.move_orig_ids],
+            'move_dest_ids': [(4, x.id) for x in self.sudo().move_dest_ids if x.state not in ('done', 'cancel')],
+            'move_orig_ids': [(4, x.id) for x in self.sudo().move_orig_ids],
             'origin_returned_move_id': self.origin_returned_move_id.id,
             'price_unit': self.price_unit,
             'date_deadline': self.date_deadline,

@@ -204,27 +204,43 @@ class ResCompany(models.Model):
             company.sudo()._create_per_company_sequences()
             company.sudo()._create_per_company_picking_types()
             company.sudo()._create_per_company_rules()
-            company.sudo()._set_per_company_inter_company_locations(inter_company_location)
+            company.sudo()._set_per_company_inter_company_locations()
         if modules.module.current_test:
             self.env['stock.warehouse'].sudo().create([{'company_id': company.id} for company in companies])
         return companies
 
-    def _set_per_company_inter_company_locations(self, inter_company_location):
+    def _set_per_company_inter_company_locations(self):
         self.ensure_one()
         if not self.env.user.has_group('base.group_multi_company'):
             return
+        inter_company_location = self.env.ref('stock.stock_location_inter_company')
         other_companies = self.env['res.company'].search([('id', '!=', self.id)])
-        other_companies.partner_id.with_company(self).write({
-            'property_stock_customer': inter_company_location.id,
-            'property_stock_supplier': inter_company_location.id,
-        })
         for company in other_companies:
-            # Still need to insert those one by one, as the env company must be different every time
+            inter_warehouse_location = self._get_nearest_parent(company).internal_transit_location_id
+            if not inter_warehouse_location.active:
+                inter_warehouse_location.sudo().write({'active': True})
+            company.partner_id.with_company(self).write({
+                'property_stock_customer': inter_warehouse_location.id if company._get_nearest_parent(self) else inter_company_location.id,
+                'property_stock_supplier': inter_warehouse_location.id if company._get_nearest_parent(self) else inter_company_location.id,
+            })
             self.partner_id.with_company(company).write({
-                'property_stock_customer': inter_company_location.id,
-                'property_stock_supplier': inter_company_location.id,
+                'property_stock_customer': inter_warehouse_location.id if company._get_nearest_parent(self) else inter_company_location.id,
+                'property_stock_supplier': inter_warehouse_location.id if company._get_nearest_parent(self) else inter_company_location.id,
             })
 
     def _get_text_validation(self, confirmation_type):
         self.ensure_one()
         return bool(self.stock_text_confirmation and self.stock_confirmation_type == confirmation_type)
+
+    def _get_nearest_parent(self, other_company):
+        self.ensure_one()
+        other_company.ensure_one()
+        self_path = self.parent_path.split('/')
+        other_path = other_company.parent_path.split('/')
+        common_path = []
+        for self_parent, other_parent in zip(self_path, other_path):
+            if self_parent and self_parent == other_parent:
+                common_path.append(self_parent)
+            else:
+                break
+        return self.env['res.company'].browse(int(common_path[-1])) if common_path else self.env['res.company']

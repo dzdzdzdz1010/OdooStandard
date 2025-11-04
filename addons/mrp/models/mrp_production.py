@@ -2468,7 +2468,8 @@ class MrpProduction(models.Model):
                 'production_order': self,
                 'order_exceptions': order_exceptions,
                 'impacted_object': impacted_object,
-                'cancel': cancel
+                'cancel': cancel,
+                'is_child_mo_unlink': self.env.context.get('is_child_mo_unlink', False)
             }
             return self.env['ir.qweb']._render('mrp.exception_on_mo', values)
 

@@ -17,10 +17,13 @@
                             <t t-set="uom" t-value="move_raw_id.uom_id if 'uom_id' in move_raw_id else move_raw_id.uom_id"/>
                             <a href="#" data-oe-model="mrp.production" t-att-data-oe-id="production_order.id"><t t-out="production_order.name"/></a>:
                             <t t-out="new_qty"/> <t t-out="uom.name"/> of <t t-out="move_raw_id.product_id.name"/>
-                            <t t-if="cancel">
+                            <t t-if="is_child_mo_unlink">
+                                unlinked from the source manufacturing order
+                            </t>
+                            <t t-elif="cancel">
                                 cancelled
                             </t>
-                            <t t-if="not cancel">
+                            <t t-else="">
                                 ordered instead of <t t-out="old_qty"/> <t t-out="uom.name"/>
                             </t>
                       </li>

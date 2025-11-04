@@ -428,6 +428,34 @@ class StockMove(models.Model):
                 mo_to_cancel._action_cancel()
         return res
 
+    @api.ondelete(at_uninstall=False)
+    def _unlink_if_draft_or_cancel(self):
+
+        def _unlink_child_mos(move, parent_mo, child_mos):
+            for mo in child_mos:
+                finished_move = mo.move_finished_ids.filtered(lambda m: m.product_id == mo.product_id)
+                documents = {(mo, parent_mo.user_id): [({finished_move: (mo, (finished_move.product_uom_qty, 0))}, [])]}
+                parent_mo.with_context(is_child_mo_unlink=True)._log_manufacture_exception(documents)
+                move.production_group_id.child_ids = [Command.unlink(mo.id)]
+
+        for move in self:
+            parent_mo = move.raw_material_production_id
+            child_mos = move.move_orig_ids.production_id or move.move_orig_ids.created_production_id
+            if move.warehouse_id.manufacture_steps == 'mrp_one_step':
+                if move.production_group_id.child_ids:
+                    _unlink_child_mos(move, parent_mo, child_mos)
+                    continue
+                return super(StockMove, move)._unlink_if_draft_or_cancel()
+            if move.warehouse_id.manufacture_steps in ['pbm', 'pbm_sam']:
+                if any(p.state != 'done' for p in move.move_orig_ids.picking_id):
+                    moves_to_remove = move | move.move_orig_ids
+                    moves_to_remove.write({'move_orig_ids': [Command.unlink(m) for m in moves_to_remove.ids]})
+                    if child_mos:
+                        _unlink_child_mos(move, parent_mo, child_mos)
+                    moves_to_remove.unlink()
+                    continue
+                return super(StockMove, move)._unlink_if_draft_or_cancel()
+
     def _prepare_move_split_vals(self, qty):
         defaults = super()._prepare_move_split_vals(qty)
         defaults['workorder_id'] = False

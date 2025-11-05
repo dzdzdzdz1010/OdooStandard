@@ -551,6 +551,7 @@ export class ProductPage extends Interaction {
      */
     async _onChangeCombination(ev, parent, combination) {
         const isCombinationPossible = !!combination.is_combination_possible;
+        const hasAvailableUoms = !!combination.has_available_uoms;
         const precision = combination.currency_precision;
         const productPrice = parent.querySelector('.product_price');
         if (productPrice && !productPrice.classList.contains('decimal_precision')) {
@@ -620,7 +621,7 @@ export class ProductPage extends Interaction {
             comparePrice.classList.toggle('d-none', combination.has_discounted_price);
         }
 
-        this._toggleDisable(parent, isCombinationPossible);
+        this._toggleDisable(parent, isCombinationPossible && hasAvailableUoms);
 
         // Only update the images and tags if the product has changed.
         if (!combination.no_product_change) {

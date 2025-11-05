@@ -538,6 +538,7 @@ class ProductTemplate(models.Model):
             'product_template_id': self.id,
             'display_name': display_name,
             'is_combination_possible': self._is_combination_possible(combination=combination),
+            'has_available_uoms': len(self._get_available_uoms()) > 0,
 
             **self._get_additionnal_combination_info(
                 product_or_template=product_or_template,
@@ -1118,3 +1119,44 @@ class ProductTemplate(models.Model):
         self.ensure_one()
 
         return bool(self.valid_product_template_attribute_line_ids)
+
+    def _has_multiple_uoms(self) -> bool:
+        """Check if the product has multiple available uoms for the current website.
+
+        :return: True if the product has multiple available uoms for the current website
+                 or if the default uom is not available
+        """
+        if request and request.is_frontend:
+            if self.type == 'combo':
+                return False
+            uoms = self._get_available_uoms()
+            if not uoms:
+                return False
+            return (
+                self.env['res.groups']._is_feature_enabled('uom.group_uom') and len(uoms) > 1
+            ) or self.uom_id not in uoms
+        return super()._has_multiple_uoms()
+
+    def _get_available_uoms(self):
+        """
+        Return the list of uoms configured for the product that are available
+        for the current website.
+        """
+        self.ensure_one()
+        all_uoms = super()._get_available_uoms()
+        if request and request.is_frontend:
+            return all_uoms.filtered(lambda uom: uom._is_website_available())
+        return all_uoms
+
+    def _get_main_uom(self):
+        """
+        Return the main uom for the product.
+
+        The main om is always the first available uom, if no uom is available, returns the default
+        uom configured on the product.
+        """
+        self.ensure_one()
+        if request and request.is_frontend:
+            available_uoms = self._get_available_uoms()
+            return available_uoms[0] if available_uoms else self.uom_id
+        return self.uom_id

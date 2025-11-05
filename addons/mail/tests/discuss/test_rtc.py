@@ -131,6 +131,8 @@ class TestChannelRTC(MailCommon, HttpCase):
                 "res.partner": self._filter_partners_fields(partner_data),
                 "Rtc": {
                     "iceServers": False,
+                    "canRecord": False,
+                    "canRecordVideo": False,
                     "localSession": last_rtc_session_id + 1,
                     "serverInfo": None,
                 },

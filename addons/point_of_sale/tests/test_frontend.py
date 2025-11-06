@@ -3052,6 +3052,17 @@ class TestUi(TestPointOfSaleHttpCommon):
             self.start_pos_tour("test_sync_from_ui_one_by_one", login="pos_user")
             self.assertEqual(sync_counter['count'], 6)
 
+    def test_combo_no_free_item(self):
+        """ Test a product combo with no free item allowed. """
+        setup_product_combo_items(self)
+        for combo_item in self.office_combo.combo_ids:
+            combo_item.write({
+                'qty_free': 0,
+                'qty_max': 5,
+            })
+        self.main_pos_config.with_user(self.pos_user).open_ui()
+        self.start_pos_tour('test_combo_no_free_item')
+
 
 # This class just runs the same tests as above but with mobile emulation
 class MobileTestUi(TestUi):

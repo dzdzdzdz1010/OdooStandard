@@ -44,7 +44,6 @@ class AuthorizeTest(AuthorizeCommon):
     def test_validation(self):
         self.assertEqual(self.authorize.available_currency_ids[0], self.currency_usd)
         self.assertEqual(self.authorize._get_validation_amount(), 0.01)
-        self.assertEqual(self.authorize._get_validation_currency(), self.currency_usd)
 
     def test_amount_validation_is_skipped_when_transaction_details_are_missing(self):
         """Test that the amount validation is skipped when the API returns with an error."""

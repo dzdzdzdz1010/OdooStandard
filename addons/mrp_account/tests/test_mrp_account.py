@@ -39,7 +39,6 @@ class TestMrpAccount(TestMrpCommon):
             'product_tmpl_id': cls.product_4.product_tmpl_id.id,
             'uom_id': cls.uom_unit.id,
             'product_qty': 4.0,
-            'consumption': 'flexible',
             'operation_ids': [
                 (0, 0, {'name': 'Gift Wrap Maching', 'workcenter_id': cls.workcenter_1.id, 'time_cycle': 15, 'sequence': 1}),
             ],
@@ -80,7 +79,6 @@ class TestMrpAccount(TestMrpCommon):
             'product_tmpl_id': cls.dining_table.product_tmpl_id.id,
             'uom_id': cls.env.ref('uom.product_uom_unit').id,
             'sequence': 3,
-            'consumption': 'flexible',
             'operation_ids': [
                 (0, 0, {'workcenter_id': cls.mrp_workcenter.id, 'name': 'Manual Assembly'}),
             ],

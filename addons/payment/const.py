@@ -541,11 +541,13 @@ CURRENCY_MINOR_UNITS = {
 
 REPORT_REASONS_MAPPING = {
     'exceed_max_amount': _lt("maximum amount exceeded"),
+    'below_min_amount': _lt("Order amount does not meet the minimum limit"),
     'express_checkout_not_supported': _lt("express checkout not supported"),
     'incompatible_country': _lt("incompatible country"),
     'incompatible_currency': _lt("incompatible currency"),
     'incompatible_website': _lt("incompatible website"),
     'manual_capture_not_supported': _lt("manual capture not supported"),
+    'pricelist_not_allowed': _lt("Pricelist not allowed for this provider"),
     'provider_not_available': _lt("no supported provider available"),
     'tokenization_not_supported': _lt("tokenization not supported"),
     'validation_not_supported': _lt("tokenization without payment no supported"),

@@ -282,6 +282,76 @@ class TestPaymentProvider(PaymentCommon):
         )
         self.assertNotIn(self.provider, compatible_providers)
 
+    def test_provider_excluded_when_pricelist_not_allowed(self):
+        """
+        Test that a provider is NOT included in compatible providers
+        when the sale order's pricelist is not in the provider's allowed pricelists.
+        """
+        pricelist_10 = self.env['product.pricelist'].create({
+            'name': 'EUR 10',
+            'currency_id': self.env.ref('base.EUR').id,
+        })
+        pricelist_20 = self.env['product.pricelist'].create({
+            'name': 'EUR 20',
+            'currency_id': self.env.ref('base.EUR').id,
+        })
+
+        sale_order = self.env['sale.order'].create({
+            'partner_id': self.partner.id,
+            'pricelist_id': pricelist_10.id,
+        })
+
+        compatible_providers = self.env['payment.provider'].sudo()._get_compatible_providers(
+            self.company.id, self.partner.id, self.amount, sale_order_id=sale_order.id
+        )
+
+        self.assertIn(
+            self.provider,
+            compatible_providers,
+            'The provider should be proposed.'
+        )
+
+        self.provider.allowed_pricelist_ids = pricelist_20
+
+        compatible_providers = self.env['payment.provider'].sudo()._get_compatible_providers(
+            self.company.id, self.partner.id, self.amount, sale_order_id=sale_order.id
+        )
+
+        self.assertNotIn(
+            self.provider,
+            compatible_providers,
+            'The provider should not be proposed because its pricelist is not allowed.'
+        )
+
+    def test_provider_excluded_when_amount_below_minimum_with_currency_check(self):
+        """
+        Test that a provider is NOT included in compatible providers
+        when the payment amount is below the provider's minimum amount,
+        considering the currency.
+        """
+        currency = self.provider.main_currency_id.id
+        compatible_providers = self.env['payment.provider'].sudo()._get_compatible_providers(
+            self.company.id, self.partner.id, self.amount, currency_id=currency
+        )
+
+        self.assertIn(
+            self.provider,
+            compatible_providers,
+            'The provider should be proposed.'
+        )
+
+        self.provider.minimum_amount = self.amount + 10
+
+        compatible_providers = self.env['payment.provider'].sudo()._get_compatible_providers(
+            self.company.id, self.partner.id, self.amount, currency_id=currency
+        )
+
+        self.assertNotIn(
+            self.provider,
+            compatible_providers,
+            'The provider should not be proposed because the amount is below minimum allowed.'
+        )
+
     def test_availability_report_covers_all_reasons(self):
         """ Test that every possible unavailability reason is correctly reported. """
         # Disable all providers.

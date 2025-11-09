@@ -3,7 +3,8 @@ import { registry } from "@web/core/registry";
 import { withSequence } from "@html_editor/utils/resource";
 import { CONTAINER_WIDTH } from "@website/builder/option_sequence";
 import { ClassAction } from "@html_builder/core/core_builder_action_plugin";
-import { BaseOptionComponent } from "@html_builder/core/utils";
+import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
+import { quoteCarouselSelector } from "./carousel_option_plugin";
 
 export class ContentWidthOption extends BaseOptionComponent {
     static template = "website.ContentWidthOption";
@@ -11,6 +12,17 @@ export class ContentWidthOption extends BaseOptionComponent {
     static exclude =
         "[data-snippet] :not(.oe_structure) > [data-snippet],#footer > *,#o_wblog_post_content *, .s_bento_banner section[data-name='Card'],.s_floating_blocks .s_floating_blocks_block, .s_bento_block_card";
     static applyTo = ":scope > .container, :scope > .container-fluid, :scope > .o_container_small";
+
+    setup() {
+        this.state = useDomState((editingElement) => {
+            const quoteCarouselEl = editingElement.closest(quoteCarouselSelector);
+            if (quoteCarouselEl) {
+                const numberOfElements = parseInt(quoteCarouselEl.dataset.numberOfElements);
+                return { disableClass: numberOfElements > 2 ? "disabled" : "" };
+            }
+            return { disableClass: "" };
+        });
+    }
 }
 
 class ContentWidthOptionPlugin extends Plugin {

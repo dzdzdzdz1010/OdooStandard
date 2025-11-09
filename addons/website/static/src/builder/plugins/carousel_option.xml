@@ -13,7 +13,7 @@
         </BuilderSelect>
     </BuilderRow>
 
-    <BuilderRow label.translate="Control" level="1">
+    <BuilderRow label.translate="Control" level="1" t-if="!this.state?.isSingleMode">
         <BuilderSelect>
             <BuilderSelectItem classAction="''">Indicators Inside</BuilderSelectItem>
             <BuilderSelectItem classAction="'s_carousel_controllers_indicators_outside'">Indicators Outside</BuilderSelectItem>

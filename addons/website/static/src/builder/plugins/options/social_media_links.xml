@@ -52,10 +52,4 @@
     </div>
 </t>
 
-<t t-name="website.example_social_media_link">
-    <a href="https://www.example.com" target="_blank" aria-label="example">
-        <i class="fa rounded shadow-sm o_editable_media fa-pencil"/>
-    </a>
-</t>
-
 </templates>

@@ -7,6 +7,7 @@ import { rpc } from "@web/core/network/rpc";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { isIosApp } from "@web/core/browser/feature_detection";
+import { BreakDurationDialog } from "@hr_attendance/components/break_duration_dialog/break_duration_dialog";
 const { DateTime } = luxon;
 
 export class ActivityMenu extends Component {
@@ -16,6 +17,7 @@ export class ActivityMenu extends Component {
 
     setup() {
         this.ui = useService("ui");
+        this.dialog = useService("dialog");
         this.lazySession = useService("lazy_session");
         this.employee = false;
         this.state = useState({
@@ -62,6 +64,18 @@ export class ActivityMenu extends Component {
 
     async signInOut() {
         this.dropdown.close();
+        await this.searchReadEmployee();
+        if (!this.employee || !this.employee.id) {
+            return;
+        }
+        let breakDurationHours = null;
+        if (this.employee && this.employee.break_management_enabled && this.employee.attendance_state === "checked_in") {
+            const minutes = await this.requestBreakDuration();
+            if (minutes === null) {
+                return;
+            }
+            breakDurationHours = (Number(minutes) || 0) / 60;
+        }
         const trackingEnabled = this.employee && this.employee.device_tracking_enabled;
         if (trackingEnabled && !isIosApp() && navigator.geolocation) {
             // iOS app lacks permissions to call `getCurrentPosition`
@@ -69,12 +83,15 @@ export class ActivityMenu extends Component {
                 async ({coords: {latitude, longitude}}) => {
                     this.employee = await rpc("/hr_attendance/systray_check_in_out", {
                         latitude,
-                        longitude
+                        longitude,
+                        break_duration: breakDurationHours,
                     })
                     this._searchReadEmployeeFill();
                 },
                 async err => {
-                    this.employee = await rpc("/hr_attendance/systray_check_in_out")
+                    this.employee = await rpc("/hr_attendance/systray_check_in_out", {
+                        break_duration: breakDurationHours,
+                    })
                     this._searchReadEmployeeFill();
                 },
                 {
@@ -82,9 +99,29 @@ export class ActivityMenu extends Component {
                 }
             )
         } else {
-            this.employee = await rpc("/hr_attendance/systray_check_in_out")
+            this.employee = await rpc("/hr_attendance/systray_check_in_out", {
+                break_duration: breakDurationHours,
+            })
             this._searchReadEmployeeFill();
         }
+    }
+
+    async requestBreakDuration() {
+        return new Promise((resolve) => {
+            let settled = false;
+            const finalize = (value) => {
+                if (!settled) {
+                    settled = true;
+                    resolve(value);
+                }
+            };
+            this.dialog.add(BreakDurationDialog, {
+                employeeName: this.employee?.employee_name,
+                defaultMinutes: 0,
+                onConfirm: (minutes) => finalize(minutes),
+                onCancel: () => finalize(null),
+            });
+        });
     }
 }
 

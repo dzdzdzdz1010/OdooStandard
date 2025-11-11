@@ -214,6 +214,7 @@ class IrAttachment(models.Model):
 
     def _index_pdf(self, bin_data):
         '''Index PDF documents'''
+        bin_data = bin_data.content
         if not bin_data.startswith(b'%PDF-'):
             return ""
         try:

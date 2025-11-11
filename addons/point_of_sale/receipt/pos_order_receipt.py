@@ -1,8 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-import base64
 from io import BytesIO
 from odoo import models, api, _
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
+from odoo.tools.image import image_data_uri
 from odoo.tools.misc import format_datetime
 
 import qrcode
@@ -116,7 +116,7 @@ class PosOrderReceipt(models.AbstractModel):
         # Convert to base64
         buffer = BytesIO()
         img.save(buffer, format="PNG")
-        return 'data:image/png;base64,' + base64.b64encode(buffer.getvalue()).decode("utf-8")
+        return image_data_uri(buffer.getvalue())
 
     def order_receipt_generate_data(self, basic_receipt=False):
         self.ensure_one()
@@ -129,7 +129,7 @@ class PosOrderReceipt(models.AbstractModel):
 
         use_qr_code = self.company_id.point_of_sale_ticket_portal_url_display_mode != 'url'
         company = self.company_id
-        company_logo = 'data:image/png;base64,' + base64.b64encode(base64.b64decode(company.logo)).decode('utf-8')
+        company_logo = image_data_uri(company.logo)
         qr_code_value = f"{self.env.company.get_base_url()}/pos/ticket?order_uuid={self.uuid}"
 
         return {

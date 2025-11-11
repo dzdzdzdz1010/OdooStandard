@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-import base64
 import logging
 from ast import literal_eval
 
 from odoo import _, api, fields, models, tools
 from odoo.exceptions import ValidationError, UserError
 from odoo.fields import Domain
-from odoo.tools import is_html_empty
+from odoo.tools import BinaryValue
 from odoo.tools.safe_eval import safe_eval, time
 
 _logger = logging.getLogger(__name__)
@@ -330,7 +328,7 @@ class MailTemplate(models.Model):
                                        render_results=None):
         """ Render attachments of template 'self', returning values for records
         given by 'res_ids'. Note that ``report_template_ids`` returns values for
-        'attachments', as we have a list of tuple (report_name, base64 value)
+        'attachments', as we have a list of tuple (report_name, binary value)
         for those reports. It is considered as being the job of callers to
         transform those attachments into valid ``ir.attachment`` records.
 
@@ -367,7 +365,7 @@ class MailTemplate(models.Model):
                         if not render_res:
                             raise UserError(_('Unsupported report type %s found.', report.report_type))
                         report_content, report_format = render_res
-                    report_content = base64.b64encode(report_content)
+                    report_content = BinaryValue.from_bytes(report_content)
                     # generate name
                     if report.print_report_name:
                         report_name = safe_eval(
@@ -580,7 +578,7 @@ class MailTemplate(models.Model):
         :returns: a dict of (res_ids, values) where values contains all rendered
           fields asked in ``render_fields``. Asking for attachments adds an
           'attachments' key using the format [(report_name, data)] where data
-          is base64 encoded. Asking for recipients adds a 'partner_ids' key.
+          is a binary value. Asking for recipients adds a 'partner_ids' key.
           Note that 2many fields contain a list of IDs, not commands.
         """
         self.ensure_one()

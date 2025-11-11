@@ -2,6 +2,7 @@ import json
 
 from odoo.tests import new_test_user
 from odoo.tests.common import tagged, RecordCapturer, HttpCase
+from odoo.tools import BinaryValue
 
 
 @tagged('at_install', '-post_install')  # LEGACY at_install
@@ -352,7 +353,7 @@ class TestPropertiesExportImport(HttpCase):
 
         import_wizard = self.env['base_import.import'].create({
             'res_model': self.ModelProperty._name,
-            'file': '\n'.join([';'.join(values) for values in values_list]),
+            'file': BinaryValue.from_bytes('\n'.join([';'.join(values) for values in values_list]).encode()),
             'file_type': 'text/csv',
         })
         opts = {'quoting': '"', 'separator': ';', 'has_headers': True}
@@ -436,7 +437,7 @@ class TestPropertiesExportImport(HttpCase):
 
         import_wizard = self.env['base_import.import'].create({
             'res_model': self.ModelProperty._name,
-            'file': '\n'.join([';'.join(values) for values in values_list]),
+            'file': BinaryValue.from_bytes('\n'.join([';'.join(values) for values in values_list]).encode()),
             'file_type': 'text/csv',
         })
         opts = {'quoting': '"', 'separator': ';', 'has_headers': True}
@@ -504,7 +505,7 @@ class TestPropertiesExportImport(HttpCase):
 
         import_wizard = Import.create({
             'res_model': self.ModelProperty._name,
-            'file': '\n'.join([';'.join(values) for values in values_list]),
+            'file': BinaryValue.from_bytes('\n'.join([';'.join(values) for values in values_list]).encode()),
             'file_type': 'text/csv',
         })
         opts = {'quoting': '"', 'separator': ';', 'has_headers': True}
@@ -535,7 +536,7 @@ class TestPropertiesExportImport(HttpCase):
 
         import_wizard = Import.create({
             'res_model': self.ModelProperty._name,
-            'file': '\n'.join([';'.join(values) for values in values_list]),
+            'file': BinaryValue.from_bytes('\n'.join([';'.join(values) for values in values_list]).encode()),
             'file_type': 'text/csv',
         })
         opts = {'quoting': '"', 'separator': ';', 'has_headers': True}

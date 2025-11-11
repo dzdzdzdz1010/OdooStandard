@@ -3,8 +3,7 @@
 import unittest
 
 from odoo.tests import TransactionCase, can_import, loaded_demo_data, tagged
-from odoo.tools import mute_logger
-from odoo.tools.misc import file_open
+from odoo.tools import BinaryValue, mute_logger
 
 
 @tagged("post_install", "-at_install")
@@ -13,11 +12,10 @@ class TestImportFiles(TransactionCase):
     def import_product_xls(self, model, filepath=None):
         if filepath is None:
             filepath = f"product/static/xls/{model.replace(".", "_")}.xls"
-        file_content = file_open(filepath, "rb").read()
         import_wizard = self.env["base_import.import"].create(
             {
                 "res_model": model,
-                "file": file_content,
+                "file": BinaryValue.from_file(filepath),
                 "file_type": "application/vnd.ms-excel",
             }
         )

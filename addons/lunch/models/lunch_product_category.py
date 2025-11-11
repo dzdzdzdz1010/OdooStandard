@@ -1,11 +1,7 @@
-# -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-import base64
-
 from odoo import api, fields, models
-
-from odoo.tools.misc import file_open
+from odoo.tools import BinaryValue
 
 
 class LunchProductCategory(models.Model):
@@ -16,8 +12,7 @@ class LunchProductCategory(models.Model):
 
     @api.model
     def _default_image(self):
-        with file_open('lunch/static/img/lunch.png', 'rb') as f:
-            return base64.b64encode(f.read())
+        return BinaryValue.from_file('lunch/static/img/lunch.png')
 
     name = fields.Char('Product Category', required=True, translate=True)
     company_id = fields.Many2one('res.company')

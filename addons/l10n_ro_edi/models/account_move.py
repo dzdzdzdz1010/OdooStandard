@@ -1,10 +1,10 @@
 import base64
-
 import requests
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.fields import Domain
+from odoo.tools import BinaryValue
 
 from .utils import (
     _request_ciusro_download_answer,
@@ -130,7 +130,7 @@ class AccountMove(models.Model):
         self.env['l10n_ro_edi.document'].sudo().create({
             'invoice_id': self.id,
             'state': 'invoice_sent',
-            'attachment': base64.b64encode(xml_data),
+            'attachment': BinaryValue.from_bytes(xml_data),
         })
         if result['key_loading']:
             self.l10n_ro_edi_index = result['key_loading']
@@ -204,7 +204,7 @@ class AccountMove(models.Model):
                 'key_download': result['key_download'],
                 'key_signature': download_data['signature']['key_signature'],
                 'key_certificate': download_data['signature']['key_certificate'],
-                'attachment': base64.b64encode(download_data['signature']['attachment_raw']),
+                'attachment': BinaryValue.from_bytes(base64.b64decode(download_data['signature']['attachment_raw'])),
             }
             if result['state_status'] == 'nok':  # Invoice refused
                 error_message = download_data['invoice']['error'].replace('\t', '')
@@ -357,7 +357,7 @@ class AccountMove(models.Model):
                 'key_download': message['id'],
                 'key_signature': message['answer']['signature']['key_signature'],
                 'key_certificate': message['answer']['signature']['key_certificate'],
-                'attachment': message['answer']['signature']['attachment_raw'],
+                'attachment': BinaryValue.from_bytes(base64.b64decode(message['answer']['signature']['attachment_raw'])),
             })
 
         self.env['l10n_ro_edi.document'].sudo().browse(document_ids_to_delete).unlink()
@@ -407,7 +407,7 @@ class AccountMove(models.Model):
                 'key_download': message['id'],
                 'key_signature': message['answer']['signature']['key_signature'],
                 'key_certificate': message['answer']['signature']['key_certificate'],
-                'attachment': message['answer']['signature']['attachment_raw'],
+                'attachment': BinaryValue.from_bytes(base64.b64decode(message['answer']['signature']['attachment_raw'])),
             })
 
         self.env['l10n_ro_edi.document'].sudo().browse(document_ids_to_delete).unlink()
@@ -480,11 +480,11 @@ class AccountMove(models.Model):
                 'key_download': message['id'],
                 'key_signature': message['answer']['signature']['key_signature'],
                 'key_certificate': message['answer']['signature']['key_certificate'],
-                'attachment': base64.b64encode(message['answer']['signature']['attachment_raw']),
+                'attachment': BinaryValue.from_bytes(base64.b64decode(message['answer']['signature']['attachment_raw'])),
             })
             xml_attachment_id = self.env['ir.attachment'].sudo().create({
                 'name': f"ciusro_{message['answer']['invoice']['name'].replace('/', '_')}.xml",
-                'raw': message['answer']['invoice']['attachment_raw'],
+                'raw': BinaryValue.from_bytes(message['answer']['invoice']['attachment_raw'].encode()),
                 'res_model': 'account.move',
                 'res_id': bill.id,
             }).id

@@ -22,7 +22,7 @@ def _build_zip_from_data(docs_data):
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, 'w', compression=zipfile.ZIP_DEFLATED) as zipfile_obj:
         for doc_data in docs_data:
-            zipfile_obj.writestr(doc_data['filename'], doc_data['content'])
+            zipfile_obj.writestr(doc_data['filename'], bytes(doc_data['content']))
     return buffer.getvalue()
 
 
@@ -33,8 +33,9 @@ class AccountDocumentDownloadController(http.Controller):
         attachments.check_access('read')
         assert all(attachment.res_id and attachment.res_model == 'account.move' for attachment in attachments)
         if len(attachments) == 1:
-            headers = _get_headers(attachments.name, attachments.mimetype, attachments.raw)
-            return request.make_response(attachments.raw, headers)
+            content = attachments.raw.content
+            headers = _get_headers(attachments.name, attachments.mimetype, content)
+            return request.make_response(content, headers)
         else:
             inv_ids = attachments.mapped('res_id')
             if len(set(inv_ids)) == 1:
@@ -60,8 +61,9 @@ class AccountDocumentDownloadController(http.Controller):
                 docs_data.extend(doc_data)
         if len(docs_data) == 1:
             doc_data = docs_data[0]
-            headers = _get_headers(doc_data['filename'], doc_data['filetype'], doc_data['content'])
-            return request.make_response(doc_data['content'], headers)
+            content = bytes(doc_data['content'])
+            headers = _get_headers(doc_data['filename'], doc_data['filetype'], content)
+            return request.make_response(content, headers)
         if len(docs_data) > 1:
             zip_content = _build_zip_from_data(docs_data)
             headers = _get_headers(_('invoices') + '.zip', 'zip', zip_content)

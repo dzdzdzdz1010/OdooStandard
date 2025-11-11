@@ -1,7 +1,7 @@
 import unittest
 
 from odoo.tests import TransactionCase, can_import, loaded_demo_data, tagged
-from odoo.tools.misc import file_open
+from odoo.tools import BinaryValue
 
 
 @tagged("post_install", "-at_install")
@@ -16,7 +16,7 @@ class TestImportFiles(TransactionCase):
         model = "website.rewrite"
         filename = "redirects_import_template.xlsx"
 
-        file_content = file_open(f"website/static/xls/{filename}", "rb").read()
+        file_content = BinaryValue.from_file(f"website/static/xls/{filename}")
         import_wizard = self.env["base_import.import"].create(
             {
                 "res_model": model,

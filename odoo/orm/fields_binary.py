@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import binascii
 import functools
 import typing
 import warnings
@@ -10,22 +9,20 @@ from operator import attrgetter
 import psycopg2
 
 from odoo.exceptions import UserError
-from odoo.tools import SQL, human_size
-from odoo.tools.mimetypes import guess_mimetype
+from odoo.tools import BinaryValue, SQL, human_size
 
-from .fields import Field
+from .fields import Field, _logger
 from .utils import SQL_OPERATORS
 
 if typing.TYPE_CHECKING:
-    from .models import BaseModel
+    from .environments import Environment
     from .query import TableSQL
 
 # http://initd.org/psycopg/docs/usage.html#binary-adaptation
-# Received data is returned as buffer (in Python 2) or memoryview (in Python 3).
-_BINARY = memoryview
+# Received data is returned as `memoryview`.
 
 
-class Binary(Field):
+class Binary(Field[BinaryValue]):
     """Encapsulates a binary content (e.g. a file).
 
     :param bool attachment: whether the field should be stored as `ir_attachment`
@@ -34,7 +31,6 @@ class Binary(Field):
     type = 'binary'
 
     prefetch = False                    # not prefetched by default
-    _depends_context = ('bin_size',)    # depends on context (content or size)
     attachment = True                   # whether value is stored in attachment
 
     @functools.cached_property
@@ -56,131 +52,72 @@ class Binary(Field):
         return False
 
     def convert_to_column(self, value, record, values=None, validate=True):
-        # Binary values may be byte strings, but the legacy Odoo convention is
-        # to transfer binaries as base64-encoded strings.
-        # This str() coercion will only work for pure ASCII unicode strings,
-        # on purpose - non base64 data must be passed as a 8bit byte strings.
+        data = self.convert_to_cache(value, record, validate) or BinaryValue.from_bytes(b'')
+        value = data.content
+        if not value:
+            return None
+        # Detect if the binary content is an SVG for restricting its upload
+        # only to system users. Check plaintext XML tag opening.
+        if validate and value[:1] == b'<':
+            # Full mimetype detection
+            if ('image/svg' in data.mimetype and
+                    not record.env.is_system()):
+                raise UserError(record.env._("Only admins can upload SVG files."))
+        return psycopg2.Binary(value)
+
+    def convert_to_cache(self, value, record, validate=True) -> BinaryValue | None:
+        if isinstance(value, BinaryValue):
+            return value
         if not value:
             return None
         if isinstance(value, str):
-            value = value.encode()
-        elif not isinstance(value, bytes):
-            try:
-                value = str(value).encode('ascii')
-            except UnicodeEncodeError as e:
-                msg = record.env._("ASCII characters are required for %(value)s in %(field)s", value=value, field=self.name)
-                raise UserError(msg) from e
-        try:
-            if (self.related_field or self).name == 'db_datas':
-                decoded_value = value
-            else:
-                decoded_value = base64.b64decode(value.translate(None, delete=b'\r\n'), validate=True)
-        except binascii.Error:
-            decoded_value = value
-        # Detect if the binary content is an SVG for restricting its upload
-        # only to system users.
-        if validate and decoded_value[:1] == b'<':  # XML tag opening
-            # Full mimetype detection
-            if (guess_mimetype(decoded_value).startswith('image/svg') and
-                    not record.env.is_system()):
-                raise UserError(record.env._("Only admins can upload SVG files."))
-        return psycopg2.Binary(decoded_value)
-
-    def get_column_update(self, record: BaseModel):
-        # since the field depends on context, force the value where we have the data
-        bin_size_name = 'bin_size_' + self.name
-        record_no_bin_size = record.with_context(**{'bin_size': False, bin_size_name: False})
-        value = self._get_cache(record_no_bin_size.env)[record.id]
-        return self.convert_to_column(value, record_no_bin_size)
+            # a string may come from RPC, it is base64 encoded
+            decoded_value = base64.b64decode(value, validate=validate)
+            # heuristic to detect if it is probably a base64 and not just text
+            if not all(len(s) > 70 or i == 0 for i, s in enumerate(reversed(value.split()))):
+                _logger.warning("%s: str passed to binary does not look like base64", self)
+            return BinaryValue.from_bytes(decoded_value)
+        # Error needed because we used to write base64 encoded data and we
+        # cannot distinguish whether bytes are encoded or not in base64.
+        if isinstance(value, bytes) and (self.related_field or self).name == 'raw':
+            # Exception for the raw field, we know bytes are raw.
+            return BinaryValue.from_bytes(value)
+        raise TypeError(f'{self}: use BinaryValue instead of {value.__class__.__name__}')
 
     def _insert_cache(self, records, values):
-        if not (
-            (self.related_field or self).name == 'db_datas'
-            or records.env.context.get('bin_size')
-            or records.env.context.get('bin_size_' + self.name)
-        ):
-            values = [base64.b64encode(val) if val else None for val in values]
+        # values are retrieved as a memoryview from the database
+        values = [BinaryValue.from_bytes(v) if v else None for v in values]
         return super()._insert_cache(records, values)
 
-    def convert_to_cache(self, value, record, validate=True):
-        if isinstance(value, bytes):
-            return value
-        if value is False or value is None:
-            return None
-        if isinstance(value, str):
-            # the cache must contain bytes or memoryview, but sometimes a string
-            # is given when assigning a binary field (test `TestFileSeparator`)
-            return value.encode()
-        if record.env.context.get('bin_size') or record.env.context.get('bin_size_' + self.name):
-            if isinstance(value, int):
-                # If the client requests only the size of the field, we return that
-                # instead of the content. Presumably a separate request will be done
-                # to read the actual content, if necessary.
-                value = human_size(value)
-                # human_size can return False (-> None) or a string (-> encoded)
-                return value.encode() if value else None
-            # keep bin_size as is
-            return value
-        return bytes(value)
+    def _update_cache(self, records, cache_value, dirty=False):
+        if cache_value is not None:
+            assert isinstance(cache_value, BinaryValue), f"{self}: unexpected type {type(cache_value)}"
+            cache_value.size  # check if exists and raise if we have issues
+        return super()._update_cache(records, cache_value, dirty)
 
     def convert_to_record(self, value, record):
-        if isinstance(value, _BINARY):
-            return bytes(value)
-        return False if value is None else value
+        return value or BinaryValue.from_bytes(b'')
 
     def convert_to_write(self, value, record):
-        return self.convert_to_cache(value, record) or False
+        return self.convert_to_cache(value, record, validate=False) or False
 
     def convert_to_read(self, value, record, use_display_name=True):
         if not value:
             return False
+        value = self.convert_to_cache(value, record, validate=False)
         if (
-            not isinstance(value, bytes)
-            or record.env.context.get('bin_size')
+            record.env.context.get('bin_size')
             or record.env.context.get('bin_size_' + self.name)
         ):
-            return value
-        if (self.related_field or self).name in ('raw', 'db_datas'):
-            # Most of fields are encoded in base64 in odoo and this is used to
-            # send data to the client. The 'raw' field is an exception and when
-            # reading it, we don't want to crash and transparently behave as
-            # other fields.
-            value = base64.b64encode(value)
-        return value.decode()
-
-    def compute_value(self, records):
-        bin_size_name = 'bin_size_' + self.name
-        if records.env.context.get('bin_size') or records.env.context.get(bin_size_name):
-            # always compute without bin_size
-            records_no_bin_size = records.with_context(**{'bin_size': False, bin_size_name: False})
-            super().compute_value(records_no_bin_size)
-            # manually update the bin_size cache
-            field_cache_data = self._get_cache(records_no_bin_size.env)
-            field_cache_size = self._get_cache(records.env)
-            for record in records:
-                try:
-                    value = field_cache_data[record.id]
-                    try:
-                        decoded_value = base64.b64decode(value)
-                        value = human_size(len(decoded_value))
-                    except binascii.Error:
-                        value = human_size(len(value))
-                    except TypeError:
-                        pass
-                    cache_value = self.convert_to_cache(value, record)
-                    # the dirty flag is independent from this assignment
-                    field_cache_size[record.id] = cache_value
-                except KeyError:
-                    pass
-        else:
-            super().compute_value(records)
+            # TODO js detects that value looks like a size otherwise it
+            # supposes that this is base64 encoded and requests the image
+            return human_size(value.size)
+        # we read bytes in base64 format for RPC
+        if (self.related_field or self).name == 'datas':
+            return value.decode(encoding='ascii')
+        return value.to_base64()
 
     def read(self, records):
-        def _encode(s: str | bool) -> bytes | bool:
-            if isinstance(s, str):
-                return s.encode("utf-8")
-            return s
-
         # values are stored in attachments, retrieve them
         assert self.attachment
         domain = [
@@ -188,10 +125,9 @@ class Binary(Field):
             ('res_field', '=', self.name),
             ('res_id', 'in', records.ids),
         ]
-        bin_size = records.env.context.get('bin_size')
         data = {
-            att.res_id: _encode(human_size(att.file_size)) if bin_size else att.datas
-            for att in records.env['ir.attachment'].sudo().search_fetch(domain)
+            att.res_id: att._to_binary_value()
+            for att in records.sudo().env['ir.attachment'].search_fetch(domain)
         }
         super()._insert_cache(records, map(data.get, records._ids))
 
@@ -208,14 +144,13 @@ class Binary(Field):
                 'res_field': self.name,
                 'res_id': record.id,
                 'type': 'binary',
-                'datas': value,
+                'raw': value,
             }
             for record, value in record_values
             if value
         ])
 
     def write(self, records, value):
-        records = records.with_context(bin_size=False)
         if not self.attachment:
             super().write(records, value)
             return
@@ -246,7 +181,7 @@ class Binary(Field):
                 ])
             if value:
                 # update the existing attachments
-                atts.write({'datas': value})
+                atts.write({'raw': value})
                 atts_records = records.browse(atts.mapped('res_id'))
                 # create the missing attachments
                 missing = (real_records - atts_records)
@@ -257,7 +192,7 @@ class Binary(Field):
                             'res_field': self.name,
                             'res_id': record.id,
                             'type': 'binary',
-                            'datas': value,
+                            'raw': value,
                         }
                         for record in missing
                     ])
@@ -301,6 +236,8 @@ class Image(Binary):
     def setup(self, model):
         super().setup(model)
         if not model._abstract and not model._log_access:
+            # XXX whyyyyy? 25c6c15a06e859370d86c561068e7246effe0e6e
+            # maybe not needed
             warnings.warn(f"Image field {self} requires the model to have _log_access = True", stacklevel=1)
 
     def create(self, record_values):
@@ -318,7 +255,7 @@ class Image(Binary):
     def write(self, records, value):
         try:
             new_value = self._image_process(value, records.env)
-        except UserError:
+        except (UserError, TypeError, ValueError):
             if not any(records._ids):
                 # Some crap is assigned to a new record. This can happen in an
                 # onchange, where the client sends the "bin size" value of the
@@ -339,24 +276,22 @@ class Image(Binary):
         # the inverse has been applied with the original image; now we fix the
         # cache with the resized value
         for record in records:
-            value = self._process_related(record[self.name], record.env)
+            value = self._process_related(record[self.name], record.env) or None
             self._update_cache(record, value, dirty=True)
 
-    def _image_process(self, value, env):
+    def _image_process(self, value, env: Environment) -> BinaryValue | typing.Literal[False]:
         if self.readonly and not self.max_width and not self.max_height:
             # no need to process images for computed fields, or related fields
             return value
-        try:
-            img = base64.b64decode(value or '') or False
-        except Exception as e:
-            raise UserError(env._("Image is not encoded in base64.")) from e
+        data = self.convert_to_cache(value, env[self.model_name], validate=False)
+        img = data.content if data else b''
 
-        if img and guess_mimetype(img, '') == 'image/webp':
+        if data and data.mimetype == 'image/webp':
             if not self.max_width and not self.max_height:
-                return value
+                return data
             # Fetch resized version.
             Attachment = env['ir.attachment']
-            checksum = Attachment._compute_checksum(img)
+            checksum = Attachment._compute_checksum(data)
             origins = Attachment.search([
                 ['id', '!=', False],  # No implicit condition on res_field.
                 ['checksum', '=', checksum],
@@ -372,15 +307,15 @@ class Image(Binary):
                 resized = Attachment.sudo().search(resized_domain, limit=1)
                 if resized:
                     # Fallback on non-resized image (value).
-                    return resized.datas or value
-            return value
+                    return resized.raw or data
+            return data
 
         # delay import of image_process until this point
         from odoo.tools.image import image_process  # noqa: PLC0415
-        return base64.b64encode(image_process(img,
+        return BinaryValue.from_bytes(image_process(img,
             size=(self.max_width, self.max_height),
             verify_resolution=self.verify_resolution,
-        ) or b'') or False
+        )) or False
 
     def _process_related(self, value, env):
         """Override to resize the related value before saving it on self."""

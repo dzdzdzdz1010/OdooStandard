@@ -1,9 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from collections import defaultdict
-import base64
 from odoo import api, fields, models
-from odoo.tools.misc import file_open
+from odoo.tools import BinaryValue
 
 # Format table expressed as width x height in inch.
 ZPL_FORMAT_SIZE = {
@@ -19,8 +18,7 @@ class ProductLabelLayout(models.TransientModel):
 
     @api.model
     def _get_zpl_label_placeholder(self):
-        with file_open('stock/static/img/zpl_label_placeholder.png', 'rb') as f:
-            return base64.b64encode(f.read())
+        return BinaryValue.from_file('stock/static/img/zpl_label_placeholder.png')
 
     move_ids = fields.Many2many('stock.move')
     move_quantity = fields.Selection([

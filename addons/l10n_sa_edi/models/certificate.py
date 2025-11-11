@@ -1,5 +1,3 @@
-import base64
-
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.x509 import ObjectIdentifier
@@ -19,13 +17,13 @@ class CertificateCertificate(models.Model):
 
     def _l10n_sa_get_issuer_name(self):
         self.ensure_one()
-        cert = x509.load_pem_x509_certificate(base64.b64decode(self.pem_certificate))
+        cert = x509.load_pem_x509_certificate(self.pem_certificate.content)
         return ', '.join([s.rfc4514_string() for s in cert.issuer.rdns[::-1]])
 
     @api.model
-    def _l10n_sa_get_csr_str(self, journal):
+    def _l10n_sa_get_csr_bin(self, journal):
         """
-            Return a string representation of a ZATCA compliant CSR that will be sent to the Compliance API in order to get back
+            Return public bytes of a ZATCA compliant CSR that will be sent to the Compliance API in order to get back
             a signed X509 certificate
         """
         if not journal:
@@ -84,7 +82,7 @@ class CertificateCertificate(models.Model):
         for ext in x509_extensions:
             builder = builder.add_extension(ext[0], critical=ext[1])
 
-        private_key = serialization.load_pem_private_key(base64.b64decode(company_id.l10n_sa_private_key_id.pem_key), password=None)
+        private_key = serialization.load_pem_private_key(company_id.l10n_sa_private_key_id.pem_key, password=None)
         request = builder.sign(private_key, hashes.SHA256())
 
-        return base64.b64encode(request.public_bytes(serialization.Encoding.PEM)).decode()
+        return request.public_bytes(serialization.Encoding.PEM)

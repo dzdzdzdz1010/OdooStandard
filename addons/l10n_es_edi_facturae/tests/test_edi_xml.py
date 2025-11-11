@@ -1,6 +1,5 @@
 import logging
 import random
-from base64 import b64encode
 from datetime import datetime
 from hashlib import sha1
 from unittest.mock import patch
@@ -12,7 +11,7 @@ from odoo import Command, fields
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
 from odoo.exceptions import UserError
 from odoo.tests import tagged
-from odoo.tools import file_open
+from odoo.tools import BinaryValue, file_open
 
 _logger = logging.getLogger(__name__)
 
@@ -97,7 +96,7 @@ class TestEdiFacturaeXmls(AccountTestInvoicingCommon):
         with freeze_time(cls.frozen_today), patch(f"{cls.certificate_module}.fields.Datetime.now", lambda x=None: cls.frozen_today):
             cls.certificate = cls.env["certificate.certificate"].create({
                 'name': 'Test ES certificate',
-                'content': b64encode(file_open('l10n_es_edi_facturae/tests/data/certificate_test.pfx', 'rb').read()),
+                'content': BinaryValue.from_file('l10n_es_edi_facturae/tests/data/certificate_test.pfx'),
                 'pkcs12_password': 'test',
                 'company_id': cls.company_data['company'].id,
                 'scope': 'facturae',

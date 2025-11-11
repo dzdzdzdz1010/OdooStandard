@@ -19,7 +19,6 @@ from collections.abc import Sequence
 
 import chardet
 import psycopg2
-from PIL import Image
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -28,6 +27,7 @@ from odoo.tools import (
     DEFAULT_SERVER_DATETIME_FORMAT,
     config,
 )
+from odoo.tools.image import binary_to_image
 from odoo.tools.mimetypes import guess_mimetype
 from odoo.tools.translate import _
 
@@ -184,7 +184,7 @@ class Base_ImportImport(models.TransientModel):
     FUZZY_MATCH_DISTANCE = 0.2
 
     res_model = fields.Char('Model')
-    file = fields.Binary('File', help="File to check and/or import, raw binary (not base64)", attachment=False)
+    file = fields.Binary('File', help="File to check and/or import, raw binary", attachment=False)
     file_name = fields.Char('File Name')
     file_type = fields.Char('File Type')
 
@@ -379,7 +379,7 @@ class Base_ImportImport(models.TransientModel):
         self.ensure_one()
 
         # guess mimetype from file content
-        mimetype = guess_mimetype(self.file or b'')
+        mimetype = self.file.mimetype
         extensions_to_try = [
             (MIMETYPE_TO_READER.get(mimetype), f"guessed using mimetype {mimetype!r}"),
             (MIMETYPE_TO_READER.get(self.file_type), f"decided from user-provided mimetype {self.file_type!r}"),
@@ -421,7 +421,7 @@ class Base_ImportImport(models.TransientModel):
 
     def _read_xls(self, options):
         import xlrd  # noqa: PLC0415
-        book = xlrd.open_workbook(file_contents=self.file or b'')
+        book = xlrd.open_workbook(file_contents=self.file.content)
         sheets = options['sheets'] = book.sheet_names()
         sheet = options['sheet'] = options.get('sheet') or sheets[0]
         return self._read_xls_book(book, sheet)
@@ -480,7 +480,7 @@ class Base_ImportImport(models.TransientModel):
         import openpyxl  # noqa: PLC0415
         import openpyxl.cell.cell as types  # noqa: PLC0415
         import openpyxl.styles.numbers as styles  # noqa: PLC0415
-        book = openpyxl.load_workbook(io.BytesIO(self.file or b''), data_only=True)
+        book = openpyxl.load_workbook(io.BytesIO(self.file.content), data_only=True)
         sheets = options['sheets'] = book.sheetnames
         sheet_name = options['sheet'] = options.get('sheet') or sheets[0]
         sheet = book[sheet_name]
@@ -519,7 +519,7 @@ class Base_ImportImport(models.TransientModel):
 
     def _read_ods(self, options):
         from . import odf_ods_reader  # noqa: PLC0415
-        doc = odf_ods_reader.ODSReader(file=io.BytesIO(self.file or b''))
+        doc = odf_ods_reader.ODSReader(file=io.BytesIO(self.file.content))
         sheets = options['sheets'] = list(doc.SHEETS.keys())
         sheet = options['sheet'] = options.get('sheet') or sheets[0]
 
@@ -537,7 +537,7 @@ class Base_ImportImport(models.TransientModel):
 
         :raises csv.Error: if an error is detected during CSV parsing
         """
-        csv_data = self.file or b''
+        csv_data = self.file.content
         if not csv_data:
             return ()
 
@@ -1113,7 +1113,8 @@ class Base_ImportImport(models.TransientModel):
             _logger.debug("Error during parsing preview", exc_info=True)
             preview = None
             if self.file_type == 'text/csv' and self.file:
-                preview = self.file[:ERROR_PREVIEW_BYTES].decode('iso-8859-1')
+                with self.file.open() as f:
+                    preview = f.read(ERROR_PREVIEW_BYTES).decode('iso-8859-1')
             return {
                 'error': str(error),
                 # iso-8859-1 ensures decoding will always succeed,
@@ -1296,7 +1297,7 @@ class Base_ImportImport(models.TransientModel):
                                     _("You can not import file via URL, check with your administrator or support for the reason."),
                                     field=name, field_type=field['type']
                                 )
-                            line[index] = self._import_file_by_url(line[index], session, name, num)
+                            line[index] = base64.b64encode(self._import_file_by_url(line[index], session, name, num))
                         elif '.' in line[index]:
                             # Detect if it's a filename
                             pass
@@ -1376,9 +1377,9 @@ class Base_ImportImport(models.TransientModel):
                     )
 
             if not guess_mimetype(content).startswith('image/'):
-                return base64.b64encode(content)
+                return content
 
-            image = Image.open(io.BytesIO(content))
+            image = binary_to_image(content)
             w, h = image.size
             if w * h > 42e6:  # Nokia Lumia 1020 photo resolution
                 raise ImportValidationError(
@@ -1386,7 +1387,7 @@ class Base_ImportImport(models.TransientModel):
                     field=field
                 )
 
-            return base64.b64encode(content)
+            return content
         except Exception as e:
             _logger.warning(e, exc_info=True)
             raise ImportValidationError(_("Could not retrieve URL: %(url)s [%(field_name)s: L%(line_number)d]: %(error)s") % {

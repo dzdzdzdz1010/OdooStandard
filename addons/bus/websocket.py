@@ -12,6 +12,7 @@ import struct
 import threading
 import time
 from collections import defaultdict, deque
+from collections.abc import Buffer
 from contextlib import contextmanager, suppress
 from enum import IntEnum
 from itertools import count
@@ -546,7 +547,7 @@ class Websocket:
                 "Trying to send a frame on a closed socket"
             )
         opcode = Opcode.BINARY
-        if not isinstance(message, (bytes, bytearray)):
+        if not isinstance(message, Buffer):
             opcode = Opcode.TEXT
         self._send_frame(Frame(opcode, message))
 
@@ -557,7 +558,9 @@ class Websocket:
             )
         if isinstance(frame.payload, str):
             frame.payload = frame.payload.encode('utf-8')
-        elif not isinstance(frame.payload, (bytes, bytearray)):
+        elif isinstance(frame.payload, Buffer):
+            frame.payload = bytes(frame.payload)
+        else:
             frame.payload = json.dumps(frame.payload).encode('utf-8')
 
         output = bytearray()

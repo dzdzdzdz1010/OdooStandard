@@ -749,6 +749,8 @@ class BaseCase(case.TestCase):
                     r[f] = float(vs[f])
                 elif t == 'integer':
                     r[f] = int(vs[f])
+                elif t == 'binary':
+                    r[f] = bytes(vs[f])
                 elif vs[f] is None:
                     r[f] = False
                 else:
@@ -771,6 +773,8 @@ class BaseCase(case.TestCase):
                         # don't round if there's no currency set
                         if c := record[currency_field_name]:
                             record_value = Approx(record_value, c, decorate=False)
+                    case odoo.fields.Binary() as field:
+                        record_value = record_value.content
 
                 r[field_name] = record_value
             record_reformatted.append(r)

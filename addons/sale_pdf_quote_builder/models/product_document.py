@@ -1,5 +1,4 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-import io
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
@@ -34,25 +33,28 @@ class ProductDocument(models.Model):
     # === CONSTRAINT METHODS ===#
 
     @api.constrains('attached_on_sale', 'raw', 'type')
-    def _check_attached_on_and_datas_compatibility(self):
+    def _check_attached_on_and_raw_compatibility(self):
         for doc in self.filtered(lambda doc: doc.attached_on_sale == 'inside'):
             if doc.type != 'binary':
                 raise ValidationError(_(
                     "When attached inside a quote, the document must be a file, not a URL."
                 ))
-            if doc.raw and not doc.mimetype.endswith('pdf'):
+            if not doc.raw:
+                continue
+            if not doc.mimetype.endswith('pdf'):
                 raise ValidationError(_("Only PDF documents can be attached inside a quote."))
-            if doc.raw and pdf.PdfFileReader(io.BytesIO(doc.raw), strict=False).isEncrypted:
-                raise ValidationError(_(
-                    "It seems that we're not able to process this pdf inside a quotation. It is either"
-                    " encrypted, or encoded in a format we do not support."
-                ))
+            with doc.raw.open() as f:
+                if pdf.PdfFileReader(f, strict=False).isEncrypted:
+                    raise ValidationError(_(
+                        "It seems that we're not able to process this pdf inside a quotation. It is either"
+                        " encrypted, or encoded in a format we do not support."
+                    ))
 
     # === COMPUTE METHODS === #
 
     @api.depends('raw', 'attached_on_sale')
     def _compute_form_field_ids(self):
-        # Empty the linked form fields as we want all and only those from the current datas
+        # Empty the linked form fields as we want all and only those from the current raw data
         self.form_field_ids = [Command.clear()]
         document_to_parse = self.filtered(
             lambda doc: doc.attached_on_sale == 'inside' and doc.raw and doc.mimetype and doc.mimetype.endswith('pdf')

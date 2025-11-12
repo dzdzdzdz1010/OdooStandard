@@ -743,13 +743,26 @@ class HrAttendance(models.Model):
                 current_attendance_duration = (now_datetime - check_in_datetime).total_seconds() / 3600
                 previous_attendances_duration = mapped_previous_duration[att.employee_id][check_in_datetime.date()]
 
-                expected_worked_hours = sum(
-                    att.employee_id.resource_calendar_id.attendance_ids.filtered(
-                        lambda a: a.dayofweek == str(check_in_datetime.weekday())
-                            and (not a.two_weeks_calendar or a.week_type == str(a.get_week_type(check_in_datetime.date())))
-                    ).mapped("duration_hours")
+                work_hours = att.employee_id.resource_calendar_id.attendance_ids.filtered(
+                    lambda a: a.dayofweek == str(check_in_datetime.weekday()) and
+                            (not a.two_weeks_calendar or a.week_type == str(a.get_week_type(check_in_datetime.date())))
                 )
 
+                scheduled_start_hour = min(work_hours.mapped("hour_from"))
+                start_of_day = check_in_datetime.replace(hour=int(scheduled_start_hour), minute=int((scheduled_start_hour % 1) * 60), second=0)
+                scheduled_end_hour = max(work_hours.mapped("hour_to"))
+                end_of_day = check_in_datetime.replace(hour=int(scheduled_end_hour), minute=int((scheduled_end_hour % 1) * 60), second=0)
+                leave_at_the_end_of_day = att.employee_id.resource_calendar_id.leave_ids.filtered(
+                    lambda l: (l.resource_id.id == att.employee_id.resource_id.id
+                                and l.date_to.astimezone(employee_timezone) == end_of_day
+                                and l.date_from.astimezone(employee_timezone) > start_of_day)
+                )
+                timeoff_hours = 0.0
+                if leave_at_the_end_of_day:
+                    date_from = leave_at_the_end_of_day.date_from.astimezone(employee_timezone)
+                    date_to = leave_at_the_end_of_day.date_to.astimezone(employee_timezone)
+                    timeoff_hours = (date_to - date_from).total_seconds() / 3600
+                expected_worked_hours = sum(work_hours.mapped("duration_hours")) - timeoff_hours
                 # Attendances where Last open attendance time + previously worked time on that day + tolerance greater than the attendances hours (including lunch) in his calendar
                 if (current_attendance_duration + previous_attendances_duration - max_tol) > expected_worked_hours:
                     att.check_out = att.check_in.replace(hour=23, minute=59, second=59)

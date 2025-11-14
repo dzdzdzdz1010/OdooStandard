@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="point_of_sale.LocalPrinterSelector">
+        <SelectMenu
+            autoSort="false"
+            class="'border-0'"
+            menuClass="'o_field_selection_menu w-auto'"
+            value="value"
+            choices="choices"
+            onSelect.bind="onChange"
+            searchable="true"
+        />
+    </t>
+</templates>

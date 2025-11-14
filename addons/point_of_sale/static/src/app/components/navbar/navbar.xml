@@ -60,7 +60,7 @@
                                 </span>
                             </div>
                             <div class="p-2 pos-burger-menu-items">
-                                <DropdownItem t-if="!isDisplayStandalone and this.pos.cashier._role != 'minimal'" onSelected="() => window.open(this.appUrl)">
+                                <DropdownItem t-if="!isDisplayStandalone and this.pos.cashier._role != 'minimal' and !this.isNativeApp" onSelected="() => window.open(this.appUrl)">
                                     Install App
                                 </DropdownItem>
                                 <DropdownItem t-if="showCashMoveButton and this.pos.cashier._role != 'minimal'" onSelected="() => this.pos.cashMove()">

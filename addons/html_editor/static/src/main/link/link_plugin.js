@@ -297,16 +297,7 @@ export class LinkPlugin extends Plugin {
         clean_for_save_handlers: ({ root }) => this.removeEmptyLinks(root),
         normalize_handlers: this.normalizeLink.bind(this),
         after_insert_handlers: this.handleAfterInsert.bind(this),
-
-        /** Overrides */
-        split_element_block_overrides: this.handleSplitBlock.bind(this),
-        insert_line_break_element_overrides: this.handleInsertLineBreak.bind(this),
-        delete_image_overrides: this.deleteImageLink.bind(this),
-        double_click_overrides: this.doubleClickLinkOverrides.bind(this),
-        triple_click_overrides: this.tripleClickButtonOverrides.bind(this),
-
-        /** Processors */
-        to_inline_code_processors: (node) => {
+        to_inline_code_handlers: (node) => {
             this.removeEmptyLinks(node);
             for (const btn of selectElements(node, "a.btn")) {
                 // Remove all attributes from the button link except "href"
@@ -315,6 +306,13 @@ export class LinkPlugin extends Plugin {
                 );
             }
         },
+
+        /** Overrides */
+        split_element_block_overrides: this.handleSplitBlock.bind(this),
+        insert_line_break_element_overrides: this.handleInsertLineBreak.bind(this),
+        delete_image_overrides: this.deleteImageLink.bind(this),
+        double_click_overrides: this.doubleClickLinkOverrides.bind(this),
+        triple_click_overrides: this.tripleClickButtonOverrides.bind(this),
     };
 
     setup() {

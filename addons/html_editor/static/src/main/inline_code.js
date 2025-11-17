@@ -102,7 +102,7 @@ export class InlineCodePlugin extends Plugin {
                 }
                 start = next;
             }
-            this.dispatchTo("to_inline_code_processors", codeElement);
+            this.dispatchTo("to_inline_code_handlers", codeElement);
             this.dependencies.selection.setSelection({
                 anchorNode: codeElement,
                 anchorOffset: nodeSize(codeElement),

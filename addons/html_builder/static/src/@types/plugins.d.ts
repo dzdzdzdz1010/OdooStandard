@@ -1,7 +1,7 @@
 declare module "plugins" {
     import { AnchorShared } from "@html_builder/core/anchor/anchor_plugin";
     import { builder_components, BuilderComponentShared } from "@html_builder/core/builder_component_plugin";
-    import { builder_header_middle_buttons, builder_options, BuilderOptionsShared, change_current_options_containers_listeners, clone_disabled_reason_providers, container_title, elements_to_options_title_components, get_options_container_top_buttons, has_overlay_options, keep_overlay_options, no_parent_containers, on_restore_containers_handlers, remove_disabled_reason_providers } from "@html_builder/core/builder_options_plugin";
+    import { builder_header_middle_buttons, builder_options, BuilderOptionsShared, change_current_options_containers_listeners, clone_disabled_reason_processors, container_title, elements_to_options_title_components, get_options_container_top_buttons, has_overlay_options, keep_overlay_options, no_parent_containers, on_restore_containers_handlers, remove_disabled_reason_processors } from "@html_builder/core/builder_options_plugin";
     import { BuilderOverlayShared } from "@html_builder/core/builder_overlay/builder_overlay_plugin";
     import { CachedModelShared } from "@html_builder/core/cached_model_plugin";
     import { CloneShared, on_cloned_handlers, on_will_clone_handlers } from "@html_builder/core/clone_plugin";
@@ -18,7 +18,7 @@ declare module "plugins" {
     import { target_hide, target_show, VisibilityShared } from "@html_builder/core/visibility_plugin";
     import { default_shape_handlers, post_compute_shape_listeners } from "@html_builder/plugins/image/image_shape_option_plugin";
     import { background_filter_target_providers, get_target_element_providers, on_bg_image_hide_handlers } from "@html_builder/plugins/background_option/background_image_option_plugin";
-    import { is_draggable_handlers, on_element_dragged_handlers, on_element_dropped_handlers, on_element_dropped_near_handlers, on_element_dropped_over_handlers, on_element_move_handlers, on_element_out_dropzone_handlers, on_element_over_dropzone_handlers, on_prepare_drag_handlers } from "@html_builder/core/drag_and_drop_plugin";
+    import { is_draggable_predicates, on_element_dragged_handlers, on_element_dropped_handlers, on_element_dropped_near_handlers, on_element_dropped_over_handlers, on_element_move_handlers, on_element_out_dropzone_handlers, on_element_over_dropzone_handlers, on_prepare_drag_handlers } from "@html_builder/core/drag_and_drop_plugin";
     import { lower_panel_entries, on_mobile_preview_clicked, trigger_dom_updated } from "@html_builder/builder";
     import { on_reveal_target_handlers } from "@html_builder/sidebar/invisible_elements_panel";
     import { on_snippet_dragged_handlers, on_snippet_dropped_handlers, on_snippet_dropped_near_handlers, on_snippet_dropped_over_handlers, on_snippet_move_handlers, on_snippet_out_dropzone_handlers, on_snippet_over_dropzone_handlers } from "@html_builder/sidebar/block_tab";
@@ -107,7 +107,7 @@ declare module "plugins" {
         // Predicates
         empty_node_predicates: empty_node_predicates;
         filter_for_sibling_dropzone_predicates: filter_for_sibling_dropzone_predicates;
-        is_draggable_handlers: is_draggable_handlers;
+        is_draggable_predicates: is_draggable_predicates;
         keep_overlay_options: keep_overlay_options;
 
         // Processors
@@ -115,11 +115,11 @@ declare module "plugins" {
         // Providers
         background_filter_target_providers: background_filter_target_providers;
         background_shape_target_providers: background_shape_target_providers;
-        clone_disabled_reason_providers: clone_disabled_reason_providers;
+        clone_disabled_reason_processors: clone_disabled_reason_processors;
         get_dirty_els: get_dirty_els;
         get_options_container_top_buttons: get_options_container_top_buttons;
         get_target_element_providers: get_target_element_providers;
-        remove_disabled_reason_providers: remove_disabled_reason_providers;
+        remove_disabled_reason_processors: remove_disabled_reason_processors;
 
         // Data
         builder_actions: builder_actions;

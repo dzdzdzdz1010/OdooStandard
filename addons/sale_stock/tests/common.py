@@ -16,7 +16,15 @@ class TestSaleStockCommon(TestSaleCommon, ProductVariantsCommon):
         })
         delivery_route_3 = cls.warehouse_3_steps_pull.delivery_route_id
         delivery_route_3.rule_ids[0].write({
-            'location_dest_id': delivery_route_3.rule_ids[1].location_src_id.id,
+            'location_dest_id': delivery_route_3.rule_ids[3].location_src_id.id,
         })
-        delivery_route_3.rule_ids[1].write({'action': 'pull'})
-        delivery_route_3.rule_ids[2].write({'action': 'pull'})
+        delivery_route_3.rule_ids[1].write({
+            'location_dest_id': delivery_route_3.rule_ids[3].location_src_id.id,
+        })
+        delivery_route_3.rule_ids[2].write({
+            'location_dest_id': delivery_route_3.rule_ids[3].location_src_id.id,
+        })
+        delivery_route_3.rule_ids[3].write({'action': 'pull'})
+        delivery_route_3.rule_ids[4].write({'action': 'pull'})
+        delivery_route_3.rule_ids[5].write({'action': 'pull'})
+        delivery_route_3.rule_ids[6].write({'action': 'pull'})

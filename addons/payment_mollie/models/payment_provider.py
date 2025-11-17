@@ -1,6 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import fields, models, release
+from odoo import api, fields, models, release
 from odoo.tools import urls
 
 from odoo.addons.payment.logging import get_payment_logger
@@ -22,6 +22,15 @@ class PaymentProvider(models.Model):
         copy=False,
         groups='base.group_system',
     )
+
+    @api.onchange('mollie_api_key')
+    def _onchange_mollie_api_key(self):
+        """When the Mollie API key changes, reset the mollie_customer_id of the partner
+            associated with the currently logged-in user.
+        """
+        partner = self.env.user.partner_id
+        if partner:
+            partner.mollie_customer_id = False
 
     # === COMPUTE METHODS === #
 

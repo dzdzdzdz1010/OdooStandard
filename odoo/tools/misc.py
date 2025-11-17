@@ -14,6 +14,7 @@ import hmac as hmac_lib
 import itertools
 import json
 import logging
+import math
 import os
 import re
 import sys
@@ -26,11 +27,19 @@ import unicodedata
 import warnings
 import zlib
 from collections import defaultdict
-from collections.abc import Iterable, Iterator, Mapping, MutableMapping, MutableSet, Reversible
+from collections.abc import (
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+    MutableSet,
+    Reversible,
+)
 from contextlib import ContextDecorator, contextmanager
 from difflib import HtmlDiff
 from functools import reduce, wraps
-from itertools import islice, groupby as itergroupby
+from itertools import groupby as itergroupby
+from itertools import islice
 from operator import itemgetter
 from types import MappingProxyType
 
@@ -52,7 +61,9 @@ K = typing.TypeVar('K')
 T = typing.TypeVar('T')
 if typing.TYPE_CHECKING:
     from collections.abc import Callable, Collection, Sequence
+
     from odoo.api import Environment
+
     from odoo.addons.base.models.res_lang import LangData
 
     P = typing.TypeVar('P')
@@ -87,9 +98,8 @@ __all__ = [
     'get_iso_codes',
     'get_lang',
     'groupby',
-    'hmac',
     'hash_sign',
-    'verify_hash_signed',
+    'hmac',
     'html_escape',
     'human_size',
     'is_list_of',
@@ -99,6 +109,7 @@ __all__ = [
     'parse_date',
     'partition',
     'posix_to_ldml',
+    'real_time',
     'remove_accents',
     'replace_exceptions',
     'reverse_enumerate',
@@ -108,7 +119,7 @@ __all__ = [
     'topological_sort',
     'unique',
     'ustr',
-    'real_time',
+    'verify_hash_signed',
 ]
 
 _logger = logging.getLogger(__name__)
@@ -123,7 +134,7 @@ default_parser = etree.XMLParser(resolve_entities=False, remove_blank_text=True)
 default_parser.set_element_class_lookup(objectify.ObjectifyElementClassLookup())
 objectify.set_default_parser(default_parser)
 
-NON_BREAKING_SPACE = u'\N{NO-BREAK SPACE}'
+NON_BREAKING_SPACE = '\N{NO-BREAK SPACE}'
 
 # ensure we have a non patched time for query times when using freezegun
 real_time = time.time.__call__  # type: ignore
@@ -136,9 +147,10 @@ class Sentinel(enum.Enum):
 
 SENTINEL = Sentinel.SENTINEL
 
-#----------------------------------------------------------
+# ----------------------------------------------------------
 # Subprocesses
-#----------------------------------------------------------
+# ----------------------------------------------------------
+
 
 def find_in_path(name):
     path = os.environ.get('PATH', os.defpath).split(os.pathsep)
@@ -155,10 +167,7 @@ def find_pg_tool(name):
     path = None
     if config['pg_path'] and config['pg_path'] != 'None':
         path = config['pg_path']
-    try:
-        return which(name, path=path)
-    except OSError:
-        raise Exception('Command `%s` not found.' % name)
+    return which(name, path=path)
 
 
 def exec_pg_environ():
@@ -194,7 +203,7 @@ def exec_pg_environ():
 # ----------------------------------------------------------
 
 
-def file_path(file_path: str, filter_ext: tuple[str, ...] = ('',), env: Environment | None = None, *, check_exists: bool = True) -> str:
+def file_path(file_path: str, filter_ext: Sequence[str] = (), env: Environment | None = None, *, check_exists: bool = True) -> str:
     """Verify that a file exists under a known `addons_path` directory and return its full path.
 
     Examples::
@@ -203,8 +212,8 @@ def file_path(file_path: str, filter_ext: tuple[str, ...] = ('',), env: Environm
     >>> file_path('hr/static/description/icon.png')
     >>> file_path('hr/static/description/icon.png', filter_ext=('.png', '.jpg'))
 
-    :param str file_path: absolute file path, or relative path within any `addons_path` directory
-    :param list[str] filter_ext: optional list of supported extensions (lowercase, with leading dot)
+    :param file_path: absolute file path, or relative path within any `addons_path` directory
+    :param filter_ext: optional list of supported extensions (lowercase, with leading dot)
     :param env: optional environment, required for a file path within a temporary directory
         created using `file_open_temporary_directory()`
     :param check_exists: check that the file exists (default: True)
@@ -251,7 +260,7 @@ def file_path(file_path: str, filter_ext: tuple[str, ...] = ('',), env: Environm
     raise FileNotFoundError("File not found: " + file_path)
 
 
-def file_open(name: str, mode: str = "r", filter_ext: tuple[str, ...] = (), env: Environment | None = None):
+def file_open(name: str, mode: str = "r", filter_ext: Sequence[str] = (), env: Environment | None = None):
     """Open a file from within the addons_path directories, as an absolute or relative path.
 
     Examples::
@@ -263,7 +272,7 @@ def file_open(name: str, mode: str = "r", filter_ext: tuple[str, ...] = (), env:
 
     :param name: absolute or relative path to a file located inside an addon
     :param mode: file open mode, as for `open()`
-    :param list[str] filter_ext: optional list of supported extensions (lowercase, with leading dot)
+    :param filter_ext: optional list of supported extensions (lowercase, with leading dot)
     :param env: optional environment, required to open a file within a temporary directory
         created using `file_open_temporary_directory()`
     :return: file object, as returned by `open()`
@@ -315,9 +324,9 @@ def file_open_temporary_directory(env: Environment):
             env.transaction._Transaction__file_open_tmp_paths = ()
 
 
-#----------------------------------------------------------
+# ----------------------------------------------------------
 # iterables
-#----------------------------------------------------------
+# ----------------------------------------------------------
 def flatten(list):
     """Flatten a list of elements into a unique list
     Author: Christophe Simonis (christophe@tinyerp.com)
@@ -482,31 +491,24 @@ def mod10r(number: str) -> str:
     Output return: the same number completed with the recursive mod10
     key
     """
-    codec=[0,9,4,6,8,2,7,1,3,5]
+    codec = [0, 9, 4, 6, 8, 2, 7, 1, 3, 5]
     report = 0
-    result=""
+    result = ""
     for digit in number:
         result += digit
         if digit.isdigit():
-            report = codec[ (int(digit) + report) % 10 ]
+            report = codec[(int(digit) + report) % 10]
     return result + str((10 - report) % 10)
 
 
-def str2bool(s: str, default: bool | None = None) -> bool:
-    # allow this (for now?) because it's used for get_param
+def str2bool(s: bool | str, default: bool | None = None) -> bool:
+    """
+
+
+
+    """
     if type(s) is bool:
         return s  # type: ignore
-
-    if not isinstance(s, str):
-        warnings.warn(
-            f"Passed a non-str to `str2bool`: {s}",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        if default is None:
-            raise ValueError('Use 0/1/yes/no/true/false/on/off')
-        return bool(default)
 
     s = s.lower()
     if s in ('y', 'yes', '1', 'true', 't', 'on'):
@@ -514,24 +516,30 @@ def str2bool(s: str, default: bool | None = None) -> bool:
     if s in ('n', 'no', '0', 'false', 'f', 'off'):
         return False
     if default is None:
-        raise ValueError('Use 0/1/yes/no/true/false/on/off')
+        e = "Use 0/1/yes/no/true/false/on/off"
+        raise ValueError(e)
     return bool(default)
 
 
-def human_size(sz: float | str) -> str | typing.Literal[False]:
+def human_size(nb: int) -> str:
     """
-    Return the size in a human readable format
+    Get a pretty human string for a number of bytes (e.g. a file size).
+
+    >>> human_size(12)
+    "12 bytes"
+    >>> human_size(1000)
+    "0.977 kiB"
+    >>> human_size(-2048)
+    "-2 kiB"
+    >>> human_size(1 << 50)  # 1 PiB, numbers this big are unlikely
+    "1.02e+03 TiB"
     """
-    if not sz:
-        return False
-    units = ('bytes', 'Kb', 'Mb', 'Gb', 'Tb')
-    if isinstance(sz, str):
-        sz=len(sz)
-    s, i = float(sz), 0
-    while s >= 1024 and i < len(units)-1:
-        s /= 1024
-        i += 1
-    return "%0.2f %s" % (s, units[i])
+    units = ('bytes', 'kiB', 'MiB', 'GiB', 'TiB')
+    for unit in units:
+        if abs(nb) < 1000 or unit == units[-1]:  # 1000 to get 0.999 GiB instead of 1023 MiB
+            break
+        nb /= 1024
+    return f'{nb:.3g} {unit}'
 
 
 DEFAULT_SERVER_DATE_FORMAT = "%Y-%m-%d"

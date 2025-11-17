@@ -37,9 +37,9 @@ export class LinkSelectionPlugin extends Plugin {
     /** @type {import("plugins").EditorResources} */
     resources = {
         /** Handlers */
-        selectionchange_handlers: this.resetLinkInSelection.bind(this),
-        clean_for_save_handlers: ({ root }) => this.clearLinkInSelectionClass(root),
-        normalize_handlers: () => this.resetLinkInSelection(),
+        selectionchange_listeners: this.resetLinkInSelection.bind(this),
+        clean_for_save_listeners: ({ root }) => this.clearLinkInSelectionClass(root),
+        normalize_listeners: () => this.resetLinkInSelection(),
         feff_providers: this.addFeffsToLinks.bind(this),
         system_classes: ["o_link_in_selection"],
         selection_placeholder_container_predicates: (container) => {

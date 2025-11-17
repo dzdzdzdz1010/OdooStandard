@@ -9,7 +9,7 @@ import { registry } from "@web/core/registry";
  */
 
 /**
- * @typedef {((commonAncestorEl: HTMLElement) => void)[]} content_manually_updated_handlers
+ * @typedef {((commonAncestorEl: HTMLElement) => void)[]} content_manually_updated_listeners
  */
 
 export class EditInteractionPlugin extends Plugin {
@@ -19,11 +19,11 @@ export class EditInteractionPlugin extends Plugin {
 
     /** @type {import("plugins").WebsiteResources} */
     resources = {
-        normalize_handlers: this.refreshInteractions.bind(this),
-        content_manually_updated_handlers: this.refreshInteractions.bind(this),
+        normalize_listeners: this.refreshInteractions.bind(this),
+        content_manually_updated_listeners: this.refreshInteractions.bind(this),
         before_save_handlers: withSequence(5, this.stopInteractions.bind(this)),
-        after_save_handlers: this.restartInteractions.bind(this),
-        on_will_clone_handlers: ({ originalEl }) => {
+        after_save_listeners: this.restartInteractions.bind(this),
+        on_will_clone_listeners: ({ originalEl }) => {
             this.stopInteractions(originalEl);
         },
         on_cloned_handlers: ({ originalEl }) => {

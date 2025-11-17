@@ -14,7 +14,7 @@ import { rpc } from "@web/core/network/rpc";
 /**
  * @typedef {((el: HTMLElement) => HTMLElement)[]} closest_savable_providers
  *
- * @typedef {((args: {imageEl: HTMLElement}) => void)[]} on_image_saved_handlers
+ * @typedef {((args: {imageEl: HTMLElement}) => void)[]} on_image_saved_listeners
  */
 
 export class ImageSavePlugin extends Plugin {
@@ -26,7 +26,7 @@ export class ImageSavePlugin extends Plugin {
         before_save_handlers: this.savePendingImages.bind(this),
 
         ...(this.config.dropImageAsAttachment && {
-            added_image_handlers: (img) => img.classList.add("o_b64_image_to_save"),
+            added_image_listeners: (img) => img.classList.add("o_b64_image_to_save"),
         }),
     };
 
@@ -202,7 +202,7 @@ export class ImageSavePlugin extends Plugin {
         } else {
             el.setAttribute("src", newAttachmentSrc);
         }
-        this.dispatchTo("on_image_saved_handlers", { imageEl: el });
+        this.trigger("on_image_saved_listeners", { imageEl: el });
     }
 
     getRecordInfo(editableEl = null) {

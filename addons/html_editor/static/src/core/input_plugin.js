@@ -1,8 +1,8 @@
 import { Plugin } from "../plugin";
 
 /**
- * @typedef {((ev: InputEvent) => void)[]} beforeinput_handlers
- * @typedef {((ev: InputEvent) => void)[]} input_handlers
+ * @typedef {((ev: InputEvent) => void)[]} beforeinput_listeners
+ * @typedef {((ev: InputEvent) => void)[]} input_listeners
  */
 
 export class InputPlugin extends Plugin {
@@ -15,11 +15,11 @@ export class InputPlugin extends Plugin {
 
     onBeforeInput(ev) {
         this.dependencies.history.stageSelection();
-        this.dispatchTo("beforeinput_handlers", ev);
+        this.trigger("beforeinput_listeners", ev);
     }
 
     onInput(ev) {
         this.dependencies.history.addStep();
-        this.dispatchTo("input_handlers", ev);
+        this.trigger("input_listeners", ev);
     }
 }

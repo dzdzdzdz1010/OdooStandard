@@ -52,8 +52,8 @@ function isFormatted(formatPlugin, format) {
  * @typedef {((formatName: string, options: {
  *      formatProps: object,
  *      applyStyle: boolean,
- * }) => void | boolean)[]} format_selection_handlers
- * @typedef {(() => void)[]} remove_all_formats_handlers
+ * }) => void | boolean)[]} format_selection_listeners
+ * @typedef {(() => void)[]} remove_all_formats_listeners
  *
  * @typedef {((className: string) => boolean)[]} format_class_predicates
  * @typedef {((node: Node) => boolean)[]} has_format_predicates
@@ -183,11 +183,11 @@ export class FormatPlugin extends Plugin {
             }),
         ],
         /** Handlers */
-        beforeinput_handlers: withSequence(20, this.onBeforeInput.bind(this)),
-        clean_for_save_handlers: this.cleanForSave.bind(this),
-        normalize_handlers: this.normalize.bind(this),
-        selectionchange_handlers: this.removeEmptyInlineElement.bind(this),
-        before_set_tag_handlers: this.removeFontSizeFormat.bind(this),
+        beforeinput_listeners: withSequence(20, this.onBeforeInput.bind(this)),
+        clean_for_save_listeners: this.cleanForSave.bind(this),
+        normalize_listeners: this.normalize.bind(this),
+        selectionchange_listeners: this.removeEmptyInlineElement.bind(this),
+        before_set_tag_listeners: this.removeFontSizeFormat.bind(this),
         before_insert_processors: this.unwrapEmptyFormat.bind(this),
 
         intangible_char_for_keyboard_navigation_predicates: (_, char) => char === "\u200b",
@@ -232,7 +232,7 @@ export class FormatPlugin extends Plugin {
     removeAllFormats() {
         const targetedNodes = this.dependencies.selection.getTargetedNodes();
         this.removeFormats(Object.keys(formatsSpecs), targetedNodes);
-        this.dispatchTo("remove_all_formats_handlers");
+        this.trigger("remove_all_formats_listeners");
         this.dependencies.history.addStep();
     }
 
@@ -291,7 +291,7 @@ export class FormatPlugin extends Plugin {
     }
 
     formatSelection(formatName, options) {
-        this.dispatchTo("format_selection_handlers", formatName, options);
+        this.trigger("format_selection_listeners", formatName, options);
         if (this._formatSelection(formatName, options) && !options?.removeFormat) {
             this.dependencies.history.addStep();
         }

@@ -14,8 +14,8 @@ import { closestElement, selectElements } from "@html_editor/utils/dom_traversal
  */
 
 /**
- * @typedef {((arg: { removedEl: HTMLElement, nextTargetEl: HTMLElement }) => void)[]} on_removed_handlers
- * @typedef {((toRemoveEl: HTMLElement) => void)[]} on_will_remove_handlers
+ * @typedef {((arg: { removedEl: HTMLElement, nextTargetEl: HTMLElement }) => void)[]} on_removed_listeners
+ * @typedef {((toRemoveEl: HTMLElement) => void)[]} on_will_remove_listeners
  *
  * @typedef {((el: HTMLElement) => boolean)[]} empty_node_predicates
  *
@@ -108,7 +108,7 @@ export class RemovePlugin extends Plugin {
             targetEl.contains(toRemoveEl)
         );
         const nextTargetEl = this.removeCurrentTarget(toRemoveEl, optionTargetEls);
-        this.dispatchTo("on_removed_handlers", { removedEl: toRemoveEl, nextTargetEl });
+        this.trigger("on_removed_listeners", { removedEl: toRemoveEl, nextTargetEl });
         if (updateContainers) {
             this.dependencies.builderOptions.setNextTarget(nextTargetEl);
         }
@@ -125,7 +125,7 @@ export class RemovePlugin extends Plugin {
      * @returns {HTMLElement}
      */
     removeCurrentTarget(toRemoveEl, optionsTargetEls) {
-        this.dispatchTo("on_will_remove_handlers", toRemoveEl);
+        this.trigger("on_will_remove_listeners", toRemoveEl);
 
         // Get the parent and the previous and next visible siblings.
         let parentEl = toRemoveEl.parentElement;

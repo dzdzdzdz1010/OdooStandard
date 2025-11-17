@@ -4,7 +4,7 @@ import { throttleForAnimation } from "@web/core/utils/timing";
 import { couldBeScrollableX, couldBeScrollableY } from "@web/core/utils/scrolling";
 
 /**
- * @typedef {(() => void)[]} layout_geometry_change_handlers
+ * @typedef {(() => void)[]} layout_geometry_change_listeners
  */
 /**
  * This plugin broadcasts layout/geometry changes to other plugins when
@@ -14,10 +14,10 @@ export class PositionPlugin extends Plugin {
     static id = "position";
     /** @type {import("plugins").EditorResources} */
     resources = {
-        // todo: it is strange that the position plugin is aware of external_history_step_handlers and history_reset_from_steps_handlers.
-        external_history_step_handlers: this.layoutGeometryChange.bind(this),
-        history_reset_from_steps_handlers: this.layoutGeometryChange.bind(this),
-        step_added_handlers: this.layoutGeometryChange.bind(this),
+        // todo: it is strange that the position plugin is aware of external_history_step_listeners and history_reset_from_steps_listeners.
+        external_history_step_listeners: this.layoutGeometryChange.bind(this),
+        history_reset_from_steps_listeners: this.layoutGeometryChange.bind(this),
+        step_added_listeners: this.layoutGeometryChange.bind(this),
     };
 
     setup() {
@@ -45,6 +45,6 @@ export class PositionPlugin extends Plugin {
         super.destroy();
     }
     layoutGeometryChange() {
-        this.dispatchTo("layout_geometry_change_handlers");
+        this.trigger("layout_geometry_change_listeners");
     }
 }

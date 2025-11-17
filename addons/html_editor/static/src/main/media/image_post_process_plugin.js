@@ -39,7 +39,7 @@ export const DEFAULT_IMAGE_QUALITY = "92";
  *     processContext: { svg: SVGElement, svgAspectRatio: number, svgWidth: number }
  *   ) => Promise<[newUrl: string, handlerDataset: object]>
  * )[]} process_image_post_processors
- * @typedef {((args: {imageEl: HTMLElement}) => void)[]} on_image_updated_handlers
+ * @typedef {((args: {imageEl: HTMLElement}) => void)[]} on_image_updated_listeners
  */
 
 export class ImagePostProcessPlugin extends Plugin {
@@ -287,7 +287,7 @@ export class ImagePostProcessPlugin extends Plugin {
                 delete el.dataset[key];
             }
         }
-        this.dispatchTo("on_image_updated_handlers", { imageEl: el });
+        this.trigger("on_image_updated_listeners", { imageEl: el });
     }
 }
 

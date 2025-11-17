@@ -3,7 +3,7 @@ import { closestElement } from "@html_editor/utils/dom_traversal";
 import { withSequence } from "@html_editor/utils/resource";
 
 /**
- * @typedef {((arg: { sourceEl: HTMLElement, targetEl: HTMLElement }) => void)[]} after_replication_handlers
+ * @typedef {((arg: { sourceEl: HTMLElement, targetEl: HTMLElement }) => void)[]} after_replication_listeners
  */
 
 export class FieldChangeReplicationPlugin extends Plugin {
@@ -12,8 +12,8 @@ export class FieldChangeReplicationPlugin extends Plugin {
 
     /** @type {import("plugins").BuilderResources} */
     resources = {
-        handleNewRecords: this.handleMutations.bind(this),
-        normalize_handlers: withSequence(9000, this.normalizeHandler.bind(this)),
+        handle_new_records_listeners: this.handleMutations.bind(this),
+        normalize_listeners: withSequence(9000, this.normalizeHandler.bind(this)),
     };
 
     setup() {
@@ -93,7 +93,7 @@ export class FieldChangeReplicationPlugin extends Plugin {
             if (targetEls.length) {
                 const cloneEl = sourceEl.cloneNode(true);
                 this.dependencies.dom.removeSystemProperties(cloneEl);
-                this.dispatchTo("clean_for_save_handlers", { root: cloneEl });
+                this.trigger("clean_for_save_listeners", { root: cloneEl });
                 for (const targetEl of targetEls) {
                     if (targetEl.classList.contains("o_translation_without_style")) {
                         // For generated elements such as the navigation
@@ -109,12 +109,12 @@ export class FieldChangeReplicationPlugin extends Plugin {
                             touchedEls.add(targetEl);
                         }
                     }
-                    this.dispatchTo("after_replication_handlers", { sourceEl, targetEl });
+                    this.trigger("after_replication_listeners", { sourceEl, targetEl });
                 }
             }
         }
         for (const touchedEl of touchedEls) {
-            this.dispatchTo("normalize_handlers", touchedEl);
+            this.trigger("normalize_listeners", touchedEl);
         }
     }
 }

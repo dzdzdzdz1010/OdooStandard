@@ -33,9 +33,9 @@ export class VisibilityPlugin extends Plugin {
         on_mobile_preview_clicked: withSequence(10, this.onMobilePreviewClicked.bind(this)),
         system_attributes: ["data-invisible"],
         system_classes: ["o_snippet_override_invisible"],
-        clean_for_save_handlers: this.cleanForSaveVisibility.bind(this),
+        clean_for_save_listeners: this.cleanForSaveVisibility.bind(this),
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
-        on_restore_containers_handlers: (newTargetEl) => this.makeTargetVisible(newTargetEl),
+        on_restore_containers_listeners: (newTargetEl) => this.makeTargetVisible(newTargetEl),
     };
 
     setup() {
@@ -143,7 +143,7 @@ export class VisibilityPlugin extends Plugin {
     toggleTargetVisibility(editingEl, show, considerDeviceVisibility, isCleaning = false) {
         show = this.toggleVisibilityStatus(editingEl, show, considerDeviceVisibility);
         const resourceName = show ? "target_show" : "target_hide";
-        this.dispatchTo(resourceName, editingEl);
+        this.trigger(resourceName, editingEl);
         return show;
     }
 

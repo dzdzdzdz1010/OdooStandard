@@ -67,7 +67,7 @@ function isUnremovableTableComponent(node, root) {
  */
 
 /**
- * @typedef {((el: HTMLElement) => void)[]} deselect_custom_selected_nodes_handlers
+ * @typedef {((el: HTMLElement) => void)[]} deselect_custom_selected_nodes_listeners
  */
 
 /**
@@ -122,11 +122,11 @@ export class TablePlugin extends Plugin {
         ],
 
         /** Handlers */
-        selectionchange_handlers: this.updateSelectionTable.bind(this),
+        selectionchange_listeners: this.updateSelectionTable.bind(this),
         clipboard_content_processors: this.processContentForClipboard.bind(this),
-        clean_for_save_handlers: ({ root }) => this.deselectTable(root),
-        before_line_break_handlers: this.resetTableSelection.bind(this),
-        before_split_block_handlers: this.resetTableSelection.bind(this),
+        clean_for_save_listeners: ({ root }) => this.deselectTable(root),
+        before_line_break_listeners: this.resetTableSelection.bind(this),
+        before_split_block_listeners: this.resetTableSelection.bind(this),
 
         /** Overrides */
         tab_overrides: withSequence(20, this.handleTab.bind(this)),
@@ -152,7 +152,7 @@ export class TablePlugin extends Plugin {
                 return true;
             }
         },
-        normalize_handlers: this.distributeTableColorsToAllCells.bind(this),
+        normalize_listeners: this.distributeTableColorsToAllCells.bind(this),
     };
 
     setup() {
@@ -1066,7 +1066,7 @@ export class TablePlugin extends Plugin {
                     table.classList.toggle("o_selected_table", true);
                     for (const td of getTableCells(table)) {
                         td.classList.toggle("o_selected_td", true);
-                        this.dispatchTo("deselect_custom_selected_nodes_handlers", td);
+                        this.trigger("deselect_custom_selected_nodes_listeners", td);
                     }
                 }
             }
@@ -1271,7 +1271,7 @@ export class TablePlugin extends Plugin {
                 (_, index) => index >= minColIndex && index <= maxColIndex
             )) {
                 td.classList.toggle("o_selected_td", true);
-                this.dispatchTo("deselect_custom_selected_nodes_handlers", td);
+                this.trigger("deselect_custom_selected_nodes_listeners", td);
             }
         }
     }

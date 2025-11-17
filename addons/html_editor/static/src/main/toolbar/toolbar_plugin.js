@@ -161,9 +161,9 @@ export class ToolbarPlugin extends Plugin {
     static shared = ["getToolbarInfo", "getIsToolbarOpen"];
     /** @type {import("plugins").EditorResources} */
     resources = {
-        selectionchange_handlers: this.handleSelectionChange.bind(this),
-        selection_leave_handlers: () => this.closeToolbar(),
-        step_added_handlers: () => this.updateToolbar(),
+        selectionchange_listeners: this.handleSelectionChange.bind(this),
+        selection_leave_listeners: () => this.closeToolbar(),
+        step_added_listeners: () => this.updateToolbar(),
         user_commands: {
             id: "expandToolbar",
             run: () => {

@@ -15,7 +15,7 @@ import { nextLeaf } from "../utils/dom_info";
  */
 
 /**
- * @typedef {(() => void)[]} before_line_break_handlers
+ * @typedef {(() => void)[]} before_line_break_listeners
  * @typedef {((params: { targetNode: Element, targetOffset: number }) => void | true)[]} insert_line_break_element_overrides
  */
 
@@ -25,7 +25,7 @@ export class LineBreakPlugin extends Plugin {
     static shared = ["insertLineBreak", "insertLineBreakNode", "insertLineBreakElement"];
     /** @type {import("plugins").EditorResources} */
     resources = {
-        beforeinput_handlers: this.onBeforeInput.bind(this),
+        beforeinput_listeners: this.onBeforeInput.bind(this),
         legit_feff_predicates: [
             (node) =>
                 !node.nextSibling &&
@@ -35,7 +35,7 @@ export class LineBreakPlugin extends Plugin {
     };
 
     insertLineBreak() {
-        this.dispatchTo("before_line_break_handlers");
+        this.trigger("before_line_break_listeners");
         let selection = this.dependencies.selection.getSelectionData().deepEditableSelection;
         if (!selection.isCollapsed) {
             // @todo @phoenix collapseIfZWS is not tested

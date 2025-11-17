@@ -17,6 +17,7 @@ import { withSequence } from "@html_editor/utils/resource";
 import { closestElement } from "@html_editor/utils/dom_traversal";
 import { fuzzyLookup } from "@web/core/utils/search";
 import { FORMATTABLE_TAGS } from "@html_editor/utils/formatting";
+import { isPromise } from "@html_editor/utils/functions";
 
 /**
  * @typedef { Object } MediaShared
@@ -24,10 +25,10 @@ import { FORMATTABLE_TAGS } from "@html_editor/utils/formatting";
  */
 
 /**
- * @typedef {((mediaEl: HTMLElement) => void)[]} after_save_media_dialog_handlers
- * @typedef {((arg: { newMediaEl: HTMLElement }) => void)[]} on_added_media_handlers
+ * @typedef {((mediaEl: HTMLElement) => void)[]} after_save_media_dialog_listeners
+ * @typedef {((arg: { newMediaEl: HTMLElement }) => void)[]} on_added_media_listeners
  * @typedef {((elements: HTMLElement[], params: { node: Node }) => Promise<void>)[]} on_media_dialog_saved_handlers
- * @typedef {((arg: { newMediaEl: HTMLElement }) => void)[]} on_replaced_media_handlers
+ * @typedef {((arg: { newMediaEl: HTMLElement }) => void)[]} on_replaced_media_listeners
  *
  * @typedef {{
  *      id: "DOCUMENTS" | "ICONS" | "IMAGES" | "VIDEOS";
@@ -85,9 +86,9 @@ export class MediaPlugin extends Plugin {
         closest_savable_providers: withSequence(20, (el) => this.editable),
 
         /** Handlers */
-        clean_for_save_handlers: ({ root }) => this.cleanForSave(root),
-        normalize_handlers: this.normalizeMedia.bind(this),
-        selectionchange_handlers: this.selectAroundIcon.bind(this),
+        clean_for_save_listeners: ({ root }) => this.cleanForSave(root),
+        normalize_listeners: this.normalizeMedia.bind(this),
+        selectionchange_listeners: this.selectAroundIcon.bind(this),
 
         unsplittable_node_predicates: isIconElement, // avoid merge
         is_node_editable_predicates: this.isEditableMediaElement.bind(this),
@@ -195,15 +196,15 @@ export class MediaPlugin extends Plugin {
             } else {
                 node.replaceWith(element);
             }
-            this.dispatchTo("on_replaced_media_handlers", { newMediaEl: element });
+            this.trigger("on_replaced_media_listeners", { newMediaEl: element });
         } else {
             this.dependencies.dom.insert(element);
-            this.dispatchTo("on_added_media_handlers", { newMediaEl: element });
+            this.trigger("on_added_media_listeners", { newMediaEl: element });
         }
         // Collapse selection after the inserted/replaced element.
         const [anchorNode, anchorOffset] = rightPos(element);
         this.dependencies.selection.setSelection({ anchorNode, anchorOffset });
-        this.dispatchTo("after_save_media_dialog_handlers", element);
+        this.trigger("after_save_media_dialog_listeners", element);
         this.dependencies.history.addStep();
     }
 
@@ -217,9 +218,11 @@ export class MediaPlugin extends Plugin {
                     ? selection
                     : [selection]
                 : [];
-            for (const onMediaDialogSaved of this.getResource("on_media_dialog_saved_handlers")) {
-                await onMediaDialogSaved(elements, { node: params.node });
-            }
+            await Promise.all(
+                this.dispatchTo("on_media_dialog_saved_handlers", elements, {
+                    node: params.node,
+                }).filter(isPromise)
+            );
             return oldSave(...args);
         };
         const { resModel, resId, field, type } = this.getRecordInfo(editableEl);

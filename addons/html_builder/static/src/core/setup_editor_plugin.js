@@ -10,7 +10,7 @@ import { _t } from "@web/core/l10n/translation";
 
 /**
  * @typedef {(() => void | true)[]} after_setup_editor_overrides
- * @typedef {(() => void)[]} before_setup_editor_handlers
+ * @typedef {(() => void)[]} before_setup_editor_listeners
  *
  * @typedef {CSSSelector[]} savable_selectors
  */
@@ -20,7 +20,7 @@ export class SetupEditorPlugin extends Plugin {
     static shared = ["getSavableAreas"];
     /** @type {import("plugins").BuilderResources} */
     resources = {
-        clean_for_save_handlers: this.cleanForSave.bind(this),
+        clean_for_save_listeners: this.cleanForSave.bind(this),
         closest_savable_providers: withSequence(10, (el) => el.closest(".o_savable")),
         savable_selectors: "[data-oe-model]",
         unremovable_node_predicates: (node) => node.classList?.contains("o_savable"),
@@ -36,7 +36,7 @@ export class SetupEditorPlugin extends Plugin {
             "#wrap .o_homepage_editor_welcome_message"
         );
         welcomeMessageEl?.remove();
-        this.dispatchTo("before_setup_editor_handlers");
+        this.trigger("before_setup_editor_listeners");
         const savableSelectors = this.getResource("savable_selectors").join(", ");
         const savableEls = [...this.editable.querySelectorAll(savableSelectors)]
             .filter((el) => !el.closest(".o_not_editable"))

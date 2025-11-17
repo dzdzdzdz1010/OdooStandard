@@ -12,8 +12,8 @@ export class InlineCodePlugin extends Plugin {
     static dependencies = ["selection", "history", "input", "split", "feff"];
     /** @type {import("plugins").EditorResources} */
     resources = {
-        input_handlers: this.onInput.bind(this),
-        selectionchange_handlers: this.handleSelectionChange.bind(this),
+        input_listeners: this.onInput.bind(this),
+        selectionchange_listeners: this.handleSelectionChange.bind(this),
         feff_providers: (root, cursors) =>
             selectElements(root, ".o_inline_code").flatMap((code) =>
                 this.dependencies.feff.surroundWithFeffs(code, cursors)
@@ -102,7 +102,7 @@ export class InlineCodePlugin extends Plugin {
                 }
                 start = next;
             }
-            this.dispatchTo("to_inline_code_handlers", codeElement);
+            this.trigger("to_inline_code_listeners", codeElement);
             this.dependencies.selection.setSelection({
                 anchorNode: codeElement,
                 anchorOffset: nodeSize(codeElement),

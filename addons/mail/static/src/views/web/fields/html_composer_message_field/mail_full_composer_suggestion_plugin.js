@@ -9,7 +9,7 @@ export class MailFullComposerSuggestionPlugin extends Plugin {
     static dependencies = ["overlay", "dom", "history", "input", "selection"];
 
     resources = {
-        beforeinput_handlers: this.onBeforeInput.bind(this),
+        beforeinput_listeners: this.onBeforeInput.bind(this),
     };
 
     setup() {

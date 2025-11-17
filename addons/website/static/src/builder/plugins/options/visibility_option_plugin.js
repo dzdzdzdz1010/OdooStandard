@@ -37,7 +37,7 @@ class VisibilityOptionPlugin extends Plugin {
             ForceVisibleAction,
             ToggleDeviceVisibilityAction,
         },
-        normalize_handlers: this.normalizeCSSSelectors.bind(this),
+        normalize_listeners: this.normalizeCSSSelectors.bind(this),
         visibility_selector_parameters: [
             {
                 saveAttribute: "visibilityValueCountry",

@@ -31,11 +31,11 @@ class ProcessStepsOptionPlugin extends Plugin {
             ChangeArrowColorAction,
         },
         // The reload of the connectors is done at the
-        // 'content_updated_handlers' (each time there is a DOM mutation) and
+        // 'content_updated_listeners' (each time there is a DOM mutation) and
         // not at the normalize as there are cases where we want to reload the
         // connectors even if there were no step added (e.g: a column of the
         // snippet is being resized).
-        content_updated_handlers: (rootEl) =>
+        content_updated_listeners: (rootEl) =>
             applyFunDependOnSelectorAndExclude(reloadConnectors, rootEl, {
                 selector: ProcessStepsOption.selector,
             }),

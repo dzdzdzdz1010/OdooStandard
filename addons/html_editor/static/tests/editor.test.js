@@ -113,7 +113,7 @@ test("clean_for_save_listeners is done last", async () => {
     class TestPlugin extends Plugin {
         static id = "test";
         resources = {
-            clean_for_save_handlers: ({ root }) => {
+            clean_for_save_listeners: ({ root }) => {
                 for (const el of root.querySelectorAll("c-div")) {
                     el.removeAttribute("class");
                 }

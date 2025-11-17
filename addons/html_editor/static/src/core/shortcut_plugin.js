@@ -42,7 +42,7 @@ export class ShortCutPlugin extends Plugin {
 
     /** @type {import("plugins").EditorResources} */
     resources = {
-        input_handlers: this.onInput.bind(this),
+        input_listeners: this.onInput.bind(this),
         user_commands: [
             {
                 id: "replaceSymbol",

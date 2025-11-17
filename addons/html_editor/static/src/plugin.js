@@ -34,6 +34,8 @@ export class Plugin {
         this.dependencies = context.dependencies;
         /** @type { EditorContext['getResource'] } **/
         this.getResource = context.getResource;
+        /** @type { EditorContext['trigger'] } **/
+        this.trigger = context.trigger;
         /** @type { EditorContext['dispatchTo'] } **/
         this.dispatchTo = context.dispatchTo;
         /** @type { EditorContext['delegateTo'] } **/

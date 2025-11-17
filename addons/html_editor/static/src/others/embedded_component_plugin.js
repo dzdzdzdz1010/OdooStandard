@@ -10,8 +10,8 @@ import { renderToElement } from "@web/core/utils/render";
  */
 
 /**
- * @typedef {((arg: { name, env, props }) => void)[]} mount_component_handlers
- * @typedef {(() => void)[]} post_mount_component_handlers
+ * @typedef {((arg: { name, env, props }) => void)[]} mount_component_listeners
+ * @typedef {(() => void)[]} post_mount_component_listeners
  */
 
 /**
@@ -25,14 +25,14 @@ export class EmbeddedComponentPlugin extends Plugin {
     /** @type {import("plugins").EditorResources} */
     resources = {
         /** Handlers */
-        normalize_handlers: withSequence(0, this.normalize.bind(this)),
-        clean_for_save_handlers: ({ root }) => this.cleanForSave(root),
-        attribute_change_handlers: this.onChangeAttribute.bind(this),
-        restore_savepoint_handlers: () => this.handleComponents(this.editable),
-        history_reset_handlers: () => this.handleComponents(this.editable),
-        history_reset_from_steps_handlers: () => this.handleComponents(this.editable),
-        step_added_handlers: ({ stepCommonAncestor }) => this.handleComponents(stepCommonAncestor),
-        external_step_added_handlers: () => this.handleComponents(this.editable),
+        normalize_listeners: withSequence(0, this.normalize.bind(this)),
+        clean_for_save_listeners: ({ root }) => this.cleanForSave(root),
+        attribute_change_listeners: this.onChangeAttribute.bind(this),
+        restore_savepoint_listeners: () => this.handleComponents(this.editable),
+        history_reset_listeners: () => this.handleComponents(this.editable),
+        history_reset_from_steps_listeners: () => this.handleComponents(this.editable),
+        step_added_listeners: ({ stepCommonAncestor }) => this.handleComponents(stepCommonAncestor),
+        external_step_added_listeners: () => this.handleComponents(this.editable),
 
         serializable_descendants_processors: this.processDescendantsToSerialize.bind(this),
         attribute_change_processors: this.onChangeAttribute.bind(this),
@@ -57,8 +57,8 @@ export class EmbeddedComponentPlugin extends Plugin {
             }
             return result;
         });
-        // First mount is done during history_reset_handlers which happens
-        // when start_edition_handlers are called.
+        // First mount is done during history_reset_listeners which happens
+        // when start_edition_listeners are called.
     }
 
     isMutationRecordSavable(record) {
@@ -189,7 +189,7 @@ export class EmbeddedComponentPlugin extends Plugin {
                 selection: { ...this.dependencies.selection },
             });
         }
-        this.dispatchTo("mount_component_handlers", { name, env, props });
+        this.trigger("mount_component_listeners", { name, env, props });
         const root = this.app.createRoot(Component, {
             props,
             env,
@@ -203,7 +203,7 @@ export class EmbeddedComponentPlugin extends Plugin {
         fiber.complete = () => {
             host.replaceChildren();
             fiberComplete.call(fiber);
-            this.dispatchTo("post_mount_component_handlers");
+            this.trigger("post_mount_component_listeners");
         };
         const onComponentInserted = this.extractOnComponentInserted(host);
         if (onComponentInserted) {

@@ -169,7 +169,7 @@ export class DynamicFieldPlugin extends Plugin {
                             apply: () => {
                                 target.textContent = "";
                                 this.normalizeQwebPlaceholders(target);
-                                this.dispatchTo("dynamic_field_edit_apply_handlers", target);
+                                this.dispatchTo("dynamic_field_edit_apply_listeners", target);
                             },
                             revert: () => {
                                 target.textContent = prevText;

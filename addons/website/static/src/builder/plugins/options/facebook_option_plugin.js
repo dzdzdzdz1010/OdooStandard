@@ -21,7 +21,7 @@ class FacebookOptionPlugin extends Plugin {
             DataAttributeListAction,
             CheckFacebookLinkAction,
         },
-        normalize_handlers: this.normalize.bind(this),
+        normalize_listeners: this.normalize.bind(this),
         content_not_editable_selectors: ".o_facebook_page",
     };
 
@@ -69,7 +69,7 @@ class FacebookOptionPlugin extends Plugin {
 
             if (hasChanged) {
                 const commonAncestor = getCommonAncestor(nodes, this.editable);
-                this.dispatchTo("content_manually_updated_handlers", commonAncestor);
+                this.trigger("content_manually_updated_listeners", commonAncestor);
                 this.config.onChange({ isPreviewing: false });
             }
         }

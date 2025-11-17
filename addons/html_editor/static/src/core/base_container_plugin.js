@@ -52,12 +52,12 @@ export class BaseContainerPlugin extends Plugin {
         this.getResource("unsplittable_node_predicates").some((fn) => fn(element));
     /** @type {import("plugins").EditorResources} */
     resources = {
-        clean_for_save_handlers: this.cleanForSave.bind(this),
+        clean_for_save_listeners: this.cleanForSave.bind(this),
         // `baseContainer` normalization should occur after every other normalization
         // because a `div` may only have the baseContainer identity if it does not
         // already have another incompatible identity given by another plugin.
-        normalize_handlers: withSequence(Infinity, this.normalizeDivBaseContainers.bind(this)),
-        delete_handlers: () => {
+        normalize_listeners: withSequence(Infinity, this.normalizeDivBaseContainers.bind(this)),
+        delete_listeners: () => {
             if (this.config.cleanEmptyStructuralContainers === false) {
                 return;
             }

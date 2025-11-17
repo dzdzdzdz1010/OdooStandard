@@ -1,7 +1,7 @@
 declare module "plugins" {
     import { CarouselOptionShared } from "@website/builder/plugins/carousel_option_plugin";
     import { CustomizeWebsiteShared } from "@website/builder/plugins/customize_website_plugin";
-    import { content_manually_updated_handlers, EditInteractionShared } from "@website/builder/plugins/edit_interaction_plugin";
+    import { content_manually_updated_listeners, EditInteractionShared } from "@website/builder/plugins/edit_interaction_plugin";
     import { WebsiteFontShared } from "@website/builder/plugins/font/font_plugin";
     import { FormOptionShared } from "@website/builder/plugins/form/form_option_plugin";
     import { ImageHoverShared } from "@website/builder/plugins/image/image_hover_plugin";
@@ -14,9 +14,9 @@ declare module "plugins" {
     import { ChartOptionShared } from "@website/builder/plugins/options/chart_option_plugin";
     import { CookiesBarOptionShared } from "@website/builder/plugins/options/cookies_bar_option";
     import { DynamicSnippetCarouselOptionShared } from "@website/builder/plugins/options/dynamic_snippet_carousel_option_plugin";
-    import { dynamic_snippet_template_updated, DynamicSnippetOptionShared } from "@website/builder/plugins/options/dynamic_snippet_option_plugin";
+    import { dynamic_snippet_template_updated_listeners, DynamicSnippetOptionShared } from "@website/builder/plugins/options/dynamic_snippet_option_plugin";
     import { footer_templates_providers, FooterOptionShared } from "@website/builder/plugins/options/footer_option_plugin";
-    import { get_gallery_items_providers, reorder_items_handlers } from "@website/builder/plugins/options/gallery_element_option_plugin";
+    import { get_gallery_items_providers, reorder_items_listeners } from "@website/builder/plugins/options/gallery_element_option_plugin";
     import { GoogleMapsOptionShared } from "@website/builder/plugins/options/google_maps_option/google_maps_option_plugin";
     import { ImageGalleryOptionShared } from "@website/builder/plugins/options/image_gallery_option_plugin";
     import { InstagramOptionShared } from "@website/builder/plugins/options/instagram_option_plugin";
@@ -31,7 +31,7 @@ declare module "plugins" {
     import { SwitchableViewsShared } from "@website/builder/plugins/switchable_views_plugin";
     import { theme_options, ThemeTabShared } from "@website/builder/plugins/theme/theme_tab_plugin";
     import { TranslateWebpageOptionShared } from "@website/builder/plugins/translation/options/translate_webpage_option_plugin";
-    import { mark_translatable_nodes } from "@website/builder/plugins/translation/translation_plugin";
+    import { mark_translatable_nodes_listeners } from "@website/builder/plugins/translation/translation_plugin";
     import { WebsiteSaveShared } from "@website/builder/plugins/website_save_plugin";
     import { WebsiteSessionShared } from "@website/builder/plugins/website_session_plugin";
 
@@ -73,12 +73,12 @@ declare module "plugins" {
     export type WebsiteResources = ResourcesDeclarationsFactory<WebsiteResourcesAccess>;
     export interface WebsiteResourcesList {
         // Handlers
-        content_manually_updated_handlers: content_manually_updated_handlers;
-        dynamic_snippet_template_updated: dynamic_snippet_template_updated;
+        content_manually_updated_listeners: content_manually_updated_listeners;
+        dynamic_snippet_template_updated_listeners: dynamic_snippet_template_updated_listeners;
         get_gallery_items_providers: get_gallery_items_providers;
-        mark_translatable_nodes: mark_translatable_nodes;
+        mark_translatable_nodes_listeners: mark_translatable_nodes_listeners;
         remove_hover_effect_handlers: remove_hover_effect_handlers;
-        reorder_items_handlers: reorder_items_handlers;
+        reorder_items_listeners: reorder_items_listeners;
         set_hover_effect_handlers: set_hover_effect_handlers;
 
         // Overrides

@@ -1,11 +1,11 @@
 import { removeClass } from "@html_editor/utils/dom";
 
-function dispatchTo(editor, resourceId, ...args) {
+function trigger(editor, resourceId, ...args) {
     (editor.resources[resourceId] || []).forEach((fn) => fn(...args));
 }
 
-export function dispatchNormalize(editor) {
-    dispatchTo(editor, "normalize_handlers", editor.editable);
+export function triggerNormalize(editor) {
+    trigger(editor, "normalize_listeners", editor.editable);
 }
 
 export function cleanHints(editor) {
@@ -15,6 +15,6 @@ export function cleanHints(editor) {
     }
 }
 
-export function dispatchCleanForSave(editor, payload) {
-    dispatchTo(editor, "clean_for_save_handlers", payload);
+export function triggerCleanForSave(editor, payload) {
+    trigger(editor, "clean_for_save_listeners", payload);
 }

@@ -51,8 +51,8 @@ const [getPreviousLeavesInBlock, getNextLeavesInBlock] = [DIRECTIONS.LEFT, DIREC
  */
 
 /**
- * @typedef {(({element: HTMLElement, secondPart: HTMLElement}) => void)[]} after_split_element_handlers
- * @typedef {(() => void)[]} before_split_block_handlers
+ * @typedef {(({element: HTMLElement, secondPart: HTMLElement}) => void)[]} after_split_element_listeners
+ * @typedef {(() => void)[]} before_split_block_listeners
  *
  * @typedef {((params: { targetNode: Node, targetOffset: number, blockToSplit: HTMLElement | null }) => void | true)[]} split_element_block_overrides
  *
@@ -74,7 +74,7 @@ export class SplitPlugin extends Plugin {
     ];
     /** @type {import("plugins").EditorResources} */
     resources = {
-        beforeinput_handlers: this.onBeforeInput.bind(this),
+        beforeinput_listeners: this.onBeforeInput.bind(this),
 
         unsplittable_node_predicates: [
             // An unremovable element is also unmergeable (as merging two
@@ -116,7 +116,7 @@ export class SplitPlugin extends Plugin {
     // commands
     // --------------------------------------------------------------------------
     splitBlock() {
-        this.dispatchTo("before_split_block_handlers");
+        this.trigger("before_split_block_listeners");
         let selection = this.dependencies.selection.getSelectionData().deepEditableSelection;
         if (!selection.isCollapsed) {
             // @todo @phoenix collapseIfZWS is not tested
@@ -223,7 +223,7 @@ export class SplitPlugin extends Plugin {
         const children = childNodes(element);
         secondPart.append(...children.slice(offset));
         element.after(secondPart);
-        this.dispatchTo("after_split_element_handlers", { element, secondPart });
+        this.trigger("after_split_element_listeners", { element, secondPart });
         return [element, secondPart];
     }
 

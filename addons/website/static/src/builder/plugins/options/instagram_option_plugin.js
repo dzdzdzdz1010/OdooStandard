@@ -29,7 +29,7 @@ class InstagramOptionPlugin extends Plugin {
             InstagramPageAction,
         },
         so_content_addition_selector: [".s_instagram_page"],
-        normalize_handlers: this.normalize.bind(this),
+        normalize_listeners: this.normalize.bind(this),
     };
 
     setup() {
@@ -66,7 +66,7 @@ class InstagramOptionPlugin extends Plugin {
 
             if (hasChanged) {
                 const commonAncestor = getCommonAncestor(nodes, this.editable);
-                this.dispatchTo("content_manually_updated_handlers", commonAncestor);
+                this.trigger("content_manually_updated_listeners", commonAncestor);
                 this.config.onChange({ isPreviewing: false });
             }
         }

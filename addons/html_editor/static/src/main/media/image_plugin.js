@@ -211,9 +211,9 @@ export class ImagePlugin extends Plugin {
         ],
 
         /** Handlers */
-        selectionchange_handlers: this.updateImageParams.bind(this),
-        post_undo_handlers: this.updateImageParams.bind(this),
-        post_redo_handlers: this.updateImageParams.bind(this),
+        selectionchange_listeners: this.updateImageParams.bind(this),
+        post_undo_listeners: this.updateImageParams.bind(this),
+        post_redo_listeners: this.updateImageParams.bind(this),
 
         /** Providers */
         paste_media_url_command_providers: this.getCommandForImageUrlPaste.bind(this),

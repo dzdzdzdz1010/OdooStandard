@@ -28,7 +28,7 @@ import { isVisible } from "@html_builder/utils/utils";
 
 /**
  * @typedef {(() => void)[]} on_mobile_preview_clicked
- * @typedef {(() => void)[]} trigger_dom_updated
+ * @typedef {(() => void)[]} dom_updated_listeners
  * @typedef {{ Component: Component; props: object; }[]} lower_panel_entries
  */
 
@@ -126,7 +126,7 @@ export class Builder extends Component {
                 installSnippetModule: (snippet) => this.props.installSnippetModule?.(snippet),
                 /** @type {import("plugins").BuilderResources} */
                 resources: {
-                    trigger_dom_updated: () => {
+                    dom_updated_listeners: () => {
                         this.triggerDomUpdated();
                     },
                     on_mobile_preview_clicked: withSequence(20, () => {
@@ -147,7 +147,7 @@ export class Builder extends Component {
                             actionButtonEl.disabled = true;
                         }
                     },
-                    after_save_handlers: () => {
+                    after_save_listeners: () => {
                         for (const actionButtonEl of this.actionButtonEls) {
                             actionButtonEl.removeAttribute("disabled");
                         }

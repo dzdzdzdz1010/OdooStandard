@@ -53,19 +53,19 @@ export class HighlightPlugin extends Plugin {
                     closestElement(editableSelection.anchorNode, ".o_text_highlight") && "compact"
             ),
         ],
-        normalize_handlers: (root) => {
+        normalize_listeners: (root) => {
             for (const node of root.querySelectorAll(".o_text_highlight")) {
                 // Signal to the interaction that there is (maybe) a new element
                 node.dispatchEvent(new Event("text_highlight_added", { bubbles: true }));
             }
         },
         format_class_predicates: (className) => className.startsWith("o_text_highlight"),
-        selectionchange_handlers: this.updateSelectedHighlight.bind(this),
-        remove_all_formats_handlers: () => {
+        selectionchange_listeners: this.updateSelectedHighlight.bind(this),
+        remove_all_formats_listeners: () => {
             // we rely on the normalize handler to start it again
             this.dependencies.edit_interaction.stopInteraction("website.text_highlight");
         },
-        format_selection_handlers: () => {
+        format_selection_listeners: () => {
             this.dependencies.edit_interaction.stopInteraction("website.text_highlight");
         },
         before_save_handlers: () => {

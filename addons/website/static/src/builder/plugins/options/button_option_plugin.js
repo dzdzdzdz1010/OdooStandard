@@ -19,10 +19,10 @@ class ButtonOptionPlugin extends Plugin {
     resources = {
         on_cloned_handlers: this.onCloned.bind(this),
         // Drag and drop from sidebar: manage the button preview.
-        on_snippet_over_dropzone_handlers: this.onSnippetPreview.bind(this),
-        on_snippet_out_dropzone_handlers: ({ snippetEl, dragState }) =>
+        on_snippet_over_dropzone_listeners: this.onSnippetPreview.bind(this),
+        on_snippet_out_dropzone_listeners: ({ snippetEl, dragState }) =>
             this.resetPreview(snippetEl, dragState),
-        on_snippet_dropped_over_handlers: ({ droppedEl, dragState }) =>
+        on_snippet_dropped_over_listeners: ({ droppedEl, dragState }) =>
             this.resetPreview(droppedEl, dragState),
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
     };

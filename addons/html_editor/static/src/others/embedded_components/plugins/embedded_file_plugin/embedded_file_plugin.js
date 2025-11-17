@@ -18,7 +18,7 @@ export class EmbeddedFilePlugin extends FilePlugin {
     /** @type {import("plugins").EditorResources} */
     resources = {
         ...this.resources,
-        mount_component_handlers: this.setupNewFile.bind(this),
+        mount_component_listeners: this.setupNewFile.bind(this),
     };
 
     /** @override */

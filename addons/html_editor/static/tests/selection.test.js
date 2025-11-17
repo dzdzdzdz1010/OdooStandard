@@ -37,7 +37,7 @@ test("plugins should be notified when ranges are removed", async () => {
     class TestPlugin extends Plugin {
         static id = "test";
         resources = {
-            selectionchange_handlers: () => count++,
+            selectionchange_listeners: () => count++,
         };
     }
 

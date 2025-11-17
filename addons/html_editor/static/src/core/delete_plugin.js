@@ -64,8 +64,8 @@ import { normalizeDeepCursorPosition, normalizeFakeBR } from "@html_editor/utils
  */
 
 /**
- * @typedef {(() => void)[]} before_delete_handlers
- * @typedef {(() => void)[]} delete_handlers
+ * @typedef {(() => void)[]} before_delete_listeners
+ * @typedef {(() => void)[]} delete_listeners
  *
  * @typedef {((range: RangeLike) => void | true)[]} delete_backward_overrides
  * @typedef {((range: RangeLike) => void | true)[]} delete_backward_word_overrides
@@ -126,12 +126,12 @@ export class DeletePlugin extends Plugin {
             { hotkey: "control+shift+delete", commandId: "deleteForwardLine" },
         ],
         /** Handlers */
-        beforeinput_handlers: [
+        beforeinput_listeners: [
             withSequence(5, this.onBeforeInputInsertText.bind(this)),
             this.onBeforeInputDelete.bind(this),
         ],
-        input_handlers: (ev) => this.onAndroidChromeInput?.(ev),
-        selectionchange_handlers: withSequence(5, () => this.onAndroidChromeSelectionChange?.()),
+        input_listeners: (ev) => this.onAndroidChromeInput?.(ev),
+        selectionchange_listeners: withSequence(5, () => this.onAndroidChromeSelectionChange?.()),
         /** Overrides */
         delete_backward_overrides: withSequence(30, this.deleteBackwardUnmergeable.bind(this)),
         delete_backward_word_overrides: withSequence(20, this.deleteBackwardUnmergeable.bind(this)),
@@ -245,7 +245,7 @@ export class DeletePlugin extends Plugin {
      */
     delete(direction, granularity) {
         const selection = this.dependencies.selection.getEditableSelection();
-        this.dispatchTo("before_delete_handlers");
+        this.trigger("before_delete_listeners");
 
         if (!selection.isCollapsed) {
             this.deleteSelection(selection);
@@ -256,7 +256,7 @@ export class DeletePlugin extends Plugin {
         } else {
             throw new Error("Invalid direction");
         }
-        this.dispatchTo("delete_handlers");
+        this.trigger("delete_listeners");
         this.dependencies.history.addStep();
     }
 
@@ -1320,9 +1320,9 @@ export class DeletePlugin extends Plugin {
         if (ev.inputType === "insertText") {
             const selection = this.dependencies.selection.getSelectionData().deepEditableSelection;
             if (!selection.isCollapsed) {
-                this.dispatchTo("before_delete_handlers");
+                this.trigger("before_delete_listeners");
                 this.deleteSelection(selection);
-                this.dispatchTo("delete_handlers");
+                this.trigger("delete_listeners");
             }
             // Default behavior: insert text and trigger input event
         }

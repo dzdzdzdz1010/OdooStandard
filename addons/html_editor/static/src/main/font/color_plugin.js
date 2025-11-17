@@ -64,7 +64,7 @@ export class ColorPlugin extends Plugin {
             },
         ],
         /** Handlers */
-        remove_all_formats_handlers: this.removeAllColor.bind(this),
+        remove_all_formats_listeners: this.removeAllColor.bind(this),
         color_combination_getters: getColorCombinationFromClass,
 
         /** Predicates */
@@ -74,7 +74,7 @@ export class ColorPlugin extends Plugin {
         ],
         format_class_predicates: (className) =>
             TEXT_CLASSES_REGEX.test(className) || BG_CLASSES_REGEX.test(className),
-        normalize_handlers: this.normalize.bind(this),
+        normalize_listeners: this.normalize.bind(this),
     };
 
     normalize(root) {

@@ -43,7 +43,7 @@ import { selectElements } from "@html_editor/utils/dom_traversal";
  * @typedef {((arg: {
  *      draggedEl: HTMLElement,
  *      dragState: DragState,
- * }) => void)[]} on_element_dragged_handlers
+ * }) => void)[]} on_element_dragged_listeners
  * @typedef {((arg: {
  *      droppedEl: HTMLElement,
  *      dragState: DragState,
@@ -52,25 +52,25 @@ import { selectElements } from "@html_editor/utils/dom_traversal";
  *      droppedEl: HTMLElement,
  *      dropzoneEl: HTMLElement,
  *      dragState: DragState,
- * }) => void)[]} on_element_dropped_near_handlers
+ * }) => void)[]} on_element_dropped_near_listeners
  * @typedef {((arg: {
  *      droppedEl: HTMLElement,
  *      dragState: DragState,
- * }) => void)[]} on_element_dropped_over_handlers
+ * }) => void)[]} on_element_dropped_over_listeners
  * @typedef {((arg: {
  *      draggedEl: HTMLElement,
  *      dragState: DragState,
  *      x: number,
  *      y: number,
- * }) => void)[]} on_element_move_handlers
+ * }) => void)[]} on_element_move_listeners
  * @typedef {((arg: {
  *      draggedEl: HTMLElement,
  *      dragState: DragState,
- * }) => void)[]} on_element_out_dropzone_handlers
+ * }) => void)[]} on_element_out_dropzone_listeners
  * @typedef {((arg: {
  *      draggedEl: HTMLElement,
  *      dragState: DragState,
- * }) => void)[]} on_element_over_dropzone_handlers
+ * }) => void)[]} on_element_over_dropzone_listeners
  * @typedef {(() => (() => void))[]} on_prepare_drag_handlers
  *
  * @typedef {((el: HTMLElement) => boolean)[]} is_draggable_predicates
@@ -86,7 +86,7 @@ export class DragAndDropPlugin extends Plugin {
             getButtons: this.getActiveOverlayButtons.bind(this),
         }),
         system_classes: ["o_draggable"],
-        clean_for_save_handlers: this.cleanForSave.bind(this),
+        clean_for_save_listeners: this.cleanForSave.bind(this),
     };
 
     setup() {
@@ -249,14 +249,11 @@ export class DragAndDropPlugin extends Plugin {
 
                 // Stop marking the elements with mutations as dirty and make
                 // some changes on the page to ease the drag and drop.
-                const restoreCallbacks = [];
-                for (const prepareDrag of this.getResource("on_prepare_drag_handlers")) {
-                    const restore = prepareDrag();
-                    restoreCallbacks.unshift(restore);
-                }
-                this.dragState.restoreCallbacks = restoreCallbacks;
+                this.dragState.restoreCallbacks = this.dispatchTo(
+                    "on_prepare_drag_handlers"
+                ).reverse();
 
-                this.dispatchTo("on_element_dragged_handlers", {
+                this.trigger("on_element_dragged_listeners", {
                     draggedEl: this.overlayTarget,
                     dragState: this.dragState,
                 });
@@ -339,7 +336,7 @@ export class DragAndDropPlugin extends Plugin {
                 dropzoneEl.after(this.overlayTarget);
                 this.dragState.currentDropzoneEl = dropzoneEl;
 
-                this.dispatchTo("on_element_over_dropzone_handlers", {
+                this.trigger("on_element_over_dropzone_listeners", {
                     draggedEl: this.overlayTarget,
                     dragState: this.dragState,
                 });
@@ -349,7 +346,7 @@ export class DragAndDropPlugin extends Plugin {
                     return;
                 }
 
-                this.dispatchTo("on_element_move_handlers", {
+                this.trigger("on_element_move_listeners", {
                     draggedEl: this.overlayTarget,
                     dragState: this.dragState,
                     x,
@@ -362,7 +359,7 @@ export class DragAndDropPlugin extends Plugin {
                     return;
                 }
 
-                this.dispatchTo("on_element_out_dropzone_handlers", {
+                this.trigger("on_element_out_dropzone_listeners", {
                     draggedEl: this.overlayTarget,
                     dragState: this.dragState,
                 });
@@ -388,13 +385,13 @@ export class DragAndDropPlugin extends Plugin {
                 }
 
                 if (isDroppedOver) {
-                    this.dispatchTo("on_element_dropped_over_handlers", {
+                    this.trigger("on_element_dropped_over_listeners", {
                         droppedEl: this.overlayTarget,
                         dragState: this.dragState,
                     });
                 } else {
                     currentDropzoneEl.after(this.overlayTarget);
-                    this.dispatchTo("on_element_dropped_near_handlers", {
+                    this.trigger("on_element_dropped_near_listeners", {
                         droppedEl: this.overlayTarget,
                         dropzoneEl: currentDropzoneEl,
                         dragState: this.dragState,

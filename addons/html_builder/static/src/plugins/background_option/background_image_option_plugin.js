@@ -10,7 +10,7 @@ import { StyleAction } from "@html_builder/core/core_builder_action_plugin";
 import { withSequence } from "@html_editor/utils/resource";
 
 /**
- * @typedef {((editingElement: HTMLElement) => void)[]} on_bg_image_hide_handlers
+ * @typedef {((editingElement: HTMLElement) => void)[]} on_bg_image_hide_listeners
  *
  * @typedef {((editingElement: HTMLElement) => HTMLElement)[]} background_filter_target_providers
  * @typedef {((el: HTMLElement) => HTMLElement)[]} get_target_element_providers
@@ -153,7 +153,7 @@ export class BackgroundImageOptionPlugin extends Plugin {
             loadResult: "",
             params: { ...params, forceClean: true },
         });
-        this.dispatchTo("on_bg_image_hide_handlers", editingElement);
+        this.trigger("on_bg_image_hide_listeners", editingElement);
     }
 }
 

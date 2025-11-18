@@ -155,16 +155,18 @@ export class ClipboardPlugin extends Plugin {
         }
 
         // Prepare text content for clipboard.
-        let textContent = selection.textContent();
-        for (const processor of this.getResource("clipboard_text_processors")) {
-            textContent = processor(textContent);
-        }
+        const textContent = this.processThrough(
+            "clipboard_text_processors",
+            selection.textContent()
+        );
         ev.clipboardData.setData("text/plain", textContent);
 
         // Prepare html content for clipboard.
-        for (const processor of this.getResource("clipboard_content_processors")) {
-            clonedContents = processor(clonedContents, selection) || clonedContents;
-        }
+        clonedContents = this.processThrough(
+            "clipboard_content_processors",
+            clonedContents,
+            selection
+        );
         this.dependencies.dom.removeSystemProperties(clonedContents);
         fillClipboardData(ev, clonedContents);
     }

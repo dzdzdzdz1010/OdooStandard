@@ -746,8 +746,20 @@ class EventEvent(models.Model):
         """Get a url-encoded version of the description for mail templates."""
         return urllib.parse.quote_plus(self._get_external_description())
 
+    def _get_ics_file_outlook(self):
+        """ Returns iCalendar file for the event invitation compatible with Outlook.
+            :returns a dict of .ics file content for each event
+        """
+        return self._get_ics_file_logic('outlook')
+
     def _get_ics_file(self):
         """ Returns iCalendar file for the event invitation.
+            :returns a dict of .ics file content for each event
+        """
+        return self._get_ics_file_logic('apple')
+
+    def _get_ics_file_logic(self, client):
+        """ Returns iCalendar file compatible with corresponding calendar clients.
             :returns a dict of .ics file content for each event
         """
         result = {}
@@ -762,7 +774,12 @@ class EventEvent(models.Model):
             cal_event.add('dtstart').value = event.date_begin.astimezone(pytz.timezone(event.date_tz))
             cal_event.add('dtend').value = event.date_end.astimezone(pytz.timezone(event.date_tz))
             cal_event.add('summary').value = event.name
-            cal_event.add('description').value = event._get_external_description()
+            ext_description = event._get_external_description()
+            cal_event.add('description').value = ext_description
+            if client == 'outlook':
+                description = cal_event.add('X-ALT-DESC')
+                description.value = ext_description
+                description.params['FMTTYPE'] = ['text/html']
             if event.address_id:
                 cal_event.add('location').value = event.address_inline
 

@@ -1039,6 +1039,7 @@ test("list daterange with empty start date and end date", async () => {
     expect(".o_field_daterange .fa-long-arrow-right").toHaveCount(0);
 });
 
+test.tags("desktop");
 test("list daterange: column widths", async () => {
     await resize({ width: 800 });
     patchWithCleanup(user, _makeUser({ user_context: { lang: "fr" } }));
@@ -1066,6 +1067,7 @@ test("list daterange: column widths", async () => {
     expect(columnWidths).toEqual([40, 220, 352, 188]);
 });
 
+test.tags("desktop");
 test("list daterange: column widths (numeric format)", async () => {
     await resize({ width: 800 });
     document.body.style.fontFamily = "sans-serif";
@@ -1098,6 +1100,7 @@ test("list daterange: column widths (numeric format)", async () => {
     expect(columnWidths).toEqual([40, 187, 310, 263]);
 });
 
+test.tags("desktop");
 test("list daterange: column widths (show_time=false)", async () => {
     await resize({ width: 800 });
     document.body.style.fontFamily = "sans-serif";
@@ -1125,6 +1128,7 @@ test("list daterange: column widths (show_time=false)", async () => {
     expect(columnWidths).toEqual([40, 219, 541]);
 });
 
+test.tags("desktop");
 test("list daterange: column widths (no record)", async () => {
     await resize({ width: 800 });
     patchWithCleanup(user, _makeUser({ user_context: { lang: "fr" } }));

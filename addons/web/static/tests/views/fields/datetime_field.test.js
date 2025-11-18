@@ -671,6 +671,7 @@ test("placeholder_field shows as placeholder (datetime)", async () => {
     });
 });
 
+test.tags("desktop");
 test("list datetime: column widths (show_time=false)", async () => {
     await resize({ width: 800 });
     document.body.style.fontFamily = "sans-serif";
@@ -691,6 +692,7 @@ test("list datetime: column widths (show_time=false)", async () => {
     expect(queryAllProperties(".o_list_table thead th", "offsetWidth")).toEqual([40, 99, 661]);
 });
 
+test.tags("desktop");
 test("list datetime: column widths (numeric format)", async () => {
     await resize({ width: 800 });
     document.body.style.fontFamily = "sans-serif";

@@ -67,7 +67,7 @@ class ProviderGelato(models.Model):
         :return: The shipment rate request results.
         :rtype: dict
         """
-        if error_message := order._ensure_partner_address_is_complete():
+        if error_message := order.partner_shipping_id._gelato_validate_delivery_address():
             return {
                 'success': False,
                 'price': 0,

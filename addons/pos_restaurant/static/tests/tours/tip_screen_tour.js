@@ -8,8 +8,10 @@ import * as FloorScreen from "@pos_restaurant/../tests/tours/utils/floor_screen_
 import * as TicketScreen from "@point_of_sale/../tests/pos/tours/utils/ticket_screen_util";
 import * as TipScreen from "@point_of_sale/../tests/pos/tours/utils/tip_screen_util";
 import * as NumberPopup from "@point_of_sale/../tests/generic_helpers/number_popup_util";
-import * as Chrome from "@point_of_sale/../tests/pos/tours/utils/chrome_util";
+import * as ChromePos from "@point_of_sale/../tests/pos/tours/utils/chrome_util";
+import * as ChromeRestaurant from "@pos_restaurant/../tests/tours/utils/chrome";
 import { negateStep } from "@point_of_sale/../tests/generic_helpers/utils";
+const Chrome = { ...ChromePos, ...ChromeRestaurant };
 import { registry } from "@web/core/registry";
 
 registry.category("web_tour.tours").add("PosResTipScreenTour", {
@@ -27,10 +29,10 @@ registry.category("web_tour.tours").add("PosResTipScreenTour", {
             FloorScreen.clickTable("2"),
             ProductScreen.totalAmountIs("2.0"),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             PaymentScreen.clickPaymentMethod("Bank"),
             PaymentScreen.clickPaymentMethod("Bank"),
             PaymentScreen.clickValidate(),
+            Chrome.closePrintingWarning(),
             TipScreen.isShown(),
             Chrome.clickPlanButton(),
             FloorScreen.clickTable("4"),
@@ -51,9 +53,9 @@ registry.category("web_tour.tours").add("PosResTipScreenTour", {
             ProductScreen.addOrderline("Minute Maid", "3", "2"),
             ProductScreen.totalAmountIs("6.0"),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             PaymentScreen.clickPaymentMethod("Bank"),
             PaymentScreen.clickValidate(),
+            Chrome.closePrintingWarning(),
             TipScreen.isShown(),
             Chrome.clickPlanButton(),
             FloorScreen.clickNewOrder(),
@@ -109,9 +111,9 @@ registry.category("web_tour.tours").add("PosResTipScreenTour", {
             ProductScreen.guestNumberIs("2"),
             ProductScreen.clickCloseButton(),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             PaymentScreen.clickPaymentMethod("Bank"),
             PaymentScreen.clickValidate(),
+            Chrome.closePrintingWarning(),
             TipScreen.isShown(),
             TipScreen.totalAmountIs("8.0"),
             TipScreen.percentAmountIs("15%", "1.20"),
@@ -136,7 +138,6 @@ registry.category("web_tour.tours").add("PosResTipScreenTour", {
             TicketScreen.selectOrderByPrice("4.0"),
             TicketScreen.loadSelectedOrder(),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             PaymentScreen.clickTipButton(),
 
             NumberPopup.enterValue("1"),
@@ -145,6 +146,7 @@ registry.category("web_tour.tours").add("PosResTipScreenTour", {
             PaymentScreen.emptyPaymentlines("5.0"),
             PaymentScreen.clickPaymentMethod("Cash"),
             PaymentScreen.clickValidate(),
+            Chrome.closePrintingWarning(),
             FeedbackScreen.isShown(),
 
             // order 5
@@ -154,9 +156,9 @@ registry.category("web_tour.tours").add("PosResTipScreenTour", {
             ProductScreen.addOrderline("Minute Maid", "3", "2"),
             ProductScreen.totalAmountIs("6.0"),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             PaymentScreen.clickPaymentMethod("Bank"),
             PaymentScreen.clickValidate(),
+            Chrome.closePrintingWarning(),
             TipScreen.isShown(),
             TipScreen.clickSettle(),
             FeedbackScreen.isShown(),
@@ -173,7 +175,6 @@ registry.category("web_tour.tours").add("test_edit_payments_with_tip", {
             FloorScreen.clickTable("2"),
             ProductScreen.addOrderline("Minute Maid", "1", "3"),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             PaymentScreen.clickTipButton(),
             {
                 content: "click numpad button: 1",
@@ -217,7 +218,6 @@ registry.category("web_tour.tours").add("test_edit_payments_with_tip", {
             FloorScreen.clickTable("2"),
             ProductScreen.addOrderline("Minute Maid", "1", "3"),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             PaymentScreen.clickPaymentMethod("Bank"),
             PaymentScreen.clickValidate(),
             TipScreen.isShown(),
@@ -237,7 +237,6 @@ registry.category("web_tour.tours").add("test_tip_after_payment", {
             FloorScreen.clickTable("2"),
             ProductScreen.addOrderline("Minute Maid", "1", "3"),
             ProductScreen.clickPayButton(false),
-            ProductScreen.discardOrderWarningDialog(),
             // case 1: remaining < 0 => increase PaymentLine amount
             PaymentScreen.enterPaymentLineAmount("Bank", "1"),
             PaymentScreen.clickTipButton(),

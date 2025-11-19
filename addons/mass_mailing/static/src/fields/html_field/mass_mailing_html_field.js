@@ -5,7 +5,6 @@ import { MAIN_PLUGINS as MAIN_EDITOR_PLUGINS } from "@html_editor/plugin_sets";
 import { normalizeHTML, parseHTML } from "@html_editor/utils/html";
 import { MassMailingIframe } from "@mass_mailing/iframe/mass_mailing_iframe";
 import { ThemeSelector } from "@mass_mailing/themes/theme_selector/theme_selector";
-import { getCSSRules, toInline } from "@mail/views/web/fields/html_mail_field/convert_inline";
 import { onWillUpdateProps, status, toRaw, useEffect, useRef } from "@odoo/owl";
 import { loadBundle } from "@web/core/assets";
 import { Domain } from "@web/core/domain";
@@ -14,6 +13,7 @@ import { Deferred } from "@web/core/utils/concurrency";
 import { effect } from "@web/core/utils/reactive";
 import { useChildRef, useService } from "@web/core/utils/hooks";
 import { batched } from "@web/core/utils/timing";
+import { useEmailHtmlConverter } from "@mail/convert_inline/hooks";
 
 export class MassMailingHtmlField extends HtmlField {
     static template = "mass_mailing.HtmlField";
@@ -41,6 +41,14 @@ export class MassMailingHtmlField extends HtmlField {
             }
         });
         super.setup();
+        const { convertToEmailHtml } = useEmailHtmlConverter({
+            // TODO EGGMAIL: evaluate email_html_conversion bundle after refactoring
+            bundles: [
+                "mass_mailing.assets_iframe_style",
+                "mass_mailing.assets_email_html_conversion",
+            ],
+        });
+        this.convertToEmailHtml = convertToEmailHtml;
         this.themeService = useService("mass_mailing.themes");
         this.ui = useService("ui");
         Object.assign(this.state, {
@@ -121,10 +129,14 @@ export class MassMailingHtmlField extends HtmlField {
         this.iframeLoaded = new Deferred();
     }
 
+    /**
+     * Ensure the currently used iframe finished loading.
+     * @returns {Promise<Boolean>}
+     */
     async ensureIframeLoaded() {
         const iframeLoaded = this.iframeLoaded;
-        const iframeInfo = await iframeLoaded;
-        return iframeLoaded === this.iframeLoaded ? iframeInfo : undefined;
+        await iframeLoaded;
+        return iframeLoaded === this.iframeLoaded;
     }
 
     onIframeLoad(iframeLoaded) {
@@ -215,7 +227,7 @@ export class MassMailingHtmlField extends HtmlField {
         } else if (this.withBuilder) {
             return this.getBuilderConfig();
         } else {
-            return this.getSimpleEditorConfig();
+            return this.getBasicEditorConfig();
         }
     }
 
@@ -244,7 +256,7 @@ export class MassMailingHtmlField extends HtmlField {
         };
     }
 
-    getSimpleEditorConfig() {
+    getBasicEditorConfig() {
         const config = super.getConfig();
         const codeViewCommand = [config.resources?.user_commands]
             .filter(Boolean)
@@ -259,6 +271,7 @@ export class MassMailingHtmlField extends HtmlField {
             Plugins: [
                 ...MAIN_EDITOR_PLUGINS,
                 ...DYNAMIC_PLACEHOLDER_PLUGINS,
+                ...registry.category("mail-core-plugins").getAll(),
                 ...registry.category("mass_mailing-basic-editor-plugins").getAll(),
             ],
         };
@@ -270,7 +283,7 @@ export class MassMailingHtmlField extends HtmlField {
                 this.mutex.exec(() =>
                     // The inlineField can not be updated to its final value at
                     // this point since the editor is needed to process the
-                    // theme template. (i.e. applying the default style).
+                    // theme template (i.e. to insert the Design Tab style).
                     // It will be updated onEditorReady since it has become empty.
                     this.props.record
                         .update({
@@ -322,34 +335,16 @@ export class MassMailingHtmlField extends HtmlField {
      * @override
      */
     async updateValue(value) {
-        const iframeInfo = await this.ensureIframeLoaded();
-        if (!iframeInfo) {
+        this.lastValue = normalizeHTML(value, this.clearElementToCompare.bind(this));
+        const valueFragment = parseHTML(document, value);
+
+        const resId = this.props.record.resId;
+        const inlineValue = await this.convertToEmailHtml(valueFragment);
+        if (resId !== this.props.record.resId) {
             return;
         }
-        const { bundleControls } = iframeInfo;
-        this.lastValue = normalizeHTML(value, this.clearElementToCompare.bind(this));
+
         this.isDirty = false;
-        const shouldRestoreDisplayNone = this.iframeRef.el.classList.contains("d-none");
-        // d-none must be removed for style computation.
-        this.iframeRef.el.classList.remove("d-none");
-        this.iframeRef.el.style.width = "1320px";
-        const processingEl = this.iframeRef.el.contentDocument.createElement("DIV");
-        processingEl.append(parseHTML(this.iframeRef.el.contentDocument, value));
-        const processingContainer = this.iframeRef.el.contentDocument.querySelector(
-            ".o_mass_mailing_processing_container"
-        );
-        bundleControls["mass_mailing.assets_inside_builder_iframe"]?.toggle(false);
-        processingContainer.append(processingEl);
-        this.preprocessFilterDomains(processingEl);
-        const cssRules = getCSSRules(this.iframeRef.el.contentDocument);
-        await toInline(processingEl, cssRules);
-        const inlineValue = processingEl.innerHTML;
-        processingEl.remove();
-        bundleControls["mass_mailing.assets_inside_builder_iframe"]?.toggle(true);
-        this.iframeRef.el.style.width = "";
-        if (shouldRestoreDisplayNone) {
-            this.iframeRef.el.classList.add("d-none");
-        }
         await this.props.record
             .update({
                 [this.props.name]: value,

@@ -44,6 +44,43 @@ patch(ProductScreen.prototype, {
             (ticket) => ticket.product_id && ticket.product_id.service_tracking === "event"
         );
 
+        // Used to dynamically update the event ticket availabilities depending on
+        // the current order already validated event registrations.
+        const currentOrderEventRegistrations = (this.pos.getOrder()?.lines || []).reduce(
+            (acc, line) => {
+                const regs = (line.event_registration_ids.flat() || []).filter(
+                    (reg) => reg.event_id?.id === event.id
+                );
+                return acc.concat(regs);
+            },
+            []
+        );
+
+        const currentOrderRegCounts = currentOrderEventRegistrations.reduce(
+            (acc, reg) => {
+                const slotId = reg.event_slot_id?.id;
+                const ticketId = reg.event_ticket_id?.id;
+                // Per slot & ticket
+                if (slotId && ticketId) {
+                    if (!acc.perSlotTicket[ticketId]) {
+                        acc.perSlotTicket[ticketId] = {};
+                    }
+                    acc.perSlotTicket[ticketId][slotId] =
+                        (acc.perSlotTicket[ticketId][slotId] || 0) + 1;
+                }
+                // Per slot
+                if (slotId) {
+                    acc.perSlot[slotId] = (acc.perSlot[slotId] || 0) + 1;
+                }
+                // Per ticket
+                if (ticketId) {
+                    acc.perTicket[ticketId] = (acc.perTicket[ticketId] || 0) + 1;
+                }
+                return acc;
+            },
+            { perSlotTicket: {}, perSlot: {}, perTicket: {} }
+        );
+
         // Multi Slot
         let avaibilityByTicket = {};
         let slotResult = {};
@@ -74,11 +111,14 @@ patch(ProductScreen.prototype, {
                 "get_slot_tickets_availability_pos",
                 [event.id, slotTickets]
             );
-            const eventSeats = event.seats_limited ? event.seats_available : "unlimited";
+            const eventSeats = event.seats_limited
+                ? Math.max(0, event.seats_available - currentOrderEventRegistrations.length)
+                : "unlimited";
             avaibilityByTicket = slotTicketAvailabilities.reduce((acc, availability, idx) => {
                 const ticketsData = slotTickets[idx];
                 const slotId = ticketsData[0];
                 const ticketId = ticketsData[1];
+                const currentCount = currentOrderRegCounts.perSlotTicket[ticketId]?.[slotId] ?? 0;
                 if (!acc[ticketId]) {
                     acc[ticketId] = {};
                 }
@@ -88,7 +128,7 @@ patch(ProductScreen.prototype, {
                 if (availability === null) {
                     acc[ticketId][slotId] = "unlimited";
                 } else if (typeof availability === "number") {
-                    acc[ticketId][slotId] = availability;
+                    acc[ticketId][slotId] = availability - currentCount;
                 } else {
                     acc[ticketId][slotId] = 0;
                 }
@@ -103,26 +143,35 @@ patch(ProductScreen.prototype, {
                 });
                 return;
             }
-            const availabilityPerSlot = Object.values(avaibilityByTicket).reduce(
-                (acc, ticketAvailability) => {
-                    Object.entries(ticketAvailability).forEach(([slotId, availability]) => {
-                        if (!acc[slotId]) {
-                            acc[slotId] = 0;
-                        } else if (acc[slotId] === "unlimited") {
-                            return acc;
-                        }
-                        if (availability === "unlimited") {
-                            acc[slotId] = "unlimited";
-                        } else if (typeof availability === "number") {
-                            acc[slotId] = Math.max(acc[slotId], availability);
-                        } else {
-                            acc[slotId] = Math.max(acc[slotId], 0);
-                        }
-                    });
-                    return acc;
-                },
-                {}
-            );
+            // NB: The slot availability cannot be the sum of every slot-ticket availabilities
+            // because each slot-ticket availability is only accurate if the user tries to register to this slot-ticket only.
+            // However here the UI allows different tickets selection, so making the sum of every slot-ticket availabilities
+            // will potentially exceed the event/slot limitations.
+            const availabilityPerSlot = slots.reduce((acc, slot) => {
+                const slotId = slot.id;
+                const isEventLimited = event.seats_limited && event.seats_max > 0;
+                const currentOrderSlotRegCount = currentOrderRegCounts.perSlot[slot.id] ?? 0;
+                const totalTicketAvailability = !tickets.some((ticket) => ticket.seats_max === 0)
+                    ? tickets.reduce((sum, ticket) => sum + (ticket.seats_available || 0), 0)
+                    : "unlimited";
+
+                let availability = 0;
+                if (isEventLimited && totalTicketAvailability === "unlimited") {
+                    // Event = limited seats, Tickets = total is unlimited
+                    availability = slot.seats_available;
+                } else if (isEventLimited && totalTicketAvailability !== "unlimited") {
+                    // Event = limited seats, Tickets = total is limited
+                    availability = Math.min(slot.seats_available, totalTicketAvailability);
+                } else if (!event.seats_limited) {
+                    // Event = unlimited seats
+                    availability = totalTicketAvailability;
+                }
+                if (availability !== "unlimited") {
+                    availability = Math.max(0, availability - currentOrderSlotRegCount);
+                }
+                acc[slotId] = availability;
+                return acc;
+            }, {});
             slotResult = await makeAwaitable(this.dialog, EventSlotSelectionPopup, {
                 availabilityPerSlot: availabilityPerSlot,
                 event: event,
@@ -133,15 +182,16 @@ patch(ProductScreen.prototype, {
             slotSelected = this.pos.models["event.slot"].get(slotResult.slotId);
         } else {
             avaibilityByTicket = tickets.reduce((acc, ticket) => {
+                const currentOrderTicketRegCount = currentOrderRegCounts.perTicket[ticket.id] ?? 0;
                 if (ticket.seats_max === 0 && !event.seats_limited) {
-                    // event and ticket unlimited
+                    // Event = unlimited seats, Ticket = unlimited seats
                     acc[ticket.id] = "unlimited";
                 } else if (ticket.seats_max === 0) {
-                    // event limited and ticket unlimited
-                    acc[ticket.id] = event.seats_available;
+                    // Event = limited seats, Ticket = unlimited seats
+                    acc[ticket.id] = event.seats_available - currentOrderTicketRegCount;
                 } else {
-                    // ticket limited
-                    acc[ticket.id] = ticket.seats_available;
+                    // Event = unlimited seats, Ticket = limited seats
+                    acc[ticket.id] = ticket.seats_available - currentOrderTicketRegCount;
                 }
                 return acc;
             }, {});

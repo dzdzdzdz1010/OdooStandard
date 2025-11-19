@@ -115,17 +115,23 @@ registry.category("web_tour.tours").add("MultiSlotEventAvailabilityInPos", {
             ProductScreen.clickDisplayedProduct("MultiSlot Event Unlimited"),
             SlotSelectionScreen.clickDisplayedSlot("10:00"),
             Dialog.confirm(),
-            // - Taking 1 basic ticket and 1 vip ticket for the 10-11AM slot should work
+            // - Taking 1 basic ticket should show error (max per order = 3 for event)
             EventTourUtils.increaseQuantityOfTicket("Ticket Basic"),
+            Dialog.confirm(),
+            Dialog.confirm(),
+            // - Taking 1 vip ticket for the 10-11AM slot should work
+            ProductScreen.clickDisplayedProduct("Event Unlimited"),
+            SlotSelectionScreen.clickDisplayedSlot("10:00"),
+            Dialog.confirm(),
             EventTourUtils.increaseQuantityOfTicket("Ticket VIP"),
             Dialog.confirm(),
             EventTourUtils.answerTicketSelectQuestion("1", "Question1", "Q1-Answer1"),
             EventTourUtils.answerGlobalSelectQuestion("Question2", "Q2-Answer1"),
             Dialog.confirm(),
-            // - Ending with 4 basic + 2 vip in cart
+            // - Ending with 3 basic + 2 vip in cart
 
             // Pay order
-            ProductScreen.totalAmountIs("1,400.00"), // (6 basic + 4 vip)
+            ProductScreen.totalAmountIs("1,300.00"), // (5 basic + 4 vip)
             ProductScreen.clickPayButton(),
             PaymentScreen.clickPaymentMethod("Bank", true, { remaining: "0.00" }),
             PaymentScreen.clickValidate(),

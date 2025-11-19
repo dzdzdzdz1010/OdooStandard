@@ -110,17 +110,35 @@ patch(ProductScreen.prototype, {
                 const ticketsData = slotTickets[idx];
                 const slotId = ticketsData[0];
                 const ticketId = ticketsData[1];
-                const currentCount = currentOrderRegCounts.perSlotTicket[ticketId]?.[slotId] ?? 0;
+                const currentTicketCount = currentOrderRegCounts.perTicket[ticketId] ?? 0;
+                const currentSlotTicketCount =
+                    currentOrderRegCounts.perSlotTicket[ticketId]?.[slotId] ?? 0;
+                const limitMaxPerOrder =
+                    tickets.find((t) => t.id === ticketId)?.limit_max_per_order ?? 0;
                 if (!acc[ticketId]) {
                     acc[ticketId] = {};
                 }
                 if (!acc[ticketId][slotId]) {
                     acc[ticketId][slotId] = {};
                 }
-                if (availability === null) {
+                const remainingSlotTicketAvailability = availability - currentSlotTicketCount;
+                if (limitMaxPerOrder > 0) {
+                    // The limit max per order is per ticket (not per slot ticket),
+                    // it needs to consider the current order ticket count.
+                    const remainingOrderTicketAvailability = limitMaxPerOrder - currentTicketCount;
+                    if (availability === null) {
+                        availability = remainingOrderTicketAvailability;
+                    } else {
+                        availability = Math.min(
+                            remainingOrderTicketAvailability,
+                            remainingSlotTicketAvailability
+                        );
+                    }
+                    acc[ticketId][slotId] = Math.max(0, availability);
+                } else if (availability === null) {
                     acc[ticketId][slotId] = "unlimited";
                 } else if (typeof availability === "number") {
-                    acc[ticketId][slotId] = availability - currentCount;
+                    acc[ticketId][slotId] = Math.max(0, remainingSlotTicketAvailability);
                 } else {
                     acc[ticketId][slotId] = 0;
                 }
@@ -174,17 +192,29 @@ patch(ProductScreen.prototype, {
             slotSelected = this.pos.models["event.slot"].get(slotResult.slotId);
         } else {
             avaibilityByTicket = tickets.reduce((acc, ticket) => {
-                const currentOrderTicketRegCount = currentOrderRegCounts.perTicket[ticket.id] ?? 0;
+                const currentTicketCount = currentOrderRegCounts.perTicket[ticket.id] ?? 0;
+                const limitMaxPerOrder = ticket.limit_max_per_order ?? 0;
+                let availability;
                 if (ticket.seats_max === 0 && !event.seats_limited) {
                     // Event = unlimited seats, Ticket = unlimited seats
-                    acc[ticket.id] = "unlimited";
+                    availability = "unlimited";
                 } else if (ticket.seats_max === 0) {
                     // Event = limited seats, Ticket = unlimited seats
-                    acc[ticket.id] = event.seats_available - currentOrderTicketRegCount;
+                    availability = event.seats_available;
                 } else {
                     // Event = unlimited seats, Ticket = limited seats
-                    acc[ticket.id] = ticket.seats_available - currentOrderTicketRegCount;
+                    availability = ticket.seats_available;
                 }
+                if (limitMaxPerOrder > 0) {
+                    availability =
+                        availability === "unlimited"
+                            ? limitMaxPerOrder
+                            : Math.min(limitMaxPerOrder, availability);
+                }
+                if (availability !== "unlimited") {
+                    availability = Math.max(0, availability - currentTicketCount);
+                }
+                acc[ticket.id] = availability;
                 return acc;
             }, {});
         }

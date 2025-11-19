@@ -96,10 +96,11 @@ class TestUi(TestPointOfSaleHttpCommon):
             "iface_available_categ_ids": [(6, 0, [self.event_category.id])],
         })
 
-        # Basic ticket = unlimited
-        # VIP ticket = max 1
+        # Basic ticket = unlimited / 3 max per order
+        # VIP ticket = 1 max
         basic_ticket, _ = self.test_event.event_ticket_ids
         basic_ticket.seats_max = 0
+        basic_ticket.limit_max_per_order = 3
 
         # Event limited (seats max = 2)
         test_event_limited = self.test_event.copy()
@@ -130,10 +131,11 @@ class TestUi(TestPointOfSaleHttpCommon):
             "iface_available_categ_ids": [(6, 0, [self.event_category.id])],
         })
 
-        # Basic ticket = unlimited
-        # VIP ticket = max 1 per slot
+        # Basic ticket = unlimited / 3 max per order
+        # VIP ticket = 1 max per slot
         basic_ticket, _ = self.test_multislot_event.event_ticket_ids
         basic_ticket.seats_max = 0
+        basic_ticket.limit_max_per_order = 3
 
         # Event/slots limited (seats max = 2 per slot)
         test_multislot_event_limited = self.test_multislot_event.copy()
@@ -149,7 +151,7 @@ class TestUi(TestPointOfSaleHttpCommon):
 
         order = self.env['pos.order'].search([], order='id desc', limit=1)
         event_registrations = order.lines.event_registration_ids
-        self.assertEqual(len(event_registrations), 10)
+        self.assertEqual(len(event_registrations), 9)
         self.assertTrue(test_multislot_event_limited.event_registrations_sold_out)
         self.assertFalse(test_multislot_event_unlimited.event_registrations_sold_out)
 

@@ -75,6 +75,11 @@ registry.category("web_tour.tours").add("EventAvailabilityInPos", {
             EventTourUtils.increaseQuantityOfTicket("Ticket VIP"),
             Dialog.confirm(),
             Dialog.confirm(),
+            // - Taking 1 more basic ticket should show error (limit max per order = 3 for event)
+            ProductScreen.clickDisplayedProduct("Event Unlimited"),
+            EventTourUtils.increaseQuantityOfTicket("Ticket Basic"),
+            Dialog.confirm(),
+            Dialog.confirm(),
             // - Ending with 3 basic + 1 vip in cart
 
             // Pay order

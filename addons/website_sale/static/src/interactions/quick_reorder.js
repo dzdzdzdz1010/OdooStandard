@@ -142,11 +142,10 @@ export class QuickReorder extends Interaction {
 
         // Add the product to the cart and update the DOM.
         const websiteSale = document.querySelector('.oe_website_sale');
-        // `updateCartNavBar` regenerates the cart lines and `updateQuickReorderSidebar`
-        // regenerates the quick reorder products, so we need to stop and start interactions to
-        // make sure the regenerated reorder products and cart lines are properly handled.
+        // `updateQuickReorderSidebar` regenerates the quick reorder products, so we need
+        // to stop and start interactions to make sure the regenerated reorder products
+        // are properly handled.
         this.services['public.interactions'].stopInteractions(websiteSale);
-        wSaleUtils.updateCartNavBar(data);
         wSaleUtils.updateQuickReorderSidebar(data);
         this.services['public.interactions'].startInteractions(websiteSale);
 

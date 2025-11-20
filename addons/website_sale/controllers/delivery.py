@@ -5,6 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.http import request, route
 
 from odoo.addons.payment import utils as payment_utils
+from odoo.addons.website_sale.controllers.cart import Cart
 from odoo.addons.website_sale.controllers.main import WebsiteSale
 
 
@@ -66,24 +67,12 @@ class Delivery(WebsiteSale):
         :return: The order summary values.
         :rtype: dict
         """
-        Monetary = request.env['ir.qweb.field.monetary']
-        currency = order.currency_id
+        Cart_controller = Cart()
         return {
             'success': True,
             'is_free_delivery': not bool(order.amount_delivery),
             'compute_price_after_delivery': order.carrier_id.invoice_policy == 'real',
-            'amount_delivery': Monetary.value_to_html(
-                order.amount_delivery, {'display_currency': currency}
-            ),
-            'amount_untaxed': Monetary.value_to_html(
-                order.amount_untaxed, {'display_currency': currency}
-            ),
-            'amount_tax': Monetary.value_to_html(
-                order.amount_tax, {'display_currency': currency}
-            ),
-            'amount_total': Monetary.value_to_html(
-                order.amount_total, {'display_currency': currency}
-            ),
+            'cart_totals_data': Cart_controller.get_cart_totals(),
         }
 
     @route('/shop/get_delivery_rate', type='jsonrpc', auth='public', methods=['POST'], website=True)

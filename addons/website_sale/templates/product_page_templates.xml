@@ -734,19 +734,15 @@
         >
             <t t-foreach="visible_tags" t-as="tag">
                 <span t-if="tag.image"
-                      class="order-0"
+                      class="order-0 o_wsale_product_tag_image"
                       t-field="tag.image"
                       t-options="{'widget': 'image', 'class': 'o_product_tag_img rounded'}"
                 />
-                <span t-else="" class="position-relative order-1 py-1 px-2">
-                    <span class="position-absolute top-0 start-0 w-100 h-100 rounded"
-                          t-attf-style="background-color: #{tag.color}; opacity: .2;"
-                    />
-                    <span class="text-nowrap small"
-                          t-attf-style="color: #{tag.color}"
-                          t-field="tag.name"
-                    />
-                </span>
+                <span
+                    t-else=""
+                    class="o_wsale_product_tag order-1 p-2 rounded lh-1 small text-nowrap"
+                    t-field="tag.name"
+                    t-attf-style="background-color: #{tag.color}33; color: #{tag.color};"/>
             </t>
         </div>
     </template>

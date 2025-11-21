@@ -10,7 +10,7 @@ export class ProductPageOption extends BaseOptionComponent {
 
     setup() {
         super.setup();
-        this.domState = useDomState((el) => {
+        this.domState = useDomState(async (el) => {
             const productDetailEl = el.querySelector("#product_detail");
             const productDetailMainEl = el.querySelector("#product_detail_main");
             const productPageCarouselEl = el.querySelector("#o-carousel-product");
@@ -28,6 +28,7 @@ export class ProductPageOption extends BaseOptionComponent {
             const isGrid = !!productDetailMainEl.querySelector("#o-grid-product");
             const hasCarousel = !!productPageCarouselEl;
             const hasGrid = !!productPageGridEl;
+
             return {
                 hasImages,
                 isFullImage,

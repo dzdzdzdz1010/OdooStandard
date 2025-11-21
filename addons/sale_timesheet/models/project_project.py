@@ -69,6 +69,8 @@ class ProjectProject(models.Model):
         readonly=False,
         store=True,
     )
+    actual_margin = fields.Monetary(compute='_compute_actual_margin', export_string_translation=False)
+    actual_margin_status = fields.Char(compute='_compute_actual_margin', export_string_translation=False)
 
     @api.model
     def _get_view(self, view_id=None, view_type='form', **options):
@@ -172,6 +174,16 @@ class ProjectProject(models.Model):
     def _compute_billing_type(self):
         self.filtered(lambda project: (not project.allow_billable or not project.allow_timesheets) and project.billing_type == 'manually').billing_type = 'not_billable'
 
+    def _compute_actual_margin(self):
+        margin_per_project = dict(self.env['account.analytic.line']._read_group(
+            domain=[('project_id', 'in', self.ids)],
+            groupby=['project_id'],
+            aggregates=['amount:sum'],
+        ))
+        for project in self:
+            project.actual_margin = margin_per_project.get(project, 0.0)
+            project.actual_margin_status = 'off_track' if project.actual_margin < 0 else 'on_track'
+
     @api.constrains('sale_line_id')
     def _check_sale_line_type(self):
         for project in self.filtered(lambda project: project.sale_line_id):
@@ -268,6 +280,13 @@ class ProjectProject(models.Model):
                 **ast.literal_eval(context),
                 'hide_so_line': True,
             }
+        return action
+
+    def action_actual_margin(self):
+        action = self.env['ir.actions.act_window']._for_xml_id('sale_timesheet.action_analytic_reporting_inherit_sale_timesheet')
+        action['display_name'] = self.env._("%(name)s's Actual Analytic Margins", name=self.name)
+        action['views'] = [(self.env.ref('sale_timesheet.view_account_analytic_line_pivot_inherit_sale_timesheet_project').id, 'pivot')]
+        action['domain'] = [('project_id', '=', self.id)]
         return action
 
     # ----------------------------

@@ -12,6 +12,18 @@
             <xpath expr="//button[@name='action_view_sos'][2]" position="attributes">
                 <attribute name="context">{'create_for_project_id': id, 'default_project_id': id, 'default_partner_id': partner_id}</attribute>
             </xpath>
+            <xpath expr="//button[@name='action_view_sos']" position="after">
+                <button class="oe_stat_button" name="action_actual_margin" type="object" groups="project.group_project_manager" context="{'active_id': id}" invisible="is_template or not allow_billable">
+                    <field name="actual_margin_status" readonly="1" widget="color_status"/>
+                    <div class="o_stat_info">
+                        <div class="o_stat_text">
+                            <i class="fa fa-dollar pe-1" title="dollar"/>
+                            <field name="actual_margin"/>
+                        </div>
+                        <span class="o_stat_value">Actual Margin</span>
+                    </div>
+                </button>
+            </xpath>
             <xpath expr="//page[@name='settings']" position="after">
                 <page name="billing_employee_rate" string="Invoicing" invisible="not allow_billable or not partner_id or is_template">
                     <field name="sale_line_employee_ids" mode="list,kanban" context="{'default_sale_line_id': sale_line_id}">

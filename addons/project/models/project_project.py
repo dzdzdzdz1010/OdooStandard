@@ -16,6 +16,7 @@ from odoo.tools.misc import unquote
 from odoo.tools.translate import _
 from .project_update import STATUS_COLOR
 from .project_task import CLOSED_STATES
+from markupsafe import Markup
 
 _lt = LazyTranslate(__name__)
 
@@ -95,6 +96,8 @@ class ProjectProject(models.Model):
     active = fields.Boolean(default=True, copy=False, export_string_translation=False)
     sequence = fields.Integer(default=10, export_string_translation=False)
     partner_id = fields.Many2one('res.partner', string='Customer', bypass_search_access=True, tracking=True, domain="['|', ('company_id', '=?', company_id), ('company_id', '=', False)]", index='btree_not_null')
+    partner_phone = fields.Char(related='partner_id.phone', export_string_translation=False)
+    partner_email = fields.Char(related='partner_id.email', export_string_translation=False)
     company_id = fields.Many2one('res.company', string='Company', compute="_compute_company_id", inverse="_inverse_company_id", store=True, readonly=False)
     currency_id = fields.Many2one('res.currency', compute="_compute_currency_id", string="Currency", readonly=True, export_string_translation=False)
     analytic_account_balance = fields.Monetary(related="account_id.balance")
@@ -176,6 +179,8 @@ class ProjectProject(models.Model):
         ('done', 'Complete'),
     ], default='to_define', compute='_compute_last_update_status', store=True, readonly=False, required=True, export_string_translation=False)
     last_update_color = fields.Integer(compute='_compute_last_update_color', export_string_translation=False)
+    last_update_progress_percentage = fields.Float(related='last_update_id.progress_percentage', export_string_translation=False)
+    last_update_progress_date = fields.Date(related='last_update_id.date', export_string_translation=False)
     milestone_ids = fields.One2many('project.milestone', 'project_id', copy=True, export_string_translation=False)
     milestone_count = fields.Integer(compute='_compute_milestone_count', groups='project.group_project_milestone', export_string_translation=False)
     milestone_count_reached = fields.Integer(compute='_compute_milestone_reached_count', groups='project.group_project_milestone', export_string_translation=False)
@@ -184,8 +189,12 @@ class ProjectProject(models.Model):
     next_milestone_id = fields.Many2one('project.milestone', compute='_compute_next_milestone_id', groups="project.group_project_milestone", export_string_translation=False)
     can_mark_milestone_as_done = fields.Boolean(compute='_compute_next_milestone_id', groups="project.group_project_milestone", export_string_translation=False)
     is_milestone_deadline_exceeded = fields.Boolean(compute='_compute_next_milestone_id', groups="project.group_project_milestone", export_string_translation=False)
+    next_milestone_status = fields.Char(compute='_compute_next_milestone_info', export_string_translation=False)
+    next_milestone_name = fields.Char(compute='_compute_next_milestone_info', export_string_translation=False)
+    next_milestone_date = fields.Date(compute='_compute_next_milestone_info', export_string_translation=False)
     is_template = fields.Boolean(copy=False, export_string_translation=False)
     show_ratings = fields.Boolean(compute='_compute_show_ratings', export_string_translation=False)
+    google_map_iframe = fields.Html(compute='_compute_google_map_iframe', sanitize=False, export_string_translation=False)
 
     _project_date_greater = models.Constraint(
         'check(date >= date_start)',
@@ -201,6 +210,40 @@ class ProjectProject(models.Model):
                 order=f"sequence asc, {self.env['project.project.stage']._order}",
                 limit=1,
             ).id
+
+    @api.depends('next_milestone_id')
+    def _compute_next_milestone_info(self):
+        for project in self:
+            milestone = project.sudo().next_milestone_id
+            if milestone:
+                project.next_milestone_status = 'off_track' if milestone.is_deadline_exceeded else 'on_track'
+                project.next_milestone_date = milestone.deadline
+                project.next_milestone_name = milestone.name
+            else:
+                project.next_milestone_status = False
+                project.next_milestone_name = False
+                project.next_milestone_date = False
+
+    @api.depends('partner_id')
+    def _compute_google_map_iframe(self):
+        for project in self:
+            if not project.partner_id or not project.partner_id.contact_address_complete:
+                project.google_map_iframe = False
+                continue
+            address = project.partner_id.contact_address_complete.replace('\n', ', ')
+            iframe_html = f"""
+                <iframe
+                    width="100%"
+                    height="100%"
+                    frameborder="0"
+                    style="border:0"
+                    loading="lazy"
+                    allowfullscreen
+                    src="https://www.google.com/maps?q={address}&output=embed">
+                </iframe>
+            """
+
+            project.google_map_iframe = Markup(iframe_html)
 
     @api.depends('milestone_ids', 'milestone_ids.is_reached', 'milestone_ids.deadline')
     def _compute_next_milestone_id(self):
@@ -901,10 +944,20 @@ class ProjectProject(models.Model):
 
     def project_update_all_action(self):
         action = self.env['ir.actions.act_window']._for_xml_id('project.project_update_all_action')
-        action['display_name'] = _("%(name)s Dashboard", name=self.name)
+        action['display_name'] = _("%(name)s Updates", name=self.name)
         return action
 
     def action_open_share_project_wizard(self):
+        if self.privacy_visibility in ['followers', 'employees'] or self.is_template:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'type': 'danger',
+                    'message': self.env._("Sharing is not available for this project visibility setting."),
+                },
+            }
+
         template = self.env.ref('project.mail_template_project_sharing', raise_if_not_found=False)
 
         local_context = self.env.context | {
@@ -984,6 +1037,15 @@ class ProjectProject(models.Model):
         action['display_name'] = _("Tasks")
         action['domain'] = [('milestone_id', 'in', self.milestone_ids.ids)]
         return action
+
+    def action_open_project_form(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': self.env._('Project Overview'),
+            'res_model': 'project.project',
+            'view_mode': 'form',
+            'res_id': self.id,
+        }
 
     # ---------------------------------------------
     #  PROJECT UPDATES
@@ -1451,3 +1513,8 @@ class ProjectProject(models.Model):
         project = self.with_context(**context).copy(default=default)
         project.message_post(body=self.env._("Project created from template %(name)s.", name=self.name))
         return project
+
+    def action_view_milestones(self):
+        action = self.env['ir.actions.act_window']._for_xml_id('project.project_milestone_action')
+        action['display_name'] = self.env._("%(name)s's Milestones", name=self.name)
+        return action

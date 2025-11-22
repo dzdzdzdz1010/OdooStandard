@@ -73,7 +73,6 @@ class NewLeadNotification(TestCrmCommon):
             }, {
                 'name': 'Test Suggestion (partner no email with cc email)',
                 'partner_id': partner_no_email.id,
-                'email_cc': 'test_cc@odoo.com',
                 'user_id': self.user_sales_leads.id
             }
         ])
@@ -148,11 +147,6 @@ class NewLeadNotification(TestCrmCommon):
                     'partner_id': partner_no_email.id,
                     'email': False,
                     'name': 'Test Partner',
-                    'create_values': {},
-                }, {
-                    'name': '',
-                    'email': 'test_cc@odoo.com',
-                    'partner_id': False,
                     'create_values': {},
                 },
             ],

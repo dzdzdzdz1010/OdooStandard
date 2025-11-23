@@ -375,6 +375,11 @@
                                                         </div>
                                                     </td>
                                                 </tr>
+                                                <tr t-if="kpi_info.get('kpi_tip')">
+                                                    <td>
+                                                        <t t-out="kpi_info['kpi_tip']"/>
+                                                    </td>
+                                                </tr>
                                             </table>
                                         </td>
                                     </tr>

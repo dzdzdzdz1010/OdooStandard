@@ -6,7 +6,7 @@ from odoo.http import Controller, request, route
 class LocationSelector(Controller):
 
     @route('/website_sale/get_pickup_locations', type='jsonrpc', auth='public', website=True)
-    def website_sale_get_pickup_locations(self, order_id=None, zip_code=None, **kwargs):
+    def website_sale_get_pickup_locations(self, res_model=None, res_id=None, zip_code=None, **kwargs):
         """ Fetch the record or the order from the request and return the pickup locations close to a given zip code.
 
         Determine the country based on GeoIP or fallback on the record's delivery address' country.
@@ -17,14 +17,14 @@ class LocationSelector(Controller):
         :return: The close pickup locations data.
         :rtype: dict
         """
-        order = request.env['sale.order'].browse(order_id).sudo() if order_id else request.cart
+        record = request.env[res_model].browse(res_id).sudo() if res_id else request.cart
         if request.geoip.country_code:
             country = request.env['res.country'].search(
                 [('code', '=', request.geoip.country_code)], limit=1,
             )
         else:
-            country = order.partner_id.country_id
-        return order._get_pickup_locations(zip_code, country, **kwargs)
+            country = record.partner_id.country_id
+        return record.carrier_id._get_pickup_locations(zip_code, country, **kwargs)
 
     @route('/website_sale/set_pickup_location', type='jsonrpc', auth='public', website=True)
     def website_sale_set_pickup_location(self, pickup_location_data):
@@ -34,4 +34,4 @@ class LocationSelector(Controller):
         :return: None
         """
         order_sudo = request.cart
-        order_sudo._set_pickup_location(pickup_location_data)
+        order_sudo.set_pickup_location(pickup_location_data)

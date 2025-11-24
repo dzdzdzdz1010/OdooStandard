@@ -47,7 +47,8 @@ class SaleOrder(models.Model):
     is_abandoned_cart = fields.Boolean(
         string="Abandoned Cart", compute='_compute_abandoned_cart', search='_search_abandoned_cart',
     )
-    pickup_location_data = fields.Json()
+    is_pickup_delivery = fields.Boolean(related='carrier_id.is_pickup')
+    partner_zip_code = fields.Char(related='partner_id.zip')
     # filter related fields
     is_unfulfilled = fields.Boolean(
         string="Unfulfilled Orders", search='_search_is_unfulfilled', store=False
@@ -59,7 +60,7 @@ class SaleOrder(models.Model):
         """ Override to reset the delivery address when a pickup location was selected. """
         super()._compute_partner_shipping_id()
         for order in self:
-            if order.partner_shipping_id.is_pickup_location:
+            if order.partner_shipping_id.pickup_delivery_carrier_id:
                 order.partner_shipping_id = order.partner_id
 
     @api.depends('order_line')
@@ -210,6 +211,14 @@ class SaleOrder(models.Model):
                 else:
                     vals['company_id'] = website.company_id.id
         return super().create(vals_list)
+
+    def write(self, vals):
+        """Reset the shipping partner when it is a pickup location and the delivery method changes."""
+        if 'carrier_id' in vals:
+            for order in self:
+                if order.partner_shipping_id.pickup_delivery_carrier_id:
+                    order.partner_shipping_id = order.partner_id
+        return super().write(vals)
 
     #=== ACTION METHODS ===#
 
@@ -829,10 +838,6 @@ class SaleOrder(models.Model):
         """
         return bool(self.order_line.product_id) and not self.only_services
 
-    def _remove_delivery_line(self):
-        super()._remove_delivery_line()
-        self.pickup_location_data = {}  # Reset the pickup location data.
-
     def _get_preferred_delivery_method(self, available_delivery_methods):
         """ Get the preferred delivery method based on available delivery methods for the order.
 
@@ -1076,34 +1081,24 @@ class SaleOrder(models.Model):
                 pickup_location = None
             self.pickup_location_data = pickup_location
 
-    def _get_pickup_locations(self, zip_code=None, country=None, **kwargs):
-        """ Return the pickup locations of the delivery method close to a given zip code.
-        Use provided `zip_code` and `country` or the order's delivery address to determine the zip
-        code and the country to use.
-        Note: self.ensure_one()
-        :param int zip_code: The zip code to look up to, optional.
-        :param res.country country: The country to look up to, required if `zip_code` is provided.
-        :return: The close pickup locations data.
-        :rtype: dict
+    def _get_delivery_wizard_context(self):
+        context = super()._get_delivery_wizard_context()
+        context['partner_zip_code'] = self.partner_zip_code
+        if self.is_pickup_delivery:
+            context['default_partner_shipping_id'] = self.partner_shipping_id.id
+        return context
+
+    def set_pickup_location(self, pickup_location_data):
+        """Set the pickup location on the current sale order.
+
+        :param str pickup_location_data: The pickup location data in JSON format.
         """
         self.ensure_one()
-        if zip_code:
-            assert country  # country is required if zip_code is provided.
-            partner_address = self.env['res.partner'].new({
-                'active': False,
-                'country_id': country.id,
-                'zip': zip_code,
-            })
-        else:
-            partner_address = self.partner_shipping_id
-        try:
-            error = {'error': _("No pick-up points are available for this delivery address.")}
-            function_name = f'_{self.carrier_id.delivery_type}_get_close_locations'
-            if not hasattr(self.carrier_id, function_name):
-                return error
-            pickup_locations = getattr(self.carrier_id, function_name)(partner_address, **kwargs)
-            if not pickup_locations:
-                return error
-            return {'pickup_locations': pickup_locations}
-        except UserError as e:
-            return {'error': str(e)}
+        if self.carrier_id.is_pickup and pickup_location_data:
+            pickup_location_data_json = json.loads(pickup_location_data)
+            address = self.env['res.partner']._address_from_json(
+                pickup_location_data_json,
+                self.partner_id,
+                pickup_delivery_carrier_id=self.carrier_id.id
+            )
+            self.partner_shipping_id = address or self.partner_id

@@ -10,5 +10,13 @@
         &:not(:hover) {
             opacity: 0.3;
         }
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+    .o_we_power_buttons.o_we_packed_power_buttons {
+        .power_button {
+            padding-left: 4px;
+            padding-right: 4px;
+        }
     }
 }

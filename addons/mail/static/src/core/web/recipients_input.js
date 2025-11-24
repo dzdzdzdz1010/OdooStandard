@@ -2,6 +2,7 @@ import { parseEmail } from "@mail/utils/common/format";
 import { AutoComplete } from "@web/core/autocomplete/autocomplete";
 import { _t } from "@web/core/l10n/translation";
 import { isEmail } from "@web/core/utils/strings";
+import { odoomark } from "@web/core/utils/html";
 import { useService } from "@web/core/utils/hooks";
 import { useSelectCreate } from "@web/views/fields/relational_utils";
 
@@ -78,37 +79,49 @@ export class RecipientsInput extends Component {
                     }
 
                     const options = [];
-                    const [name, email] = term ? parseEmail(term) : ["", ""];
 
                     const limit = 8;
                     const matches = await this.orm.searchRead(
                         "res.partner",
                         [
                             ["id", "not in", Array.from(partnerIds)],
-                            "|",
-                            ["name", "ilike", name],
-                            email ? ["email_normalized", "ilike", email] : [0, "=", 1], // if no email, use a false leaf
+                            ["display_name", "ilike", term],
                         ],
-                        ["email", "id", "lang", "name"],
-                        { limit }
+                        ["email", "id", "lang", "name", "parent_name"],
+                        { limit, context: { formatted_display_name: true } }
                     );
 
                     options.push(
-                        ...matches.map((match) => ({
-                            label: match.email
-                                ? _t("%(partner_name)s <%(partner_email)s>", {
-                                      partner_name: match.name || _t("Unnamed"),
-                                      partner_email: match.email,
-                                  })
-                                : match.name || _t("Unnamed"),
-                            onSelect: () => {
-                                this.insertAdditionalRecipient({
-                                    email: match.email,
-                                    name: match.name,
-                                    partner_id: match.id,
+                        ...matches.map((match) => {
+                            let label = match.name || _t("Unnamed");
+                            if (match.parent_name && match.email) {
+                                label = odoomark(
+                                    _t(
+                                        "**%(company_name)s** %(partner_name)s --<%(partner_email)s>--",
+                                        {
+                                            company_name: match.parent_name,
+                                            partner_name: label,
+                                            partner_email: match.email,
+                                        }
+                                    )
+                                );
+                            } else if (match.email) {
+                                label = _t("%(partner_name)s <%(partner_email)s>", {
+                                    partner_name: label,
+                                    partner_email: match.email,
                                 });
-                            },
-                        }))
+                            }
+                            return {
+                                label,
+                                onSelect: () => {
+                                    this.insertAdditionalRecipient({
+                                        email: match.email,
+                                        name: match.name,
+                                        partner_id: match.id,
+                                    });
+                                },
+                            };
+                        })
                     );
 
                     if (matches.length >= limit) {
@@ -121,6 +134,7 @@ export class RecipientsInput extends Component {
                         });
                     }
 
+                    const [name, email] = term ? parseEmail(term) : ["", ""];
                     const createOption = {
                         cssClass: "o_m2o_dropdown_option o_m2o_dropdown_option_create",
                         label: _t("Create %s", name),

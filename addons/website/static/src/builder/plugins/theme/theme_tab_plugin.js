@@ -20,6 +20,7 @@ import { BuilderAction } from "@html_builder/core/builder_action";
 import { CustomizeWebsiteVariableAction } from "../customize_website_plugin";
 import { EditHeadBodyDialog } from "@website/components/edit_head_body_dialog/edit_head_body_dialog";
 import { BaseOptionComponent } from "@html_builder/core/utils";
+import { ImageSize } from "@html_builder/plugins/image/image_size";
 
 /**
  * @typedef { Object } ThemeTabShared
@@ -76,7 +77,10 @@ export class ThemeTabPlugin extends Plugin {
                     _t("Website"),
                     class ThemeWebsiteSettingsOption extends BaseOptionComponent {
                         static template = "website.ThemeWebsiteSettingsOption";
-                    }
+                        static components = { ImageSize };
+                    },
+                    this.document.querySelector("#wrapwrap"),
+                    true
                 )
             ),
             withSequence(
@@ -226,18 +230,22 @@ export class ThemeTabPlugin extends Plugin {
         );
     }
 
-    getThemeOptionBlock(id, name, options) {
-        // TODO Have a specific kind of options container that takes the specific parameters like name, no element, no selector...
-        const el = this.document.createElement("div");
-        el.dataset.name = name;
-        this.document.body.appendChild(el); // Currently editingElement needs to be isConnected
+    getThemeOptionBlock(id, name, options, el = null, hasOverlayOptions = false) {
+        let divEl = null;
+        // TODO Have a specific kind of options container that takes the
+        // specific parameters like name, no element, no selector...
+        if (!el) {
+            divEl = this.document.createElement("div");
+            divEl.dataset.name = name;
+            this.document.body.appendChild(divEl); // Currently editingElement needs to be isConnected
+        }
 
         options.selector = "*";
 
         return {
             id: id,
-            element: el,
-            hasOverlayOptions: false,
+            element: el || divEl,
+            hasOverlayOptions,
             headerMiddleButton: false,
             isClonable: false,
             isRemovable: false,

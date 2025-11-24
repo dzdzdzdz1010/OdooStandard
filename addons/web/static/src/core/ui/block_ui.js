@@ -44,6 +44,7 @@ export class BlockUI extends Component {
             blockState: this.BLOCK_STATES.UNBLOCKED,
             line1: "",
             line2: "",
+            resetCursor: false,
         });
 
         this.props.bus.addEventListener("BLOCK", this.block.bind(this));
@@ -62,6 +63,7 @@ export class BlockUI extends Component {
     }
 
     block(ev) {
+        this.state.resetCursor = false;
         const showBlockedUI = () => (this.state.blockState = this.BLOCK_STATES.VISIBLY_BLOCKED);
         const delay = ev.detail?.delay;
         if (delay) {
@@ -79,10 +81,18 @@ export class BlockUI extends Component {
     }
 
     unblock() {
-        this.state.blockState = this.BLOCK_STATES.UNBLOCKED;
-        clearTimeout(this.showBlockedUITimer);
-        clearTimeout(this.msgTimer);
-        this.state.line1 = "";
-        this.state.line2 = "";
+        // Chrome sometimes keeps the last cursor until the next pointer event.
+        // Force a cursor reset on the overlay before removing it to avoid a
+        // stuck "wait" cursor.
+        this.state.resetCursor = true;
+
+        setTimeout(() => {
+            this.state.blockState = this.BLOCK_STATES.UNBLOCKED;
+            this.state.resetCursor = false;
+            clearTimeout(this.showBlockedUITimer);
+            clearTimeout(this.msgTimer);
+            this.state.line1 = "";
+            this.state.line2 = "";
+        });
     }
 }

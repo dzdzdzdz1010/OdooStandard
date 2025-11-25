@@ -32,7 +32,7 @@
                 <li t-if="field.widget" data-item="widget">
                     <span class="o-tooltip--technical--title">Widget:</span>
                     <t t-if="field.widgetDescription" t-esc="field.widgetDescription"/>
-                    <t t-if="field.widget">
+                    <t t-if="field.widget" t-translation="off">
                         (<t t-esc="field.widget"/>)
                     </t>
                 </li>
@@ -74,7 +74,7 @@
                 </li>
                 <li t-if="field.selection" data-item="selection">
                     <span class="o-tooltip--technical--title">Selection:</span>
-                    <ul class="o-tooltip--technical">
+                    <ul class="o-tooltip--technical" t-translation="off">
                         <li t-foreach="field.selection" t-as="option" t-key="option_index">
                             [<t t-esc="option[0]"/>]
                             <t t-if="option[1]"> - </t>

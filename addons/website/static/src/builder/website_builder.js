@@ -172,6 +172,7 @@ export class WebsiteBuilder extends Component {
         const installSnippetModule = builderProps.installSnippetModule;
         builderProps.installSnippetModule = (snippet) =>
             installSnippetModule(snippet, this.save.bind(this));
+        builderProps.config.builderOptionsTemplate = "website.BuilderOptions";
         return builderProps;
     }
 }

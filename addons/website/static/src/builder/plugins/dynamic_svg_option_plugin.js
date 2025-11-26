@@ -1,18 +1,14 @@
 import { registry } from "@web/core/registry";
 import { Plugin } from "@html_editor/plugin";
-import { DynamicSvgOption } from "./dynamic_svg_option";
 import { normalizeCSSColor } from "@web/core/utils/colors";
 import { getCSSVariableValue, getHtmlStyle } from "@html_editor/utils/formatting";
 import { loadImage } from "@html_editor/utils/image_processing";
-import { withSequence } from "@html_editor/utils/resource";
-import { DYNAMIC_SVG } from "@html_builder/utils/option_sequence";
 import { BuilderAction } from "@html_builder/core/builder_action";
 
-class DynamicSvgOptionPlugin extends Plugin {
+export class DynamicSvgOptionPlugin extends Plugin {
     static id = "DynamicSvgOption";
     /** @type {import("plugins").WebsiteResources} */
     resources = {
-        builder_options: [withSequence(DYNAMIC_SVG, DynamicSvgOption)],
         builder_actions: {
             SvgColorAction,
         },

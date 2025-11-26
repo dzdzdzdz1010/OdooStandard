@@ -89,7 +89,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #   2: channels_as_member
     #       - search_fetch channel (channels)
     #       - search_count member (has_unpinned_channels)
-    #   34: store add channel:
+    #   35: store add channel:
     #       - read group member (prefetch _compute_self_member_id from _compute_is_member)
     #       - read group member (_compute_invited_member_ids)
     #       - search discuss_channel_rtc_session
@@ -97,10 +97,10 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #       - search member (channel_member_ids)
     #       - search member (channel_name_member_ids)
     #       - fetch discuss_channel_member (manual prefetch)
-    #       17: member:
+    #       18: member:
     #           - search im_livechat_channel_member_history (livechat member type)
     #           - fetch im_livechat_channel_member_history (livechat member type)
-    #           13: partner:
+    #           14: partner:
     #               - fetch res_partner (partner)
     #               - fetch res_users (_compute_im_status)
     #               - search mail_presence (_compute_im_status)
@@ -114,6 +114,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #               - fetch res_users_settings (livechat username)
     #               - fetch res_users (_compute_main_user_id)
     #               - fetch res_country (livechat override)
+    #               - fetch res_partner (partner_share field)
     #           2: guest:
     #               - fetch mail_presence (_compute_im_status)
     #               - fetch mail_guest
@@ -151,7 +152,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #       - search user (author)
     #       - fetch user (author)
     #       - fetch discuss_call_history
-    _query_count_discuss_channels = 63
+    _query_count_discuss_channels = 64
 
     def setUp(self):
         super().setUp()
@@ -401,6 +402,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                     "main_user_id": self.user_root.id,
                     "name": "OdooBot",
                     "tz": "Europe/Brussels",
+                    "partner_share": False,
                     "write_date": fields.Datetime.to_string(self.user_root.partner_id.write_date),
                 },
                 {
@@ -1664,6 +1666,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "mention_token": user.partner_id._get_mention_token(),
                 "name": "Ernest Employee",
                 "tz": "Europe/Brussels",
+                "partner_share": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
             if also_livechat:
@@ -1720,6 +1723,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "mention_token": user.partner_id._get_mention_token(),
                 "name": "test2",
                 "tz": False,
+                "partner_share": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.users[3]:
@@ -1735,6 +1739,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "mention_token": user.partner_id._get_mention_token(),
                 "name": "test3",
                 "tz": False,
+                "partner_share": False,
                 "write_date": fields.Datetime.to_string(self.users[3].partner_id.write_date),
             }
         if user == self.users[12]:
@@ -1750,6 +1755,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "mention_token": user.partner_id._get_mention_token(),
                 "name": "test12",
                 "tz": False,
+                "partner_share": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.users[14]:
@@ -1765,6 +1771,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "mention_token": user.partner_id._get_mention_token(),
                 "name": "test14",
                 "tz": False,
+                "partner_share": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.users[15]:
@@ -1780,6 +1787,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "mention_token": user.partner_id._get_mention_token(),
                 "name": "test15",
                 "tz": False,
+                "partner_share": False,
                 "write_date": fields.Datetime.to_string(user.partner_id.write_date),
             }
         if user == self.user_root:

@@ -3,7 +3,7 @@ import { registry } from "@web/core/registry";
 import { applyNeededCss } from "@html_builder/utils/utils_css";
 import { withSequence } from "@html_editor/utils/resource";
 
-class ColorStylePlugin extends Plugin {
+export class ColorStylePlugin extends Plugin {
     static id = "colorStyle";
     static dependencies = ["color"];
     /** @type {import("plugins").BuilderResources} */

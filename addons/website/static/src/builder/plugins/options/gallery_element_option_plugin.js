@@ -1,7 +1,5 @@
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
-import { withSequence } from "@html_editor/utils/resource";
-import { SNIPPET_SPECIFIC } from "@html_builder/utils/option_sequence";
 import { BuilderAction } from "@html_builder/core/builder_action";
 import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
 
@@ -18,9 +16,9 @@ import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
  */
 
 export class GalleryElementOption extends BaseOptionComponent {
+    static id = "gallery_element_option";
     static template = "website.GalleryElementOption";
-    static selector =
-        ".s_image_gallery img, .s_carousel .carousel-item, .s_quotes_carousel .carousel-item, .s_carousel_intro .carousel-item, .s_carousel_cards .carousel-item";
+
     setup() {
         this.state = useDomState((editingElement) => {
             const isImageWall = editingElement.closest('[data-snippet="s_images_wall"]');
@@ -50,7 +48,6 @@ export class GalleryElementOptionPlugin extends Plugin {
 
     /** @type {import("plugins").WebsiteResources} */
     resources = {
-        builder_options: [withSequence(SNIPPET_SPECIFIC, GalleryElementOption)],
         builder_actions: {
             SetGalleryElementPositionAction,
         },
@@ -99,3 +96,4 @@ export class SetGalleryElementPositionAction extends BuilderAction {
 }
 
 registry.category("website-plugins").add(GalleryElementOptionPlugin.id, GalleryElementOptionPlugin);
+registry.category("builder-options").add(GalleryElementOption.id, GalleryElementOption);

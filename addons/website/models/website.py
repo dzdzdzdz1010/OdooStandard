@@ -395,7 +395,8 @@ class Website(models.CachedModel):
                         'website_id': self.id,
                         'view_id': specific_cook_view.id,
                     })
-
+        if 'robots_txt' in values:
+            self._update_robots_txt()
         return result
 
     @api.model
@@ -2327,3 +2328,53 @@ class Website(models.CachedModel):
         """
         self.ensure_one()
         return not self.cookies_bar or self.env['ir.http']._is_allowed_cookie('optional')
+
+    def _update_robots_txt(self, clean_record=False):
+        current_website = self.get_current_website()
+
+        xmlid_module = 'website'
+        xmlid_name = f'robots_txt_website_{current_website.id}'
+        full_xmlid = f'{xmlid_module}.{xmlid_name}'
+
+        attachment = self.env.ref(full_xmlid, raise_if_not_found=False)
+
+        if clean_record:
+            attachment.unlink()
+            return None
+
+        render_context = {
+            'allowed_routes': self.env['ir.http']._get_allowed_robots_routes(),
+            'url_root': f'{self.get_base_url()}/',
+            'website': current_website,
+        }
+
+        robots_content = str(
+            self.env['ir.ui.view']._render_template(
+                'website.robots',
+                render_context,
+            )
+        )
+
+        values = {
+            'name': 'robots.txt',
+            'website_id': current_website.id,
+            'index_content': robots_content,
+            'mimetype': 'text/plain',
+        }
+
+        if attachment:
+            attachment.write(values)
+            return attachment
+
+        Attachment = self.env['ir.attachment'].sudo()
+        ModelData = self.env['ir.model.data'].sudo()
+
+        attachment = Attachment.create(values)
+        ModelData.create({
+            'module': xmlid_module,
+            'name': xmlid_name,
+            'model': 'ir.attachment',
+            'res_id': attachment.id,
+            'noupdate': True,
+        })
+        return attachment

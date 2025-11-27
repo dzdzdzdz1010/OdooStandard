@@ -95,6 +95,16 @@ class IrModuleModule(models.Model):
                     for website in websites_to_update:
                         module._theme_load(website)
 
+            depends_on_website = any('website' in dep.name for dep in module.dependencies_id)
+
+            # If the module depends on 'website' and is being
+            # installed/uninstalled/upgraded then update the robots.txt
+            if (
+                depends_on_website
+                and module.state in ('to install', 'to remove', 'to upgrade')
+            ):
+                self.env['website']._upsert_robots_txt_attachment()
+
         return super(IrModuleModule, self).write(vals)
 
     def _get_module_data(self, model_name):

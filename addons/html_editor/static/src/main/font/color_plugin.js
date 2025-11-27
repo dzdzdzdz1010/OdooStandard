@@ -5,7 +5,6 @@ import {
     hasAnyNodesColor,
     hasColor,
     TEXT_CLASSES_REGEX,
-    hasTextColorClass,
 } from "@html_editor/utils/color";
 import { fillEmpty, unwrapContents } from "@html_editor/utils/dom";
 import {
@@ -20,6 +19,7 @@ import { isColorGradient, rgbaToHex } from "@web/core/utils/colors";
 import { backgroundImageCssToParts, backgroundImagePartsToCss } from "@html_editor/utils/image";
 import { isHtmlContentSupported } from "@html_editor/core/selection_plugin";
 import { isBlock } from "@html_editor/utils/blocks";
+import { callbacksForCursorUpdate } from "@html_editor/utils/selection";
 
 const COLOR_COMBINATION_CLASSES = [1, 2, 3, 4, 5].map((i) => `o_cc${i}`);
 const COLOR_COMBINATION_SELECTOR = COLOR_COMBINATION_CLASSES.map((c) => `.${c}`).join(", ");
@@ -185,6 +185,7 @@ export class ColorPlugin extends Plugin {
                 targetedNodes.push(selection.endContainer, ...descendants(selection.endContainer));
             }
         }
+        const cursor = this.dependencies.selection.preserveSelection();
 
         const findTopMostDecoration = (current) => {
             const decoration = closestElement(current.parentNode, "s, u");
@@ -217,49 +218,39 @@ export class ColorPlugin extends Plugin {
                 .filter(Boolean)
         );
 
+        const alreadyWithinFont = new Set();
         const getFonts = (selectedNodes) =>
             selectedNodes.flatMap((node) => {
                 // Invisible nodes like `feff`s can be removed during `splitAroundUntil`
-                // so we filter them out.
-                if (!node.isConnected) {
+                // or the node is already within a newly created font so we
+                // filter them out.
+                if (!node.isConnected || alreadyWithinFont.has(node)) {
                     return [];
                 }
-                let font =
-                    closestElement(node, "font") ||
-                    closestElement(
-                        node,
-                        '[style*="color"]:not(li), [style*="background-color"]:not(li), [style*="background-image"]:not(li)'
-                    ) ||
-                    closestElement(node, "span") ||
-                    closestElement(node, (node) => hasTextColorClass(node, mode));
-
-                const faNodes = font?.querySelectorAll(".fa");
-                if (faNodes && Array.from(faNodes).some((faNode) => faNode.contains(node))) {
-                    return font;
+                let font = closestElement(
+                    node,
+                    (node) =>
+                        (hasColor(node, "color") || hasColor(node, "backgroundColor")) &&
+                        node.nodeName !== "LI"
+                );
+                if (
+                    color &&
+                    font &&
+                    (!hasColor(font, mode) ||
+                        (isColorGradient(font.style["background-image"]) &&
+                            !this.dependencies.selection.areNodeContentsFullySelected(font))) &&
+                    // Background gradient cannot be applied within text
+                    // gradient.
+                    !(
+                        font.classList.contains("text-gradient") &&
+                        mode === "backgroundColor" &&
+                        isColorGradient(color)
+                    )
+                ) {
+                    font = null;
                 }
                 const children = font && descendants(font);
-                const hasInlineGradient = font && isColorGradient(font.style["background-image"]);
-                const isFullySelected =
-                    children && children.every((child) => selectedNodes.includes(child));
-                const isTextGradient =
-                    hasInlineGradient && font.classList.contains("text-gradient");
-                const shouldReplaceExistingGradient =
-                    isFullySelected &&
-                    ((mode === "color" && isTextGradient) ||
-                        (mode === "backgroundColor" && !isTextGradient));
-                if (
-                    font &&
-                    font.nodeName !== "T" &&
-                    (font.nodeName !== "SPAN" ||
-                        font.style[mode] ||
-                        font.style.backgroundImage ||
-                        hasTextColorClass(font, mode)) &&
-                    (isColorGradient(color) ||
-                        color === "" ||
-                        !hasInlineGradient ||
-                        shouldReplaceExistingGradient) &&
-                    !this.dependencies.split.isUnsplittable(font)
-                ) {
+                if (font && !this.dependencies.split.isUnsplittable(font)) {
                     // Partially selected <font>: split it.
                     const selectedChildren = children.filter((child) =>
                         selectedNodes.includes(child)
@@ -285,46 +276,11 @@ export class ColorPlugin extends Plugin {
                             font.append(newFont);
                             font = newFont;
                         }
-                        const closestGradientEl = closestElement(
-                            node,
-                            'font[style*="background-image"], span[style*="background-image"]'
-                        );
-                        const isGradientBeingUpdated = closestGradientEl && isColorGradient(color);
-                        const splitnode = isGradientBeingUpdated ? closestGradientEl : font;
-                        const cursors = this.dependencies.selection.preserveSelection();
                         font = this.dependencies.split.splitAroundUntil(
                             selectedChildren,
-                            splitnode,
-                            cursors
+                            font,
+                            cursor
                         );
-                        cursors.restore();
-                        if (isGradientBeingUpdated) {
-                            const classRegex =
-                                mode === "color" ? TEXT_CLASSES_REGEX : BG_CLASSES_REGEX;
-                            // When updating a gradient, remove color applied to
-                            // its descendants.This ensures the gradient remains
-                            // visible without being overwritten by a descendant's color.
-                            for (const node of descendants(font)) {
-                                if (
-                                    node.nodeType === Node.ELEMENT_NODE &&
-                                    (node.style[mode] || classRegex.test(node.className))
-                                ) {
-                                    this.colorElement(node, "", mode);
-                                    node.style.webkitTextFillColor = "";
-                                    if (!node.getAttribute("style")) {
-                                        unwrapContents(node);
-                                    }
-                                }
-                            }
-                        } else if (
-                            mode === "color" &&
-                            (font.style.webkitTextFillColor ||
-                                (closestGradientEl &&
-                                    closestGradientEl.classList.contains("text-gradient") &&
-                                    !shouldReplaceExistingGradient))
-                        ) {
-                            font.style.webkitTextFillColor = color;
-                        }
                     } else {
                         font = [];
                     }
@@ -358,12 +314,10 @@ export class ColorPlugin extends Plugin {
                         // No <font> found: insert a new one.
                         font = this.document.createElement("font");
                         node.after(font);
-                        if (isTextGradient && mode === "color") {
-                            font.style.webkitTextFillColor = color;
-                        }
                     }
                     if (node.textContent) {
                         font.appendChild(node);
+                        descendants(node).forEach((n) => alreadyWithinFont.add(n));
                     } else {
                         fillEmpty(font);
                     }
@@ -384,7 +338,6 @@ export class ColorPlugin extends Plugin {
         if (!fonts.every((font) => font.isConnected)) {
             fonts = getFonts(selectedNodes);
         }
-
         // Color the selected <font>s and remove uncolored fonts.
         const fontsSet = new Set(fonts);
         for (const font of fontsSet) {
@@ -395,14 +348,12 @@ export class ColorPlugin extends Plugin {
                 ["FONT", "SPAN"].includes(font.nodeName) &&
                 (!font.hasAttribute("style") || !color)
             ) {
-                for (const child of [...font.childNodes]) {
-                    font.parentNode.insertBefore(child, font);
-                }
-                font.parentNode.removeChild(font);
+                cursor.update(callbacksForCursorUpdate.unwrap(font));
+                unwrapContents(font);
                 fontsSet.delete(font);
             }
         }
-        this.dependencies.selection.setSelection(selection, { normalize: false });
+        cursor.restore();
     }
 
     /**
@@ -443,6 +394,15 @@ export class ColorPlugin extends Plugin {
             .replace(/\s+/, " ");
         if (oldClassName !== newClassName) {
             element.setAttribute("class", newClassName);
+        }
+        const isTextGradient = closestElement(element, ".text-gradient");
+        // If the nearest <font> has a text gradient, its
+        // visible color comes from -webkit-text-fill-color,
+        // we need to set it too when applying a color.
+        if (isTextGradient && mode === "color" && !isColorGradient(color)) {
+            element.style.webkitTextFillColor = color;
+        } else if (isColorGradient(color) || color === "") {
+            element.style.webkitTextFillColor = "";
         }
         if (color.startsWith("text") || color.startsWith("bg-")) {
             element.style[mode] = "";

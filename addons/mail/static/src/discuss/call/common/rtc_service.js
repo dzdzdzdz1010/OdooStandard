@@ -6,7 +6,6 @@ import { monitorAudio } from "@mail/utils/common/media_monitoring";
 import { CallPermissionDeniedDialog } from "@mail/discuss/call/common/call_permission_denied_dialog";
 import { rpc } from "@web/core/network/rpc";
 import { assignDefined, closeStream, onChange } from "@mail/utils/common/misc";
-import { CallInfiniteMirroringWarning } from "@mail/discuss/call/common/call_infinite_mirroring_warning";
 
 import { reactive, toRaw } from "@odoo/owl";
 
@@ -466,7 +465,6 @@ export class Rtc extends Record {
     start() {
         const services = this.store.env.services;
         this.notification = services.notification;
-        this.overlay = services.overlay;
         this.dialog = services.dialog;
         this.soundEffectsService = services["mail.sound_effects"];
         this.pttExtService = services["discuss.ptt_extension"];
@@ -605,29 +603,6 @@ export class Rtc extends Record {
             return;
         }
         this.setPttReleaseTimeout();
-    }
-
-    showMirroringWarning() {
-        this.screenTrack.enabled = false;
-        const trackEndedFn = () => this.removeMirroringWarning?.();
-        this.removeMirroringWarning = this.overlay.add(
-            CallInfiniteMirroringWarning,
-            {
-                onClose: ({ stopScreensharing } = {}) => {
-                    this.removeMirroringWarning({ stopScreensharing });
-                },
-            },
-            {
-                onRemove: ({ stopScreensharing } = {}) => {
-                    if (stopScreensharing) {
-                        this.toggleVideo("screen", false);
-                    }
-                    this.screenTrack?.removeEventListener("ended", trackEndedFn);
-                    this.removeMirroringWarning = null;
-                },
-            }
-        );
-        this.screenTrack.addEventListener("ended", trackEndedFn, { once: true });
     }
 
     setPttReleaseTimeout(duration = PTT_RELEASE_DURATION) {
@@ -2034,9 +2009,17 @@ export class Rtc extends Record {
                 if (this.sourceScreenStream) {
                     sourceStream = this.sourceScreenStream;
                 } else {
+                    let controller;
+                    try {
+                        controller = new window.CaptureController();
+                        controller.setFocusBehavior("no-focus-change");
+                    } catch {
+                        console.warn("CaptureController not supported");
+                    }
                     sourceStream = await sourceWindow.navigator.mediaDevices.getDisplayMedia({
                         video: SCREEN_CONFIG,
                         audio: true,
+                        ...(controller && { controller }),
                     });
                 }
                 this.soundEffectsService.play("screen-sharing");
@@ -2421,9 +2404,8 @@ export const rtcService = {
                 rtc.displaySurface !== "browser" &&
                 rtc.fullscreen.id === CALL_FULLSCREEN_ID
             ) {
-                rtc.showMirroringWarning();
+                rtc.screenTrack.enabled = false;
             } else if (!rtc.isFullscreen) {
-                rtc.removeMirroringWarning?.();
                 if (wasFullscreen && rtc.screenTrack) {
                     rtc.screenTrack.enabled = true;
                 }

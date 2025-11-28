@@ -1,10 +1,21 @@
 import { setSelection } from "@html_editor/../tests/_helpers/selection";
 import { expandToolbar } from "@html_editor/../tests/_helpers/toolbar";
 import { expect, test } from "@odoo/hoot";
-import { queryFirst, queryOne, scroll, waitFor, waitUntil } from "@odoo/hoot-dom";
+import {
+    click,
+    pointerDown,
+    pointerUp,
+    queryFirst,
+    queryOne,
+    scroll,
+    waitFor,
+    waitForNone,
+    waitUntil,
+} from "@odoo/hoot-dom";
 import { contains } from "@web/../tests/web_test_helpers";
 import { defineWebsiteModels, setupWebsiteBuilder } from "./website_helpers";
 import { animationFrame } from "@odoo/hoot-mock";
+import { expectElementCount } from "@html_editor/../tests/_helpers/ui_expectations";
 
 defineWebsiteModels();
 
@@ -79,12 +90,14 @@ test("Floating toolbar visual consistency and usability", async () => {
     // Verify animation option dropdown matches font style popover design
     await contains(".o-we-toolbar button[title='Animate Text']").click();
     await contains(".o_animate_text_popover .hb-row-content button").click();
-    const animationPopover = await waitFor(".o_popover:has([data-action-value='onAppearance']");
+    const animationPopover = await waitFor(".o_popover:has([data-action-value='onAppearance'])");
     expect(animationPopover).not.toHaveClass("o-hb-select-dropdown");
 
     // Verify highlight picker grid is scrollable and scrollbar is hidden
-    await contains(".o-we-toolbar button[title='Apply highlight']").click();
-    const textHighlightPopover = await waitFor(".o_popover");
+    await pointerDown(".o-we-toolbar button[title='Apply highlight']");
+    await waitForNone(".o_popover:has([data-action-value='onAppearance'])");
+    await pointerUp(".o-we-toolbar button[title='Apply highlight']");
+    const textHighlightPopover = await waitFor(".o_popover .grid");
     expect(textHighlightPopover).toHaveStyle({ overflow: "auto", scrollbarWidth: "thin" });
 
     // Verify highlight color picker has sublevel rows for hierarchy
@@ -93,6 +106,7 @@ test("Floating toolbar visual consistency and usability", async () => {
     const sublevelRow = colorLabel.closest(".hb-row-sublevel-1");
     expect(sublevelRow).toHaveClass("hb-row-sublevel-1");
 });
+<<<<<<< 1417a464ad732a150813951872cbb99b4c3670bb
 
 test("button preview updates according to button shape, size, and theme colors", async () => {
     await setupWebsiteBuilder(
@@ -149,3 +163,36 @@ test("button preview updates according to button shape, size, and theme colors",
         "text-transform": "none",
     });
 });
+||||||| 41fcb966dd23b82ca3d196483d498756d4c5ad6e
+=======
+
+test("closing the link popover should re-open the toolbar", async () => {
+    await setupWebsiteBuilder(`
+        <section class="first-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <p>TEST</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    `);
+
+    const p = queryOne(":iframe p");
+    setSelection({ anchorNode: p, anchorOffset: 0, focusNode: p, focusOffset: 1 });
+
+    await waitFor(".o-we-toolbar");
+    await contains('.o-we-toolbar button[name="link"]').click();
+
+    // While the link popover is open, the toolbar should be hidden
+    await expectElementCount(".o-we-toolbar", 0);
+    await expectElementCount(".o-we-linkpopover", 1);
+
+    // Closing the link popover should bring the toolbar back
+    await click(".o_we_discard_link");
+
+    await expectElementCount(".o-we-linkpopover", 0);
+    await expectElementCount(".o-we-toolbar", 1);
+});
+>>>>>>> 5db3301801a8ea7cd392f6b83fe2b2f69880185d

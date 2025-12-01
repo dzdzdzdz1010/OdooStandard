@@ -25,6 +25,9 @@
                     <button string="Send Mass Mailing" name="action_send_mail" type="object" class="btn-primary o_mail_send"
                         invisible="mass_mailing_name == '' or not mass_mailing_name" data-hotkey="q"/>
                 </xpath>
+                <xpath expr="//field[@name='template_id']" position="attributes">
+                    <attribute name="invisible">True</attribute>
+                </xpath>
             </field>
         </record>
 

@@ -28,6 +28,7 @@ class kioskAttendanceApp extends Component{
         barcodeSource: { type: String },
         fromTrialMode: { type: Boolean },
         deviceTrackingEnabled: { type: Boolean },
+        captureCheckInPicture: { type: Boolean },
     };
     static components = {
         KioskBarcodeScanner,
@@ -133,6 +134,18 @@ class kioskAttendanceApp extends Component{
         this.notification.add(text, { type: "danger" });
     }
 
+    async _capturePicture() {
+        const canvas = document.createElement("canvas");
+        canvas.width = this.video.videoWidth;
+        canvas.height = this.video.videoHeight;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(this.video, 0, 0, canvas.width, canvas.height);
+
+        const imgData = canvas.toDataURL("image/webp");
+        return imgData.split(",")[1];
+    }
+
     async makeRpcWithGeolocation(route, params) {
         if (!this.props.deviceTrackingEnabled || !navigator.geolocation || isIosApp()) {
             // iOS app lacks permissions or tracking disabled
@@ -161,16 +174,22 @@ class kioskAttendanceApp extends Component{
     }
 
     async onManualSelection(employeeId, enteredPin) {
+        this.video = document.getElementById("attendance_video_stream");
+        let check_in_image;
+        if (this.video) {
+            check_in_image = await this._capturePicture();
+        }
         const result = await this.makeRpcWithGeolocation('manual_selection',
             {
                 'token': this.props.token,
                 'employee_id': employeeId,
-                'pin_code': enteredPin
+                'pin_code': enteredPin,
+                'check_in_image': check_in_image,
             })
         if (result && result.attendance) {
             this.employeeData = result
             this.switchDisplay('greet')
-        }else{
+        } else {
             if (enteredPin){
                 this.displayNotification(_t("Wrong Pin"))
             }
@@ -181,6 +200,11 @@ class kioskAttendanceApp extends Component{
         if (this.lockScanner || this.state.active_display !== 'main') {
             return;
         }
+        this.video = document.getElementById("attendance_video_stream");
+        let check_in_image;
+        if (this.video) {
+            check_in_image = await this._capturePicture();
+        }
         this.lockScanner = true;
         this.ui.block();
 
@@ -189,6 +213,7 @@ class kioskAttendanceApp extends Component{
             result = await rpc("attendance_barcode_scanned", {
                 barcode: barcode,
                 token: this.props.token,
+                check_in_image: check_in_image,
             });
 
             if (result && result.employee_name) {
@@ -232,6 +257,7 @@ export async function createPublicKioskAttendance(document, kiosk_backend_info) 
                 barcodeSource: kiosk_backend_info.barcode_source,
                 fromTrialMode: kiosk_backend_info.from_trial_mode,
                 deviceTrackingEnabled: kiosk_backend_info.device_tracking_enabled,
+                captureCheckInPicture: kiosk_backend_info.capture_check_in_picture,
             },
         dev: env.debug,
         translateFn: appTranslateFn,

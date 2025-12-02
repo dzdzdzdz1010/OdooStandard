@@ -18,5 +18,6 @@ from . import test_backorder
 from . import test_performance
 from . import test_consume_component
 from . import test_manual_consumption
+from . import test_warning
 from . import test_workcenter
 from . import test_workorder

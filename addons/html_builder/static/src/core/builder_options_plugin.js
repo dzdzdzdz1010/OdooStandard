@@ -558,7 +558,6 @@ export class BuilderOptionsPlugin extends Plugin {
         return Array.from(template.children, (node) => this.createOptionClassFromNode(node));
     }
 
-    // TODO DUAU: for title, in the template, should it be title.translate? How are translations managed?
     createOptionClassFromNode(node) {
         const optionId = node.tagName.toLowerCase();
         const {
@@ -575,7 +574,7 @@ export class BuilderOptionsPlugin extends Plugin {
         if (!selector) {
             throw new Error(`Missing selector name in builder option ${optionId}`);
         }
-        // TODO DUAU: we need specific for website and mass_mailing, also registry or ressource?
+
         const optionRegistry = this.getOptionRegistry(optionId);
         if (!optionRegistry) {
             if (!template) {
@@ -631,20 +630,21 @@ export class BuilderOptionsPlugin extends Plugin {
 
     createOptionClass(
         name,
-        { template, selector, exclude, applyTo, title, editableOnly, reloadTarget, groups, props }
+        { template, selector, exclude, applyTo, title, editableOnly, reloadTarget, groups }
     ) {
-        const OptionClass = { [name]: class extends BaseOptionComponent {} }[name];
-        return Object.assign(OptionClass, {
-            template,
-            selector,
-            exclude,
-            applyTo,
-            title,
-            editableOnly,
-            reloadTarget,
-            groups,
-            propsValue: props,
-        });
+        const OptionClass = {
+            [name]: class extends BaseOptionComponent {
+                static template = template;
+                static selector = selector;
+                static exclude = exclude;
+                static applyTo = applyTo;
+                static title = title;
+                static editableOnly = editableOnly;
+                static reloadTarget = reloadTarget;
+                static groups = groups;
+            },
+        }[name];
+        return OptionClass;
     }
 
     getOptionAttributes(node) {

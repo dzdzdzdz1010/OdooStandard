@@ -14,4 +14,4 @@ export class DynamicSnippetEventsOption extends BaseOptionComponent {
     }
 }
 
-registry.category("builder-options").add(DynamicSnippetEventsOption.id, DynamicSnippetEventsOption);
+registry.category("website-options").add(DynamicSnippetEventsOption.id, DynamicSnippetEventsOption);

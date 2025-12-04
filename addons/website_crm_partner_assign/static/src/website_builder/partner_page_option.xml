@@ -8,7 +8,7 @@
     </t>
 
     <t t-inherit="website.BuilderOptions" t-inherit-mode="extension">
-        <xpath expr="//switchable_views" position="after">
+        <xpath expr="//t[@id='module_specific_options']" position="after">
             <partner_page_option
                 template="website_crm_partner_assign.PartnerPageOption"
                 selector="main:has(#oe_structure_website_crm_partner_assign_layout_1):not(:has(.o_wcrm_filters_top))"

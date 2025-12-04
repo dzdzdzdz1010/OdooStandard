@@ -58,6 +58,8 @@ export class BuilderAction {
         this.delegateTo = context.delegateTo;
         /** @type { EditorContext['processThrough'] } **/
         this.processThrough = context.processThrough;
+        /** @type { EditorContext['checkPredicates'] } **/
+        this.checkPredicates = context.checkPredicates;
 
         this.setup();
 

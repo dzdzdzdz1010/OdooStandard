@@ -43,6 +43,7 @@
         t-att-data-publish="product.website_published and 'on' or 'off'"
         t-att-aria-label="product.name"
     >
+        <t t-if="not product.website_published" t-call="website.unpublished_badge" badge_classes="'position-absolute top-0 start-0 z-1 mt-2 ms-2'"/>
         <div t-attf-class="oe_product_image position-relative flex-grow-0 overflow-hidden">
             <!-- Fetch Images Data -->
             <!-- Use `variant` instead of reassigning `product_variant` beacause it's used to infer
@@ -134,15 +135,6 @@
                                 t-if="combination_name"
                                 t-out="'('+combination_name+')'"
                             />
-                        </a>
-                        <a
-                            t-if="not product.website_published"
-                            role="button"
-                            t-att-href="product_href"
-                            class="btn btn-sm btn-danger"
-                            title="This product is unpublished."
-                        >
-                            Unpublished
                         </a>
                     </h2>
                     <!-- Description -->

@@ -2766,6 +2766,15 @@
     </div>
 </template>
 
+<template id="website.unpublished_badge" name="Unpublished Badge">
+    <small
+        t-attf-class="o_unpublished_badge badge bg-black-75 shadow-sm {{badge_classes if badge_classes is not None else 'position-absolute top-0 end-0 z-1 mt-2 me-2'}}"
+        t-att-title="is_minimal_badge and 'Unpublished'"
+    >
+        <i t-attf-class="fa fa-ban {{not is_minimal_badge and 'me-2' or ''}}" aria-hidden="true"/><t t-if="not is_minimal_badge">Unpublished</t>
+    </small>
+</template>
+
 <template id="pager" name="Pager" inherit_id="portal.pager">
 </template>
 

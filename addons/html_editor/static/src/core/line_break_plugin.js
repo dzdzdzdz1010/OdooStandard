@@ -26,12 +26,15 @@ export class LineBreakPlugin extends Plugin {
     /** @type {import("plugins").EditorResources} */
     resources = {
         beforeinput_listeners: this.onBeforeInput.bind(this),
-        legit_feff_predicates: [
-            (node) =>
+        legit_feff_predicates: (node) => {
+            if (
                 !node.nextSibling &&
                 !isBlock(closestElement(node)) &&
-                nextLeaf(node, closestBlock(node)),
-        ],
+                nextLeaf(node, closestBlock(node))
+            ) {
+                return true;
+            }
+        },
     };
 
     insertLineBreak() {

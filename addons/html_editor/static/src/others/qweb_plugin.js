@@ -49,11 +49,22 @@ export class QWebPlugin extends Plugin {
         normalize_listeners: withSequence(0, this.normalize.bind(this)),
 
         system_attributes: QWEB_DATA_ATTRIBUTES,
-        unremovable_node_predicates: isUnremovableQWebElement,
-        unsplittable_node_predicates: isUnsplittableQWebElement,
+        removable_node_predicates: (node) => {
+            if (isUnremovableQWebElement(node)) {
+                return false;
+            }
+        },
+        splittable_node_predicates: (node) => {
+            if (isUnsplittableQWebElement(node)) {
+                return false;
+            }
+        },
         clipboard_content_processors: this.clearDataAttributes.bind(this),
-        legit_empty_link_predicates: (linkEl) =>
-            linkEl.getAttributeNames().some((name) => name.startsWith("t-")),
+        legit_empty_link_predicates: (linkEl) => {
+            if (linkEl.getAttributeNames().some((name) => name.startsWith("t-"))) {
+                return true;
+            }
+        },
     };
 
     setup() {

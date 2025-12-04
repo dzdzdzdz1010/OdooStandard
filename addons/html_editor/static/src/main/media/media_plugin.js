@@ -90,11 +90,20 @@ export class MediaPlugin extends Plugin {
         normalize_listeners: this.normalizeMedia.bind(this),
         selectionchange_listeners: this.selectAroundIcon.bind(this),
 
-        unsplittable_node_predicates: isIconElement, // avoid merge
+        splittable_node_predicates: (node) => {
+            // avoid merge
+            if (isIconElement(node)) {
+                return false;
+            }
+        },
         is_node_editable_predicates: this.isEditableMediaElement.bind(this),
         clipboard_content_processors: this.clean.bind(this),
         clipboard_text_processors: (text) => text.replace(/\u200B/g, ""),
-        functional_empty_node_predicates: isMediaElement,
+        functional_empty_node_predicates: (node) => {
+            if (isMediaElement(node)) {
+                return true;
+            }
+        },
 
         selectors_for_feff_providers: () =>
             `:is(${paragraphRelatedElementsSelector}, ${FORMATTABLE_TAGS.join(

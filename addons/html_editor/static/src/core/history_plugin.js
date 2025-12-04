@@ -153,8 +153,8 @@ import { trackOccurrences, trackOccurrencesPair } from "../utils/tracking";
  * @typedef {(() => void)[]} restore_savepoint_listeners
  * @typedef {((arg: { step: HistoryStep, stepCommonAncestor: HTMLElement, isPreviewing: boolean }) => void)[]} step_added_listeners
  *
- * @typedef {((record: HistoryMutationRecord) => boolean)[]} savable_mutation_record_predicates
- * @typedef {((step: HistoryStep) => boolean)[]} unreversible_step_predicates
+ * @typedef {((record: HistoryMutationRecord) => boolean | undefined)[]} savable_mutation_record_predicates
+ * @typedef {((step: HistoryStep) => boolean | undefined)[]} reversible_step_predicates
  *
  * @typedef {((
  *    value: string,
@@ -1239,9 +1239,7 @@ export class HistoryPlugin extends Plugin {
         if (!step) {
             return false;
         }
-        return !this.getResource("unreversible_step_predicates").some((predicate) =>
-            predicate(step)
-        );
+        return this.checkPredicates("reversible_step_predicates", step) ?? true;
     }
     /**
      * Get the step index in the history to redo.

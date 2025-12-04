@@ -55,8 +55,8 @@ function isFormatted(formatPlugin, format) {
  * }) => void | boolean)[]} format_selection_listeners
  * @typedef {(() => void)[]} remove_all_formats_listeners
  *
- * @typedef {((className: string) => boolean)[]} format_class_predicates
- * @typedef {((node: Node) => boolean)[]} has_format_predicates
+ * @typedef {((className: string) => boolean | undefined)[]} format_class_predicates
+ * @typedef {((node: Node) => boolean | undefined)[]} has_format_predicates
  */
 
 export class FormatPlugin extends Plugin {
@@ -190,7 +190,11 @@ export class FormatPlugin extends Plugin {
         before_set_tag_listeners: this.removeFontSizeFormat.bind(this),
         before_insert_processors: this.unwrapEmptyFormat.bind(this),
 
-        intangible_char_for_keyboard_navigation_predicates: (_, char) => char === "\u200b",
+        tangible_char_for_keyboard_navigation_predicates: (_, char) => {
+            if (char === "\u200b") {
+                return false;
+            }
+        },
     };
 
     /**
@@ -285,8 +289,8 @@ export class FormatPlugin extends Plugin {
                 return true;
             }
         }
-        return targetedNodes.some((node) =>
-            this.getResource("has_format_predicates").some((predicate) => predicate(node))
+        return targetedNodes.some(
+            (node) => this.checkPredicates("has_format_predicates", node) ?? false
         );
     }
 
@@ -362,8 +366,9 @@ export class FormatPlugin extends Plugin {
             // Remove the format on all inline ancestors until a block or an element
             // with a class that is not indicated as splittable.
             const isClassListSplittable = (classList) =>
-                [...classList].every((className) =>
-                    this.getResource("format_class_predicates").some((cb) => cb(className))
+                [...classList].every(
+                    (className) =>
+                        this.checkPredicates("format_class_predicates", className) ?? false
                 );
 
             while (
@@ -563,8 +568,8 @@ export class FormatPlugin extends Plugin {
             return;
         }
         if (
-            ![...element.classList].every((c) =>
-                this.getResource("format_class_predicates").some((p) => p(c))
+            ![...element.classList].every(
+                (c) => this.checkPredicates("format_class_predicates", c) ?? false
             )
         ) {
             // Original comment from web_editor:
@@ -679,7 +684,7 @@ export class FormatPlugin extends Plugin {
     shouldBeMergedWithPreviousSibling(node) {
         const isMergeable = (node) =>
             FORMATTABLE_TAGS.includes(node.nodeName) &&
-            !this.getResource("unsplittable_node_predicates").some((predicate) => predicate(node));
+            (this.checkPredicates("splittable_node_predicates", node) ?? true);
         return (
             !isSelfClosingElement(node) &&
             areSimilarElements(node, node.previousSibling) &&

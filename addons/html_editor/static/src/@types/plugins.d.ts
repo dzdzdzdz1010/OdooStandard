@@ -3,22 +3,22 @@ declare module "plugins" {
     import { Plugin } from "@html_editor/plugin";
     import { ResourceWithSequence } from "@html_editor/utils/resource";
 
-    import { BaseContainerShared, invalid_for_base_container_predicates } from "@html_editor/core/base_container_plugin";
-    import { added_image_listeners, after_paste_listeners, before_paste_listeners, bypass_paste_image_files, clipboard_content_processors, clipboard_text_processors, ClipboardShared, paste_text_overrides } from "@html_editor/core/clipboard_plugin";
+    import { BaseContainerShared, valid_for_base_container_predicates } from "@html_editor/core/base_container_plugin";
+    import { added_image_listeners, after_paste_listeners, before_paste_handlers, bypass_paste_image_files, clipboard_content_processors, clipboard_text_processors, ClipboardShared, paste_text_overrides } from "@html_editor/core/clipboard_plugin";
     import { content_editable_providers, content_not_editable_providers, contenteditable_to_remove_selector, valid_contenteditable_predicates } from "@html_editor/core/content_editable_plugin";
-    import { before_delete_listeners, delete_backward_line_overrides, delete_backward_overrides, delete_backward_word_overrides, delete_forward_line_overrides, delete_forward_overrides, delete_forward_word_overrides, delete_listeners, delete_range_overrides, DeleteShared, functional_empty_node_predicates, is_empty_predicates, removable_descendants_providers, system_node_selectors, unremovable_node_predicates } from "@html_editor/core/delete_plugin";
+    import { before_delete_listeners, delete_backward_line_overrides, delete_backward_overrides, delete_backward_word_overrides, delete_forward_line_overrides, delete_forward_overrides, delete_forward_word_overrides, delete_listeners, delete_range_overrides, DeleteShared, functional_empty_node_predicates, removable_descendants_providers, system_node_selectors, removable_node_predicates } from "@html_editor/core/delete_plugin";
     import { DialogShared } from "@html_editor/core/dialog_plugin";
     import { after_insert_listeners, before_insert_processors, before_set_tag_listeners, DomShared, node_to_insert_processors, system_attributes, system_classes, system_style_properties } from "@html_editor/core/dom_plugin";
     import { format_class_predicates, format_selection_listeners, FormatShared, has_format_predicates, remove_all_formats_listeners } from "@html_editor/core/format_plugin";
-    import { attribute_change_listeners, attribute_change_processors, before_add_step_listeners, before_filter_mutation_record_listeners, content_updated_listeners, external_step_added_listeners, handle_new_records_listeners, history_cleaned_listeners, history_reset_from_steps_listeners, history_reset_listeners, history_step_processors, HistoryShared, post_redo_listeners, post_undo_listeners, restore_savepoint_listeners, savable_mutation_record_predicates, serializable_descendants_processors, set_attribute_overrides, step_added_listeners, unreversible_step_predicates } from "@html_editor/core/history_plugin";
+    import { attribute_change_listeners, attribute_change_processors, before_add_step_listeners, before_filter_mutation_record_listeners, content_updated_listeners, external_step_added_listeners, handle_new_records_listeners, history_cleaned_listeners, history_reset_from_steps_listeners, history_reset_listeners, history_step_processors, HistoryShared, post_redo_listeners, post_undo_listeners, restore_savepoint_listeners, savable_mutation_record_predicates, serializable_descendants_processors, set_attribute_overrides, step_added_listeners, reversible_step_predicates } from "@html_editor/core/history_plugin";
     import { beforeinput_listeners, input_listeners } from "@html_editor/core/input_plugin";
     import { before_line_break_listeners, insert_line_break_element_overrides, LineBreakShared } from "@html_editor/core/line_break_plugin";
     import { OverlayShared } from "@html_editor/core/overlay_plugin";
     import { ProtectedNodeShared } from "@html_editor/core/protected_node_plugin";
     import { SanitizeShared } from "@html_editor/core/sanitize_plugin";
-    import { double_click_overrides, fix_selection_on_editable_root_overrides, fully_selected_node_predicates, intangible_char_for_keyboard_navigation_predicates, is_node_editable_predicates, selection_leave_listeners, selectionchange_listeners, SelectionShared, targeted_nodes_processors, triple_click_overrides } from "@html_editor/core/selection_plugin";
+    import { double_click_overrides, fix_selection_on_editable_root_overrides, fully_selected_node_predicates, tangible_char_for_keyboard_navigation_predicates, is_node_editable_predicates, selection_leave_listeners, selectionchange_listeners, SelectionShared, targeted_nodes_processors, triple_click_overrides } from "@html_editor/core/selection_plugin";
     import { shortcuts, shorthands } from "@html_editor/core/shortcut_plugin";
-    import { after_split_element_listeners, before_split_block_listeners, split_element_block_overrides, SplitShared, unsplittable_node_predicates } from "@html_editor/core/split_plugin";
+    import { after_split_element_listeners, before_split_block_listeners, split_element_block_overrides, SplitShared, splittable_node_predicates } from "@html_editor/core/split_plugin";
     import { StyleShared } from "@html_editor/core/style_plugin";
     import { user_commands, UserCommandShared } from "@html_editor/core/user_command_plugin";
 
@@ -32,7 +32,7 @@ declare module "plugins" {
     import { to_inline_code_processors } from "@html_editor/main/inline_code";
     import { paste_url_overrides } from "@html_editor/main/link/link_paste_plugin";
     import { create_link_listeners, immutable_link_selectors, is_link_editable_predicates, legit_empty_link_predicates, link_compatible_selection_predicates, link_popovers, LinkShared } from "@html_editor/main/link/link_plugin";
-    import { ineligible_link_for_selection_indication_predicates, ineligible_link_for_zwnbsp_predicates, LinkSelectionShared } from "@html_editor/main/link/link_selection_plugin";
+    import { eligible_link_for_selection_indication_predicates, eligible_link_for_zwnbsp_predicates, LinkSelectionShared } from "@html_editor/main/link/link_selection_plugin";
     import { paste_media_url_command_providers } from "@html_editor/main/link/powerbox_url_paste_plugin";
     import { LocalOverlayShared } from "@html_editor/main/local_overlay_plugin";
     import { ImageCropShared } from "@html_editor/main/media/image_crop_plugin";
@@ -204,11 +204,10 @@ declare module "plugins" {
         functional_empty_node_predicates: functional_empty_node_predicates;
         has_format_predicates: has_format_predicates;
         image_name_providers: image_name_providers;
-        ineligible_link_for_selection_indication_predicates: ineligible_link_for_selection_indication_predicates;
-        ineligible_link_for_zwnbsp_predicates: ineligible_link_for_zwnbsp_predicates;
-        intangible_char_for_keyboard_navigation_predicates: intangible_char_for_keyboard_navigation_predicates;
-        invalid_for_base_container_predicates: invalid_for_base_container_predicates;
-        is_empty_predicates: is_empty_predicates;
+        eligible_link_for_selection_indication_predicates: eligible_link_for_selection_indication_predicates;
+        eligible_link_for_zwnbsp_predicates: eligible_link_for_zwnbsp_predicates;
+        tangible_char_for_keyboard_navigation_predicates: tangible_char_for_keyboard_navigation_predicates;
+        valid_for_base_container_predicates: valid_for_base_container_predicates;
         is_link_editable_predicates: is_link_editable_predicates;
         is_node_editable_predicates: is_node_editable_predicates;
         legit_empty_link_predicates: legit_empty_link_predicates;
@@ -216,9 +215,9 @@ declare module "plugins" {
         link_compatible_selection_predicates: link_compatible_selection_predicates;
         power_buttons_visibility_predicates: power_buttons_visibility_predicates;
         savable_mutation_record_predicates: savable_mutation_record_predicates;
-        unremovable_node_predicates: unremovable_node_predicates;
-        unreversible_step_predicates: unreversible_step_predicates;
-        unsplittable_node_predicates: unsplittable_node_predicates;
+        removable_node_predicates: removable_node_predicates;
+        reversible_step_predicates: reversible_step_predicates;
+        splittable_node_predicates: splittable_node_predicates;
         valid_contenteditable_predicates: valid_contenteditable_predicates;
 
         // Processors

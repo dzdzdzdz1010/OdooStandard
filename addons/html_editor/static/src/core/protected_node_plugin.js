@@ -23,9 +23,18 @@ export class ProtectedNodePlugin extends Plugin {
         normalize_listeners: withSequence(0, this.normalize.bind(this)),
         before_filter_mutation_record_listeners: this.beforeFilteringMutationRecords.bind(this),
 
-        unsplittable_node_predicates: [
-            isProtecting, // avoid merge
-            isUnprotecting,
+        splittable_node_predicates: [
+            (node) => {
+                // avoid merge
+                if (isProtecting(node)) {
+                    return false;
+                }
+            },
+            (node) => {
+                if (isUnprotecting(node)) {
+                    return false;
+                }
+            },
         ],
         savable_mutation_record_predicates: this.isMutationRecordSavable.bind(this),
         removable_descendants_providers: this.filterDescendantsToRemove.bind(this),

@@ -319,6 +319,21 @@
             </field>
         </record>
 
+        <record id="mrp_bom_line_view_tree" model="ir.ui.view">
+            <field name="name">mrp.bom.line.view.list</field>
+            <field name="model">mrp.bom.line</field>
+            <field name="arch" type="xml">
+                <list create="0" multi_edit="1" action="action_open_bom" type="object">
+                    <field name="product_id" string="Product" context="{'default_is_storable': True}"/>
+                    <field name="product_qty"/>
+                    <field name="uom_id" options="{'no_open': True, 'no_create': True}" groups="uom.group_uom" widget="many2one_uom"/>
+                    <field name="operation_id" readonly="True" optional="hide" groups="mrp.group_mrp_routings"/>
+                    <field name="bom_product_template_attribute_value_ids" readonly="True" optional="hide" groups="product.group_product_variant" widget="many2many_tags"/>
+                    <field name="bom_id" readonly="True" optional="hide" string="Bill of Material"/>
+                </list>
+            </field>
+        </record>
+
         <record id="template_open_bom" model="ir.actions.act_window">
             <field name="context">{'default_product_tmpl_id': active_id}</field>
             <field name="name">Bill of Materials</field>
@@ -331,6 +346,22 @@
             <field name="name">Bill of Materials</field>
             <field name="res_model">mrp.bom</field>
             <field name="domain">[]</field> <!-- Force empty -->
+        </record>
+
+        <record id="action_open_bom_lines" model="ir.actions.server">
+            <field name="name">Show BoM Lines</field>
+            <field name="model_id" ref="mrp.model_mrp_bom"/>
+            <field name="binding_model_id" ref="mrp.model_mrp_bom"/>
+            <field name="state">code</field>
+            <field name="code">
+                action = {
+                    'type': 'ir.actions.act_window',
+                    'name': 'BoM Lines',
+                    'res_model': 'mrp.bom.line',
+                    'views': [(env.ref('mrp.mrp_bom_line_view_tree').id, 'list')],
+                    'domain': [('bom_id', 'in', env.context.get('active_ids'))],
+                }
+            </field>
         </record>
     </data>
 </odoo>

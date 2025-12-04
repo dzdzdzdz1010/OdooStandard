@@ -756,6 +756,17 @@ class MrpBomLine(models.Model):
                 values['uom_id'] = self.env['product.product'].browse(values['product_id']).uom_id.id
         return super(MrpBomLine, self).create(vals_list)
 
+    def write(self, vals):
+        res = super().write(vals)
+        if 'product_id' in vals:
+            self.bom_id._check_bom_cycle()
+        self.bom_id._set_outdated_bom_in_productions()
+        return res
+
+    @api.ondelete(at_uninstall=False)
+    def _unlink_and_set_outdated_bom(self):
+        self.bom_id._set_outdated_bom_in_productions()
+
     def _skip_bom_line(self, product, never_attribute_values=False):
         """ Control if a BoM line should be produced, can be inherited to add custom control.
             cases:
@@ -803,6 +814,15 @@ class MrpBomLine(models.Model):
             'limit': 80,
             'context': context,
             'search_view_id': self.env.ref('product.product_document_search').ids
+        }
+
+    def action_open_bom(self):
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'mrp.bom',
+            'res_id': self.bom_id.id,
+            'view_mode': 'form',
         }
 
     # -------------------------------------------------------------------------

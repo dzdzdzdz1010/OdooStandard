@@ -128,6 +128,7 @@ class MailThread(models.AbstractModel):
     _mail_thread_customer = False  # subscribe customer when being in post recipients
     _mail_post_access = 'write'  # access required on the document to post on it
     _primary_email = 'email'  # Must be set for the models that can be created by alias
+    _mail_subject_field = None
 
     _CUSTOMER_HEADERS_LIMIT_COUNT = 50
 
@@ -2355,6 +2356,10 @@ class MailThread(models.AbstractModel):
             if real_author and not real_author.partner_share:
                 self._message_subscribe(partner_ids=[real_author.id])
 
+        # update "default subject"
+        if self._mail_subject_field and new_message.subject and self.has_access("write"):
+            self[self._mail_subject_field] = new_message.subject
+
         self._message_post_after_hook(new_message, msg_values)
         self._notify_thread(new_message, msg_values, **notif_kwargs)
         return new_message
@@ -3052,7 +3057,7 @@ class MailThread(models.AbstractModel):
         :rtype: str
         """
         self.ensure_one()
-        return self.display_name
+        return (self._mail_subject_field and self[self._mail_subject_field]) or self.display_name
 
     def _message_create(self, values_list):
         """ Low-level helper to create mail.message records. It is mainly used
@@ -5062,6 +5067,8 @@ class MailThread(models.AbstractModel):
         if "contact_fields" in request_list:
             res.attr("primary_email_field", lambda t: t._mail_get_primary_email_field())
             res.attr("partner_fields", lambda t: t._mail_get_partner_fields())
+        if "default_subject" in request_list:
+            res.attr("default_subject", lambda t: t._message_compute_subject())
         if "followers" in request_list:
             count_by_tid = {"groupby": ["res_id"], "aggregates": ["__count"]}
             domain = Domain("res_id", "in", self.ids) & Domain("res_model", "=", self._name)
@@ -5165,7 +5172,7 @@ class MailThread(models.AbstractModel):
         sudo()._message_update_content(), which means these parameters should be either inoffensive
         or safely handled by these methods. Parameters requiring special processing need to be
         manually handled in _prepare_message_data."""
-        return {"email_add_signature", "message_type", "subtype_xmlid"}
+        return {"email_add_signature", "message_type", "subject", "subtype_xmlid"}
 
     @api.model
     def _get_allowed_access_params(self):

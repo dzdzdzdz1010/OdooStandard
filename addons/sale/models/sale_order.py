@@ -37,6 +37,7 @@ class SaleOrder(models.Model):
     _order = 'date_order desc, id desc'
     _check_company_auto = True
     _mail_post_access = 'read'
+    _mail_subject_field = 'mail_subject'
 
     _date_order_conditional_required = models.Constraint(
         "CHECK((state = 'sale' AND date_order IS NOT NULL) OR state != 'sale')",
@@ -56,6 +57,7 @@ class SaleOrder(models.Model):
         required=True, copy=False, readonly=False,
         index='trigram',
         default=lambda self: _('New'))
+    mail_subject = fields.Char('Mail Subject')
 
     company_id = fields.Many2one(
         comodel_name='res.company',

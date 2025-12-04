@@ -93,12 +93,14 @@ class CrmLead(models.Model):
                ]
     _primary_email = 'email_from'
     _check_company_auto = True
+    _mail_subject_field = 'mail_subject'
     _track_duration_field = 'stage_id'
 
     # Description
     name = fields.Char(
         'Opportunity', index='trigram', required=True,
         compute='_compute_name', readonly=False, store=True)
+    mail_subject = fields.Char('Mail Subject')
     user_id = fields.Many2one(
         'res.users', string='Salesperson', default=lambda self: self.env.user,
         domain="[('share', '=', False)]",

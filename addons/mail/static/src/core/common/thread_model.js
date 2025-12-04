@@ -95,6 +95,8 @@ export class Thread extends Record {
     counter = 0;
     counter_bus_id = 0;
     /** @type {string} */
+    default_subject;
+    /** @type {string} */
     description;
     /** @type {string} */
     display_name;

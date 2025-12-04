@@ -65,6 +65,13 @@ class TestCloudStorageAttachmentController(HttpCaseWithUserDemo, TestCloudStorag
                                     "mimetype": "text/x-python",
                                     "name": "__init__.py",
                                     "res_name": False,
+<<<<<<< dfcd5e63547c75b8eec60f6937e25e67cbf31455
+||||||| f95bcc097fd7e70af8d28a66c010ae9b9490f439
+                                    "size": 0,
+=======
+                                    "res_model": attachment.res_model,
+                                    "size": 0,
+>>>>>>> ab0dba58afd69bf5e4ed622d4f9cdecca0ac0790
                                     "thread": False,
                                     "voice": False,
                                     "type": "cloud_storage",

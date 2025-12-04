@@ -104,6 +104,13 @@ class TestMessageController(HttpCaseWithUserDemo):
                     "create_date": fields.Datetime.to_string(self.attachments[0].create_date),
                     "id": self.attachments[0].id,
                     "name": "File 1",
+<<<<<<< dfcd5e63547c75b8eec60f6937e25e67cbf31455
+||||||| f95bcc097fd7e70af8d28a66c010ae9b9490f439
+                    "size": 0,
+=======
+                    "res_model": self.attachments[0].res_model,
+                    "size": 0,
+>>>>>>> ab0dba58afd69bf5e4ed622d4f9cdecca0ac0790
                     "res_name": "Test channel",
                     "mimetype": "application/octet-stream",
                     "thread": {"id": self.channel.id, "model": "discuss.channel"},
@@ -160,6 +167,13 @@ class TestMessageController(HttpCaseWithUserDemo):
                     "create_date": fields.Datetime.to_string(self.attachments[0].create_date),
                     "id": self.attachments[0].id,
                     "name": "File 1",
+<<<<<<< dfcd5e63547c75b8eec60f6937e25e67cbf31455
+||||||| f95bcc097fd7e70af8d28a66c010ae9b9490f439
+                    "size": 0,
+=======
+                    "res_model": self.attachments[0].res_model,
+                    "size": 0,
+>>>>>>> ab0dba58afd69bf5e4ed622d4f9cdecca0ac0790
                     "res_name": "Test channel",
                     "mimetype": "application/octet-stream",
                     "thread": {"id": self.channel.id, "model": "discuss.channel"},
@@ -172,6 +186,13 @@ class TestMessageController(HttpCaseWithUserDemo):
                     "create_date": fields.Datetime.to_string(self.attachments[1].create_date),
                     "id": self.attachments[1].id,
                     "name": "File 2",
+<<<<<<< dfcd5e63547c75b8eec60f6937e25e67cbf31455
+||||||| f95bcc097fd7e70af8d28a66c010ae9b9490f439
+                    "size": 0,
+=======
+                    "res_model": self.attachments[1].res_model,
+                    "size": 0,
+>>>>>>> ab0dba58afd69bf5e4ed622d4f9cdecca0ac0790
                     "res_name": "Test channel",
                     "mimetype": "application/octet-stream",
                     "thread": {"id": self.channel.id, "model": "discuss.channel"},
@@ -207,6 +228,7 @@ class TestMessageController(HttpCaseWithUserDemo):
                     "id": self.attachments[0].id,
                     "name": "File 1",
                     "res_name": "Test channel",
+                    "res_model": self.attachments[0].res_model,
                     "mimetype": "application/octet-stream",
                     "thread": {"id": self.channel.id, "model": "discuss.channel"},
                     "voice": False,
@@ -218,6 +240,13 @@ class TestMessageController(HttpCaseWithUserDemo):
                     "create_date": fields.Datetime.to_string(self.attachments[1].create_date),
                     "id": self.attachments[1].id,
                     "name": "File 2",
+<<<<<<< dfcd5e63547c75b8eec60f6937e25e67cbf31455
+||||||| f95bcc097fd7e70af8d28a66c010ae9b9490f439
+                    "size": 0,
+=======
+                    "res_model": self.attachments[1].res_model,
+                    "size": 0,
+>>>>>>> ab0dba58afd69bf5e4ed622d4f9cdecca0ac0790
                     "res_name": "Test channel",
                     "mimetype": "application/octet-stream",
                     "thread": {"id": self.channel.id, "model": "discuss.channel"},

@@ -59,6 +59,7 @@ import { renderToElement } from "@web/core/utils/render";
  * @property { BuilderOptionsPlugin['getReloadSelector'] } getReloadSelector
  * @property { BuilderOptionsPlugin['setNextTarget'] } setNextTarget
  * @property { BuilderOptionsPlugin['getBuilderOptionContext'] } getBuilderOptionContext
+ * @property { BuilderOptionsPlugin['getBuilderOptions'] } getBuilderOptions
  */
 
 /**
@@ -130,6 +131,7 @@ export class BuilderOptionsPlugin extends Plugin {
         "getReloadSelector",
         "setNextTarget",
         "getBuilderOptionContext",
+        "getBuilderOptions",
     ];
     /** @type {import("plugins").BuilderResources} */
     resources = {
@@ -556,6 +558,10 @@ export class BuilderOptionsPlugin extends Plugin {
             this.getBuilderOptionsContext()
         );
         return Array.from(template.children, (node) => this.createOptionClassFromNode(node));
+    }
+
+    getBuilderOptions() {
+        return [...this.builderOptions];
     }
 
     createOptionClassFromNode(node) {

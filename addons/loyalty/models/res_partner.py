@@ -11,6 +11,7 @@ class ResPartner(models.Model):
         compute='_compute_count_active_cards',
         compute_sudo=True,
         groups='base.group_user')
+    program_id = fields.Many2one(comodel_name='loyalty.program', index=True)
 
     def _compute_count_active_cards(self):
         loyalty_groups = self.env['loyalty.card']._read_group(

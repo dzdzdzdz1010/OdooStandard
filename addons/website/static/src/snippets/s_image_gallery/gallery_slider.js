@@ -121,7 +121,7 @@ export class GallerySlider extends Interaction {
                 this.prevEl.remove();
             } else {
                 this.prevEl.classList.remove("d-none");
-                this.indicatorEl.insertAdjacentElement("afterbegin", this.prevEl);
+                this.insert(this.prevEl, this.indicatorEl, "afterbegin");
             }
         }
         if (this.nextEl) {

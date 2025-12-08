@@ -283,7 +283,7 @@ class ImageGalleryOption extends Plugin {
             carouselEl.removeEventListener("slid.bs.carousel", this.onCarouselSlid);
         }
         container.replaceChildren(slideshowEl);
-        slideshowEl.querySelectorAll("img").forEach((img, index) => {
+        slideshowEl.querySelectorAll("img:not([aria-hidden])").forEach((img, index) => {
             img.setAttribute("data-index", index);
         });
         if (images.length) {
@@ -397,7 +397,7 @@ class ImageGalleryOption extends Plugin {
     }
 
     getImages(currentContainer) {
-        const imgs = currentContainer.querySelectorAll("img");
+        const imgs = currentContainer.querySelectorAll("img:not([aria-hidden])");
         return [...imgs].sort((imgA, imgB) => this.getIndex(imgA) - this.getIndex(imgB));
     }
 
@@ -423,7 +423,7 @@ class ImageGalleryOption extends Plugin {
     onWillRemove(toRemoveEl) {
         // If the removed element is an image from a gallery, store the gallery
         // element for `onRemoved`.
-        if (toRemoveEl.matches(".s_image_gallery img")) {
+        if (toRemoveEl.matches(".s_image_gallery img:not([aria-hidden])")) {
             this.imageRemovedGalleryElement = toRemoveEl.closest(".s_image_gallery");
         }
     }

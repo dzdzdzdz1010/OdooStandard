@@ -24,22 +24,17 @@ class HrVersion(models.Model):
         default=lambda self: datetime.now().replace(hour=0, minute=0, second=0, microsecond=0),
         groups="hr.group_hr_user", tracking=True)
     last_generation_date = fields.Date(string='Last Generation Date', readonly=True, groups="hr.group_hr_user", tracking=True)
-    work_entry_source = fields.Selection([('calendar', 'Working Schedule')], required=True, default='calendar', tracking=True, help='''
+    # TODO Change Help ToolTip
+    tracking_method = fields.Selection([
+        ('calendar', 'Time Off'),
+        ('work_entry', "Work Entries")
+    ], default=lambda self: self.env.company.tracking_method, tracking=True, required=True, help='''
         Defines the source for work entries generation
 
         Working Schedule: Work entries will be generated from the working hours below.
         Attendances: Work entries will be generated from the employee's attendances. (requires Attendance app)
         Planning: Work entries will be generated from the employee's planning. (requires Planning app)
     ''', groups="base.group_system,hr.group_hr_manager")
-    work_entry_source_calendar_invalid = fields.Boolean(
-        compute='_compute_work_entry_source_calendar_invalid',
-        groups="hr.group_hr_manager",
-    )
-
-    @api.depends('work_entry_source', 'resource_calendar_id')
-    def _compute_work_entry_source_calendar_invalid(self):
-        for version in self:
-            version.work_entry_source_calendar_invalid = version.work_entry_source == 'calendar' and not version.resource_calendar_id
 
     @ormcache()
     def _get_default_work_entry_type_id(self):
@@ -96,7 +91,7 @@ class HrVersion(models.Model):
         # {resource: intervals}
         employees_by_calendar = defaultdict(lambda: self.env['hr.employee'])
         for version in self:
-            if version.work_entry_source != 'calendar':
+            if version.tracking_method != 'calendar':
                 continue
             employees_by_calendar[version.resource_calendar_id] |= version.employee_id
         result = dict()
@@ -143,7 +138,7 @@ class HrVersion(models.Model):
 
     @api.model
     def _get_whitelist_fields_from_template(self):
-        return super()._get_whitelist_fields_from_template() + ['work_entry_source']
+        return super()._get_whitelist_fields_from_template() + ['tracking_method']
 
     # Meant for behavior override
     def _get_real_attendance_work_entry_vals(self, intervals):
@@ -380,7 +375,7 @@ class HrVersion(models.Model):
         # Static work entries as in the same are to be generated each month
         # Useful to differentiate attendance based versions from regular ones
         self.ensure_one()
-        return self.work_entry_source == 'calendar'
+        return self.tracking_method == 'calendar'
 
     def generate_work_entries(self, date_start, date_stop, force=False):
         # Generate work entries between 2 dates (datetime.date)
@@ -683,7 +678,7 @@ class HrVersion(models.Model):
 
     def _get_fields_that_recompute_we(self):
         # Returns the fields that should recompute the work entries
-        return ['resource_calendar_id', 'work_entry_source']
+        return ['resource_calendar_id', 'tracking_method']
 
     @api.model
     def _cron_generate_missing_work_entries(self):

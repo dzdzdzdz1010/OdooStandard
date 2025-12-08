@@ -18,7 +18,7 @@
                 </button>
             </button>
             <separator name="schedule" position="after">
-                <field name="work_entry_source" invisible="1"/>
+                <field name="tracking_method"/>
             </separator>
         </field>
     </record>

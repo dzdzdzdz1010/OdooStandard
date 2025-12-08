@@ -2863,7 +2863,10 @@ class AccountMove(models.Model):
             We will check the sellers set on the product and update the price and min_qty for it if needed.
         """
         self.ensure_one()
-        product_infos = {'price': product.list_price if self.is_sale_document() else product.standard_price}
+        product_infos = {
+            'price': product.list_price if self.is_sale_document() else product.standard_price,
+            'uomDisplayName': product.uom_id.display_name
+        }
 
         # Check if there is a price and a minimum quantity for the order's vendor.
         if self.is_purchase_document() and self.partner_id:
@@ -2876,9 +2879,18 @@ class AccountMove(models.Model):
                 params={'order_id': self}
             )
             if seller:
+                product_uom = (seller.product_id or seller.product_tmpl_id).uom_id
+                seller_price = seller.currency_id._convert(
+                    from_amount=seller.price_discounted,
+                    to_currency=self.currency_id,
+                    company=self.company_id,
+                )
                 product_infos.update(
-                    price=seller.price,
+                    price=product_uom._compute_price(seller_price, seller.uom_id),
                     min_qty=seller.min_qty,
+                    uomDisplayName=seller.uom_id.display_name,
+                    productUomDisplayName=product_uom.display_name,
+                    productUnitPrice=seller_price
                 )
         return product_infos
 
@@ -2908,8 +2920,9 @@ class AccountMove(models.Model):
         :param int quantity: The quantity selected in the catalog
         :param int section_id: The id of section selected in the catalog.
         :return: The unit price of the product, based on the pricelist of the
-                 sale order and the quantity selected.
-        :rtype: float
+                 sale order or purchase order and the quantity selected, the price per product unit
+                 and the uom display name only if a line has been removed.
+        :rtype: dict
         """
         move_line = self.line_ids.filtered(
             lambda line: line.product_id.id == product_id
@@ -2919,12 +2932,14 @@ class AccountMove(models.Model):
             if quantity != 0:
                 move_line.quantity = quantity
             elif self.state in {'draft', 'sent'}:
-                price_unit = self._get_product_price_and_data(move_line.product_id)['price']
+                price_unit = move_line.price_unit_discounted if self.is_purchase_document() else move_line.product_id.list_price
+                price_per_product_unit = move_line.product_uom_id._compute_price(price_unit, move_line.product_id.uom_id)
+                uom_display_name = move_line.product_id.uom_id.display_name if not self.is_purchase_document() else move_line.product_uom_id.display_name
                 # The catalog is designed to allow the user to select products quickly.
                 # Therefore, sometimes they may select the wrong product or decide to remove
                 # some of them from the quotation. The unlink is there for that reason.
                 move_line.unlink()
-                return price_unit
+                return {'price': price_unit, 'productUnitPrice': price_per_product_unit, 'uomDisplayName': uom_display_name}
             else:
                 move_line.quantity = 0
         elif quantity > 0:
@@ -2934,7 +2949,33 @@ class AccountMove(models.Model):
                 'product_id': product_id,
                 'sequence': self._get_new_line_sequence(child_field, section_id),
             })
-        return move_line.price_unit
+        seller = False
+        if self.is_purchase_document() and self.partner_id and move_line.product_id:
+            seller = move_line.product_id._select_seller(
+                partner_id=self.partner_id,
+                quantity=None,
+                date=self.invoice_date,
+                uom_id=move_line.product_uom_id,
+                ordered_by='min_qty',
+                params={'order_id': self}
+            )
+            if seller:
+                # Adapt accounting lines' data to the seller.
+                seller_price = seller.currency_id._convert(
+                    from_amount=seller.price,
+                    to_currency=self.currency_id,
+                    company=self.company_id,
+                    date=self.invoice_date,
+                )
+                move_line.price_unit = seller_price
+                move_line.product_uom_id = seller.uom_id
+                move_line.discount = seller.discount
+
+        price = move_line.price_unit_discounted
+        price_per_product_unit = seller.price_discounted if seller else price
+        if move_line.product_uom_id and not seller:  # Avoid sending an empty uom if a product is added and removed quickly
+            price_per_product_unit = move_line.product_uom_id._compute_price(price, move_line.product_id.uom_id)
+        return {'price': price, 'productUnitPrice': price_per_product_unit}
 
     def _is_readonly(self):
         """

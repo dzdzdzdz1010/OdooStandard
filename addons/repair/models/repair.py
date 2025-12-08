@@ -722,7 +722,7 @@ class RepairOrder(models.Model):
                 'repair_line_type': 'add'
             })
 
-        return self.env['product.product'].browse(product_id).list_price
+        return {'price': self.env['product.product'].browse(product_id).list_price}
 
     # ------------------------------------------------------------
     # MAIL.THREAD

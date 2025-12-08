@@ -72,6 +72,7 @@ class ProductCatalogMixin(models.AbstractModel):
                 'productType': string
                 'price': float
                 'uomDisplayName': string
+                'productUomDisplayName': string (optional)
                 'code': string (optional)
                 'readOnly': bool (optional)
             }
@@ -80,6 +81,7 @@ class ProductCatalogMixin(models.AbstractModel):
             product.id: {
                 'productType': product.type,
                 'uomDisplayName': product.uom_id.display_name,
+                'productUomDisplayName': product.uom_id.display_name,
                 'code': product.code if product.code else '',
             }
             for product in products
@@ -98,6 +100,7 @@ class ProductCatalogMixin(models.AbstractModel):
                 'productType': string
                 'price': float
                 'uomDisplayName': string
+                'productUomDisplayName': string (optional)
                 'code': string (optional)
                 'readOnly': bool (optional)
             }
@@ -145,7 +148,8 @@ class ProductCatalogMixin(models.AbstractModel):
         :param int quantity: The product's quantity.
         :param dict kwargs: additional values given for inherited models.
         :return: The unit price of the product, based on the pricelist of the
-                 purchase order and the quantity selected.
-        :rtype: float
+                 purchase order and the quantity selected, the price per product unit
+                 and the uom display name only if a line has been removed except from purchase.
+        :rtype: dict
         """
-        return 0
+        return {'price': 0}

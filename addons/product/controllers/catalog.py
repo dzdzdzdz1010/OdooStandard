@@ -39,8 +39,8 @@ class ProductCatalogController(Controller):
         :param int order_id: The order id.
         :param int product_id: The product, as a `product.product` id.
         :return: The unit price price of the product, based on the pricelist of the order and
-                 the quantity selected.
-        :rtype: float
+                 the quantity selected, and the price per product unit.
+        :rtype: dict
         """
         order = request.env[res_model].browse(order_id)
         return order.with_company(order.company_id)._update_order_line_info(

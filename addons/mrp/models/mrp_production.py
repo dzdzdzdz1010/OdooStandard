@@ -3102,7 +3102,7 @@ class MrpProduction(models.Model):
             new_line = self[child_field].filtered(lambda mv: mv.product_id.id == product_id)[-1:]
             self._update_catalog_line_quantity(new_line, quantity, **kwargs)
 
-        return self.env['product.product'].browse(product_id).standard_price
+        return {'price': self.env['product.product'].browse(product_id).standard_price}
 
     def _update_catalog_line_quantity(self, line, quantity, **kwargs):
         line.product_uom_qty = quantity

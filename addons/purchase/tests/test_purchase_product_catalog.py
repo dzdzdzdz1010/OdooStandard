@@ -84,7 +84,7 @@ class TestPurchaseProductCatalog(AccountTestInvoicingCommon, HttpCase):
             headers={'Content-Type': 'application/json'},
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()['result'], other_product_price_converted)
+        self.assertEqual(resp.json()['result']['price'], other_product_price_converted)
 
         resp = self.url_open(
             url='/product/catalog/update_order_line_info',
@@ -100,7 +100,25 @@ class TestPurchaseProductCatalog(AccountTestInvoicingCommon, HttpCase):
             headers={'Content-Type': 'application/json'},
         )
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.json()['result'], company_product_price)
+        self.assertEqual(resp.json()['result']['price'], company_product_price)
+
+        purchase_order.order_line[0].uom_id = self.env.ref('uom.product_uom_pack_6')
+        resp = self.url_open(
+            url='/product/catalog/update_order_line_info',
+            data=json.dumps({
+                'params': {
+                    'child_field': 'order_line',
+                    'order_id': purchase_order.id,
+                    'product_id': other_product.id,
+                    'quantity': 2,
+                    'res_model': 'purchase.order'
+                }
+            }),
+            headers={'Content-Type': 'application/json'},
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()['result']['price'], other_product_price_converted * 6)
+        self.assertEqual(resp.json()['result']['productUnitPrice'], other_product_price_converted)
 
     # === TOUR TESTS ===#
     def test_catalog_vendor_uom(self):

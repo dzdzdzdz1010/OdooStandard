@@ -256,11 +256,12 @@ class SaleOrder(models.Model):
         """ Override of `sale` to recompute the delivery prices.
 
         :param int product_id: The product, as a `product.product` id.
-        :return: The unit price price of the product, based on the pricelist of the sale order and
-                 the quantity selected.
-        :rtype: float
+        :return: The unit price of the product, based on the pricelist of the sale order and
+                 the quantity selected, the price per product unit
+                 and the uom display name only if a line has been removed.
+        :rtype: dict
         """
-        price_unit = super()._update_order_line_info(product_id, quantity, **kwargs)
+        update_data = super()._update_order_line_info(product_id, quantity, **kwargs)
         if self:
             self.onchange_order_line()
-        return price_unit
+        return update_data

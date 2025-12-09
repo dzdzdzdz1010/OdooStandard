@@ -5,6 +5,7 @@ import { isDisplayStandalone, isMobileOS } from "@web/core/browser/feature_detec
 import { CashierName } from "@point_of_sale/app/navbar/cashier_name/cashier_name";
 import { ProxyStatus } from "@point_of_sale/app/navbar/proxy_status/proxy_status";
 import { SyncPopup } from "@point_of_sale/app/navbar/sync_popup/sync_popup";
+import { OfflineErrorPopup } from "@point_of_sale/app/errors/offline_error_popup/offline_error_popup";
 import {
     SaleDetailsButton,
     handleSaleDetails,
@@ -124,11 +125,16 @@ export class Navbar extends Component {
     onSyncNotificationClick() {
         if (this.pos.data.network.offline) {
             this.pos.data.network.warningTriggered = false;
+
+            console.log("Displaying offline error popup");
+
+            this.dialog.add(OfflineErrorPopup, {});
+            return;
         }
 
-        if (this.pos.data.network.unsyncData.length > 0) {
+        if (this.pos.unsyncedOrderCount > 0) {
             this.dialog.add(SyncPopup, {
-                confirm: () => this.pos.data.syncData(),
+                confirm: () => this.pos.syncAllOrders(),
             });
         }
     }

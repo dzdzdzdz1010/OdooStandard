@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="point_of_sale.OfflineErrorPopup">
+        <Dialog contentClass="'p-0'">
+            <t t-set-slot="header">
+                <div>
+                    <h3 class="modal-title title"> <t t-esc="props.title" /></h3>
+                </div>
+            </t>
+            <div class="modal-body">
+                <t t-esc=" props.body" />
+            </div>
+            <t t-set-slot="footer">
+                <div class="modal-footer-left d-flex gap-2">
+                    <button class="button highlight btn btn-lg btn-primary" t-on-click="confirm"><t t-esc="props.confirmText" /></button>
+                </div>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

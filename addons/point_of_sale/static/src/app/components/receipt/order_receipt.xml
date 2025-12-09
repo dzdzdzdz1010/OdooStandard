@@ -145,28 +145,25 @@
                 </div>
             </t>
 
-            <t t-set="company" t-value="order.company" />
+            <t t-set="config" t-value="order.config" />
             <div class="d-flex gap-2 pt-3">
                 <!-- Left: Company Address -->
                 <div class="w-50 text-break text-start" style="font-size: 75%;">
-                    <div class="pos-config-name" t-out="order.config.name"/>
+                    <div class="pos-config-name" t-out="config.name"/>
                     <div>
-                        <t t-if="company.street" t-out="company.street"/>
-                        <t t-if="company.city" t-out="', ' + company.city"/>
-                        <t t-if="company.state_id?.code" t-out="', ' + company.state_id.code"/>
-                        <t t-if="company.zip" t-out="', ' +  company.zip"/>
+                        <t t-if="config.receipt_address" t-out="config.receipt_address"/>
                     </div>
                 </div>
 
                 <!-- Right: Contact Info -->
                 <div class="w-50 text-break text-end" style="font-size: 75%;">
                     <div>
-                        <div t-if="company.vat" t-out="vatText"/>
-                        <div t-if="company.phone">
-                            Tel: <t t-out="company.phone"/>
+                        <div t-if="order.company.vat" t-out="vatText"/>
+                        <div t-if="config.phone">
+                            Tel: <t t-out="config.phone"/>
                         </div>
-                        <div t-if="company.email" t-out="company.email"/>
-                        <div t-if="company.website" t-out="company.website"/>
+                        <div t-if="config.email" t-out="config.email"/>
+                        <div t-if="config.website" t-out="config.website"/>
                     </div>
                 </div>
             </div>

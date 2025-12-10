@@ -3057,7 +3057,11 @@ class MailThread(models.AbstractModel):
         :rtype: str
         """
         self.ensure_one()
-        return (self._mail_subject_field and self[self._mail_subject_field]) or self.display_name
+        # only shorten if default subject wasn't set by user
+        return (
+            (self._mail_subject_field and self[self._mail_subject_field])
+            or textwrap.shorten(self.display_name or '', width=100, placeholder="...")
+        )
 
     def _message_create(self, values_list):
         """ Low-level helper to create mail.message records. It is mainly used

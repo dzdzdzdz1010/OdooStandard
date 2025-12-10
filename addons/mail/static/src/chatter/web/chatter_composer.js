@@ -13,7 +13,16 @@ export class ChatterComposer extends Composer {
         useEffect(
             () => {
                 const thread = this.props.thread;
-                if (thread.default_subject !== thread.display_name && this.subjectInputRef.el) {
+                let defaultSubjectStart = thread.default_subject;
+                if (defaultSubjectStart && defaultSubjectStart.slice(-3) === "...") {
+                    defaultSubjectStart = defaultSubjectStart.slice(0, -3);
+                }
+                if (
+                    defaultSubjectStart &&
+                    thread.display_name &&
+                    !thread.display_name.startsWith(defaultSubjectStart) &&
+                    this.subjectInputRef.el
+                ) {
                     this.subjectInputRef.el.value = this.props.thread.default_subject;
                 }
             },

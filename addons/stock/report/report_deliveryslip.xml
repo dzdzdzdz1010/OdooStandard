@@ -72,7 +72,7 @@
                                 <td>
                                     <span t-field="move.product_id">Customizable Desk</span>
                                     <p t-if="move.description_picking and move.description_picking != move.product_id.name and move.description_picking != move.product_id.display_name">
-                                        <span t-field="move.description_picking">Description on transfer</span>
+                                        <span t-out="move._get_report_description_picking()">Description on transfer</span>
                                     </p>
                                 </td>
                                 <td class="o_td_quantity text-end">

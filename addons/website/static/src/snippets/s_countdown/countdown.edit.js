@@ -3,6 +3,19 @@ import { registry } from "@web/core/registry";
 
 const CountdownEdit = (I) =>
     class extends I {
+        dynamicContent = {
+            ...super.dynamicContent,
+            ".countdown_metrics": {
+                // focus is needed here so we can listen to keydown events
+                "t-on-click": (ev) => {
+                    ev.currentTarget.focus();
+                },
+                "t-on-keydown": (ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                },
+            },
+        };
         setup() {
             this.websiteEditService = this.services.website_edit;
             super.setup();
@@ -34,7 +47,7 @@ const CountdownEdit = (I) =>
                     "ignoreDOMMutations",
                     super.render.bind(this)
                 );
-                this.enableIsCurrentStepModifiedWarning();
+                this.enableIsCurrentStepModifiedWarning?.();
             }
         }
         get shouldHideCountdown() {

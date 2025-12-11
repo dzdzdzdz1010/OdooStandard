@@ -17,11 +17,9 @@
                     </div>
                  </div>
             </setting>
-            <block name="sale_shipping_setting_container" position="inside">
-                <setting id="delivery_email" company_dependent="1" string="Confirmation Email" help="Send an automatic confirmation email when Delivery Orders are done">
-                    <field name="delivery_email_validation"/>
-                </setting>
-            </block>
+            <setting id="delivery_email" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </setting>
         </field>
     </record>
 

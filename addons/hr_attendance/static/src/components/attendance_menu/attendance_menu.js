@@ -22,7 +22,8 @@ export class ActivityMenu extends Component {
         this.employee = false;
         this.state = useState({
             checkedIn: false,
-            isDisplayed: false
+            isDisplayed: false,
+            gettingPosition: false,
         });
         this.date_formatter = registry.category("formatters").get("float_time")
         this.dropdown = useDropdownState();
@@ -55,6 +56,10 @@ export class ActivityMenu extends Component {
 
     async signInOut() {
         this.dropdown.close();
+        if (this.state.gettingPosition) {
+            return;
+        }
+        this.state.gettingPosition = true
         if (!isIosApp()) { // iOS app lacks permissions to call `getCurrentPosition`
             navigator.geolocation.getCurrentPosition(
                 async ({coords: {latitude, longitude}}) => {
@@ -63,10 +68,12 @@ export class ActivityMenu extends Component {
                         longitude
                     })
                     await this.searchReadEmployee()
+                    this.state.gettingPosition = false
                 },
                 async err => {
                     await rpc("/hr_attendance/systray_check_in_out")
                     await this.searchReadEmployee()
+                    this.state.gettingPosition = false
                 },
                 {
                     enableHighAccuracy: true,

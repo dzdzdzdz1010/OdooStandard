@@ -1,6 +1,7 @@
 import { Component, useRef, useState, useExternalListener, useSubEnv } from "@odoo/owl";
 import { useNavigation } from "@web/core/navigation/navigation";
 import { usePosition } from "@web/core/position/position_hook";
+import { markEventHandled } from "@web/core/utils/misc";
 
 /**
  * CallDropdown is an alternative to the web popover for calls to make them available
@@ -93,6 +94,7 @@ export class CallDropdown extends Component {
     onKeydown(ev) {
         if (ev.key === "Escape" && this.isOpen) {
             ev.preventDefault();
+            markEventHandled(ev, "CallDropdown.close");
             this.close();
         }
     }

@@ -8,13 +8,21 @@ import {
     useMessageScrolling,
 } from "@mail/utils/common/hooks";
 
-import { Component, onMounted, onWillUnmount, useChildSubEnv, useSubEnv } from "@odoo/owl";
+import {
+    Component,
+    onMounted,
+    onWillUnmount,
+    useSubEnv,
+    useChildSubEnv,
+    useExternalListener,
+} from "@odoo/owl";
 
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { useService } from "@web/core/utils/hooks";
 import { MeetingSideActions } from "./meeting_side_actions";
 import { useThreadActions } from "@mail/core/common/thread_actions";
 import { useMessageSearch } from "@mail/core/common/message_search_hook";
+import { isEventHandled, markEventHandled } from "@web/core/utils/misc";
 
 /** @typedef {"chat"|"invite"} MeetingPanel */
 
@@ -63,6 +71,7 @@ export class Meeting extends Component {
             messageHighlight: this.messageHighlight,
             messageSearch: this.messageSearch,
         });
+        useExternalListener(window, "keydown", (ev) => this.onWindowKeydown(ev));
         onMounted(() => (this.store.meetingViewOpened = true));
         onWillUnmount(() => (this.store.meetingViewOpened = false));
     }
@@ -70,4 +79,28 @@ export class Meeting extends Component {
     get channel() {
         return this.store.rtc.channel;
     }
+
+    onWindowKeydown(ev) {
+        if (ev.key !== "Escape") {
+            return;
+        }
+        if (
+            ev.defaultPrevented ||
+            ev.cancelBubble ||
+            isEventHandled(ev, "NavigableList.close") ||
+            isEventHandled(ev, "Composer.discard")
+        ) {
+            return;
+        }
+        if (this.threadActions.activeAction) {
+            this.threadActions.activeAction.actionPanelClose();
+            markEventHandled(ev, "Meeting.closeActionPanel");
+            return;
+        }
+        if (this.rtc.isFullscreen) {
+            this.rtc.exitFullscreen();
+            markEventHandled(ev, "Meeting.close");
+        }
+    }
+
 }

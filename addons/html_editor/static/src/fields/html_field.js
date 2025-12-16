@@ -378,6 +378,11 @@ export const htmlField = {
                 options.cleanEmptyStructuralContainers
             );
         }
+        if ("dynamicThemeColors" in options) {
+            editorConfig.dynamicThemeColors = Boolean(
+                options.dynamicThemeColors
+            );
+        }
         return {
             editorConfig,
             isCollaborative: options.collaborative,

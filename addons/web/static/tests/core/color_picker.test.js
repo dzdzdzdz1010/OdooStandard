@@ -291,3 +291,31 @@ test("should mark default color as selected when it is selected", async () => {
     });
     expect(".o_color_button[data-color='900']").toHaveClass("selected");
 });
+
+test("colorpicker disabling dynamic theme colors", async () => {
+    defineStyle(`
+        :root {
+            --o-color-1: rgb(113, 75, 103);
+            --o-color-2: rgb(45, 49, 66);
+        }
+    `);
+    await mountWithCleanup(ColorPicker, {
+        props: {
+            state: {
+                selectedColor: "",
+                defaultTab: "solid",
+            },
+            getUsedCustomColors: () => [],
+            applyColor() {},
+            applyColorPreview() {},
+            applyColorResetPreview() {},
+            colorPrefix: "",
+            cssVarColorPrefix: "",
+            dynamicThemeColors: false,
+        },
+    });
+    expect("button[data-color='o-color-1']").toHaveCount(0);
+    expect("button[data-color='o-color-2']").toHaveCount(0);
+    expect("button[data-color='#714B67']").toHaveCount(1);
+    expect("button[data-color='#2D3142']").toHaveCount(1);
+});

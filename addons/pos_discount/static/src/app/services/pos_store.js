@@ -3,8 +3,28 @@ import { PosStore } from "@point_of_sale/app/services/pos_store";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { accountTaxHelpers } from "@account/helpers/account_tax";
 import { _t } from "@web/core/l10n/translation";
+import { debounce } from "@web/core/utils/timing";
 
 patch(PosStore.prototype, {
+    async setup() {
+        await super.setup(...arguments);
+        this.debouncedDiscount = debounce(this.applyDiscount.bind(this));
+        this.models["pos.order.line"].addEventListener("update", (data) => {
+            const line = this.models["pos.order.line"].get(data.id);
+            const order = line.order_id;
+            if (!order || order.state !== "draft") {
+                return;
+            }
+
+            const isDiscountLine = line.isDiscountLine;
+            if (!order.globalDiscountPc || isDiscountLine) {
+                return;
+            }
+
+            const percentage = order.globalDiscountPc;
+            this.debouncedDiscount(percentage, order); // Wait an animation frame before applying the discount
+        });
+    },
     selectOrderLine(order, line) {
         super.selectOrderLine(order, line);
         // Ensure the numpadMode should be `price` when the discount line is selected
@@ -12,10 +32,24 @@ patch(PosStore.prototype, {
             this.numpadMode = "price";
         }
     },
+<<<<<<< 2e38766eb0e4606f475c6976746255fb40921787
     async applyDiscount(value, type = "percent", order = this.getOrder()) {
         const lines = order.getOrderlines();
         const product = this.config.discount_product_id;
+||||||| bf7dee8069f203095c44381708153865d3e8f19e
+    async applyDiscount(percent, order = this.getOrder()) {
+        const lines = order.getOrderlines();
+        const product = this.config.discount_product_id;
+=======
+    async applyDiscount(percent, order = this.getOrder()) {
+        const taxKey = (taxIds) =>
+            taxIds
+                .map((tax) => tax.id)
+                .sort((a, b) => a - b)
+                .join("_");
+>>>>>>> 856b2f49794b46df507c4f0d4876e9d8bf2aeade
 
+        const product = this.config.discount_product_id;
         if (product === undefined) {
             this.dialog.add(AlertDialog, {
                 title: _t("No discount product found"),
@@ -25,8 +59,15 @@ patch(PosStore.prototype, {
             });
             return;
         }
-        const tobeRemoved = order.getDiscountLine(); // remove once we successfully create new line
 
+        const discountLinesMap = {};
+        (order.discountLines || []).forEach((line) => {
+            const key = taxKey(line.tax_ids);
+            discountLinesMap[key] = line;
+        });
+        const isGlobalDiscountBtnClicked = Object.keys(discountLinesMap).length === 0;
+
+        const lines = order.getOrderlines();
         const discountableLines = lines.filter((line) => line.isGlobalDiscountApplicable());
         const baseLines = discountableLines.map((line) =>
             accountTaxHelpers.prepare_base_line_for_taxes_computation(
@@ -52,8 +93,10 @@ patch(PosStore.prototype, {
                 grouping_function: groupingFunction,
             }
         );
+        let lastDiscountLine = null;
         for (const baseLine of globalDiscountBaseLines) {
             const extra_tax_data = accountTaxHelpers.export_base_line_extra_tax_data(baseLine);
+<<<<<<< 2e38766eb0e4606f475c6976746255fb40921787
             extra_tax_data.discount_value = value;
             extra_tax_data.discount_type = type;
             const line = await this.addLineToCurrentOrder(
@@ -69,7 +112,54 @@ patch(PosStore.prototype, {
             );
             if (line) {
                 tobeRemoved?.delete();
+||||||| bf7dee8069f203095c44381708153865d3e8f19e
+            extra_tax_data.discount_percentage = percent;
+            const line = await this.addLineToCurrentOrder(
+                {
+                    product_id: baseLine.product_id,
+                    price_unit: baseLine.price_unit,
+                    qty: baseLine.quantity,
+                    tax_ids: [["link", ...baseLine.tax_ids]],
+                    product_tmpl_id: baseLine.product_id.product_tmpl_id,
+                    extra_tax_data: extra_tax_data,
+                },
+                { merge: false }
+            );
+            if (line) {
+                tobeRemoved?.delete();
+=======
+            extra_tax_data.discount_percentage = percent;
+
+            const key = taxKey(baseLine.tax_ids);
+            const existingLine = discountLinesMap[key];
+
+            if (existingLine) {
+                existingLine.price_unit = baseLine.price_unit;
+                delete discountLinesMap[key];
+            } else {
+                lastDiscountLine = await this.addLineToOrder(
+                    {
+                        product_id: baseLine.product_id,
+                        price_unit: baseLine.price_unit,
+                        qty: baseLine.quantity,
+                        tax_ids: [["link", ...baseLine.tax_ids]],
+                        product_tmpl_id: baseLine.product_id.product_tmpl_id,
+                        extra_tax_data: extra_tax_data,
+                    },
+                    order,
+                    { force: true },
+                    false
+                );
+>>>>>>> 856b2f49794b46df507c4f0d4876e9d8bf2aeade
             }
+        }
+
+        Object.values(discountLinesMap).forEach((line) => {
+            line.delete();
+        });
+
+        if (lastDiscountLine && isGlobalDiscountBtnClicked) {
+            order.selectOrderline(lastDiscountLine);
             this.numpadMode = "price";
         }
     },

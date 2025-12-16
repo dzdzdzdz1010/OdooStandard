@@ -700,7 +700,14 @@ registry.category("web_tour.tours").add("test_open_register_with_preset_takeaway
             FloorScreen.isShown(),
             FloorScreen.clickTable("5"),
             Chrome.presetTimingSlotHourNotExists("09:00"),
+<<<<<<< 2e38766eb0e4606f475c6976746255fb40921787
             Chrome.selectPresetTimingSlotHour({ title: "takeaway", hour: "12:20" }),
+||||||| bf7dee8069f203095c44381708153865d3e8f19e
+            Chrome.selectPresetTimingSlotHour("12:20"),
+=======
+            Chrome.selectPresetTimingSlotHour("12:20"),
+            Chrome.waitRequest(),
+>>>>>>> 856b2f49794b46df507c4f0d4876e9d8bf2aeade
             ProductScreen.clickDisplayedProduct("Coca-Cola", true),
             ProductScreen.clickControlButton("Cancel Order"),
             Dialog.cancel({ title: "Existing orderlines" }),

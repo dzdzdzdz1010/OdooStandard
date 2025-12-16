@@ -15,6 +15,7 @@ patch(ProductScreen.prototype, {
             return button;
         });
     },
+<<<<<<< 2e38766eb0e4606f475c6976746255fb40921787
     async addProductToOrder(product) {
         await super.addProductToOrder(product);
         const discountLine = this.currentOrder.getDiscountLine();
@@ -30,4 +31,21 @@ patch(ProductScreen.prototype, {
             }
         }
     },
+||||||| bf7dee8069f203095c44381708153865d3e8f19e
+    async addProductToOrder(product) {
+        await super.addProductToOrder(product);
+        const discountLine = this.currentOrder.getDiscountLine();
+        if (discountLine) {
+            const percentage = discountLine.extra_tax_data?.discount_percentage;
+            if (percentage) {
+                const selectLine = this.currentOrder?.getSelectedOrderline();
+                await this.pos.applyDiscount(percentage, this.currentOrder);
+                this.pos.selectOrderLine(this.currentOrder, selectLine);
+            } else {
+                discountLine.delete();
+            }
+        }
+    },
+=======
+>>>>>>> 856b2f49794b46df507c4f0d4876e9d8bf2aeade
 });

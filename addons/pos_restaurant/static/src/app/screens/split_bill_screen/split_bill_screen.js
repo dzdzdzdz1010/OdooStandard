@@ -88,8 +88,15 @@ export class SplitBillScreen extends Component {
         return `${latestOrderName.slice(0, -1)}${nextChar}`;
     }
 
+    get totOrderQty() {
+        return this.currentOrder.lines.reduce(
+            (sum, line) => sum + (line.isGlobalDiscountApplicable() ? line.qty : 0),
+            0
+        );
+    }
+
     async paySplittedOrder() {
-        const totalQty = this.currentOrder.lines.reduce((sum, line) => sum + line.qty, 0);
+        const totalQty = this.totOrderQty;
         const selectedQty = this.getNumberOfProducts();
 
         if (selectedQty > 0 && selectedQty < totalQty) {
@@ -103,25 +110,47 @@ export class SplitBillScreen extends Component {
     async transferSplittedOrder(event) {
         // Prevents triggering the 'startTransferOrder' event listener
         event.stopPropagation();
-        if (this.getNumberOfProducts() > 0) {
+        const totalQty = this.totOrderQty;
+        const selectedQty = this.getNumberOfProducts();
+        if (selectedQty > 0 && selectedQty !== totalQty) {
             this.isTransferred = true;
             await this.createSplittedOrder();
         }
         this.pos.startTransferOrder();
     }
+<<<<<<< 2e38766eb0e4606f475c6976746255fb40921787
     getGlobalDiscountPc(order = this.currentOrder) {
         return {
             value: order.getDiscountLine()?.extra_tax_data?.discount_value,
             type: order.getDiscountLine()?.extra_tax_data?.discount_type,
         };
     }
+||||||| bf7dee8069f203095c44381708153865d3e8f19e
+    getGlobalDiscountPc(order = this.currentOrder) {
+        return order.getDiscountLine()?.extra_tax_data?.discount_percentage;
+    }
+=======
+>>>>>>> 856b2f49794b46df507c4f0d4876e9d8bf2aeade
     async handleDiscountLines(originalOrder, newOrder) {
+<<<<<<< 2e38766eb0e4606f475c6976746255fb40921787
         const { value, type } = this.getGlobalDiscountPc(originalOrder);
         if (value) {
             await this.pos.applyDiscount(value, type, originalOrder);
             if (!this.isTransferred) {
                 await this.pos.applyDiscount(value, type, newOrder);
             }
+||||||| bf7dee8069f203095c44381708153865d3e8f19e
+        const discountPercentage = this.getGlobalDiscountPc(originalOrder);
+        if (discountPercentage) {
+            await this.pos.applyDiscount(discountPercentage, originalOrder);
+            if (!this.isTransferred) {
+                await this.pos.applyDiscount(discountPercentage, newOrder);
+            }
+=======
+        const discountPercentage = originalOrder.globalDiscountPc;
+        if (!this.isTransferred && discountPercentage) {
+            await this.pos.applyDiscount(discountPercentage, newOrder);
+>>>>>>> 856b2f49794b46df507c4f0d4876e9d8bf2aeade
         }
     }
     async createSplittedOrder() {
@@ -206,7 +235,6 @@ export class SplitBillScreen extends Component {
             line.delete();
         }
         await this.handleDiscountLines(originalOrder, newOrder);
-
         await this.pos.syncAllOrders({ orders: [originalOrder, newOrder] });
         originalOrder.customer_count -= 1;
         originalOrder.setScreenData({ name: "ProductScreen" });

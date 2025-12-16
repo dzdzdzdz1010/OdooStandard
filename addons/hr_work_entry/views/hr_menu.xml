@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <menuitem
+            id="menu_hr_work_entry_type_view"
+            action="hr_work_entry.hr_work_entry_type_action"
+            parent="hr.menu_config_working_times"
+            sequence="2"/>
+    </data>
+</odoo>

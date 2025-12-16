@@ -57,9 +57,15 @@ export class Countdown extends Interaction {
         }
         this.initTimeDiff();
 
+        this.lastDelta = null;
+
         this.render();
 
-        this.setInterval = setInterval(this.render.bind(this), 1000);
+        // Check 10 times a second (100ms) to catch when the second changes.
+        // This makes the countdown more accurate, and, for example, when we
+        // have 2+ countdowns on the same page and something restarts one of
+        // their interactions, one of the countdowns might end up a bit delayed
+        this.setInterval = setInterval(this.render.bind(this), 100);
     }
 
     destroy() {
@@ -224,8 +230,20 @@ export class Countdown extends Interaction {
      * Draws the whole countdown, including one countdown for each time unit.
      */
     render() {
-        if (this.onlyOneUnit && this.getDelta() < this.timeDiff[0].nbSeconds) {
-            this.el.querySelector(".s_countdown_canvas_flex").remove();
+        const currentDelta = Math.floor(this.getDelta());
+
+        if (this.lastDelta === currentDelta && currentDelta >= 0) {
+            return;
+        }
+
+        this.lastDelta = currentDelta;
+
+        if (this.onlyOneUnit && currentDelta < this.timeDiff[0].nbSeconds) {
+            // In circle mode, we remove the canvas flex wrapper.
+            // In text mode, the structure is different, but onlyOneUnit isn't usually combined with complex text templates in the same way.
+            if (this.layout !== "text") {
+                this.el.querySelector(".s_countdown_canvas_flex").remove();
+            }
             this.initTimeDiff();
         }
         this.updateTimediff();

@@ -19,7 +19,7 @@ class TransformImageAction extends BuilderAction {
     static id = "transformImage";
     static dependencies = ["history"];
     isApplied({ editingElement }) {
-        return editingElement.matches(`[style*="transform"]`);
+        return editingElement.matches(`[style*="transform"], [style*="width"], [style*="height"]`);
     }
     async apply({
         editingElement,

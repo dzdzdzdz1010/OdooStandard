@@ -34,7 +34,6 @@ class TestMrpAnalyticAccount(TransactionCase):
 
 
 @skip('Temporary to fast merge new valuation')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestAnalyticAccount(TestMrpAnalyticAccount):
     def test_mandatory_analytic_plan_bom(self):
         """

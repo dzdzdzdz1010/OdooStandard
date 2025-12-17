@@ -8,7 +8,6 @@ from odoo.tests import tagged, Form
 from odoo.tests.common import TransactionCase, freeze_time
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestMrpProductionBackorder(TestMrpCommon):
 
     @classmethod
@@ -919,7 +918,6 @@ class TestMrpProductionBackorder(TestMrpCommon):
         self.assertRecordValues(mo_never, [{'state': 'done', 'qty_produced': qty_produced, 'mrp_production_backorder_count': 1, 'priority': '0'}])
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestMrpWorkorderBackorder(TransactionCase):
     @classmethod
     def setUpClass(cls):

@@ -11,7 +11,6 @@ from odoo.tools import mute_logger
 
 
 @tagged('mail_thread', 'mail_track', 'is_query_count')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestMailTrackingDurationMixin(MailTrackingDurationMixinCase):
 
     @classmethod
@@ -29,7 +28,6 @@ class TestMailTrackingDurationMixin(MailTrackingDurationMixinCase):
 
 
 @tagged('mail_thread', 'mail_track')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestMailThreadRottingMixin(MailTrackingDurationMixinCase):
 
     @classmethod
@@ -183,7 +181,6 @@ class TestMailThreadRottingMixin(MailTrackingDurationMixinCase):
 
 
 @tagged('mail_thread', 'mail_blacklist')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestMailThread(MailCommon, TestRecipients):
 
     @mute_logger('odoo.models.unlink')
@@ -237,7 +234,6 @@ class TestMailThread(MailCommon, TestRecipients):
 
 
 @tagged('mail_thread', 'mail_thread_cc', 'mail_tools')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestMailThreadCC(MailCommon):
 
     @users("employee")

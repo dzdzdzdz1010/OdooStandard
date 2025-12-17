@@ -79,7 +79,6 @@ class ThreadRecipients(MailCommon, TestRecipients):
 
 
 @tagged('mail_thread', 'mail_thread_api', 'mail_tools')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestAPI(ThreadRecipients):
 
     @classmethod
@@ -1007,7 +1006,6 @@ class TestAPI(ThreadRecipients):
 
 
 @tagged('mail_thread')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestChatterTweaks(ThreadRecipients):
 
     @classmethod
@@ -1160,7 +1158,6 @@ class TestChatterTweaks(ThreadRecipients):
 
 
 @tagged('mail_thread')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestDiscuss(MailCommon, TestRecipients):
 
     @classmethod
@@ -1268,7 +1265,6 @@ class TestDiscuss(MailCommon, TestRecipients):
 
 
 @tagged('mail_thread')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestNotification(MailCommon):
 
     @classmethod
@@ -1309,7 +1305,6 @@ class TestNotification(MailCommon):
 
 
 @tagged('mail_thread', 'mail_nothread')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestNoThread(MailCommon, TestRecipients):
     """ Specific tests for cross models thread features """
 

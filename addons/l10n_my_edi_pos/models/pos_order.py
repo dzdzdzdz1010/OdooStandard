@@ -88,7 +88,32 @@ class PosOrder(models.Model):
 
             # At this point we don't want to raise anymore, if there are issues it'll be logged on the invoice, and we will
             # move on.
-            self.account_move.action_l10n_my_edi_send_invoice()
+            if self.account_move:
+                try:
+                    self.account_move.action_l10n_my_edi_send_invoice()
+                    myinvois_doc = self.account_move.l10n_my_edi_document_ids._get_active_myinvois_document(including_in_progress=True)
+                    if myinvois_doc and myinvois_doc.myinvois_state == 'in_progress' and self.env.user.is_public:
+                        self.account_move.message_post(
+                            body=(
+                                "Your input has been submitted."
+                                "Please save this link and refresh later to view the final status."
+                            ),
+                            message_type="comment",
+                            subtype_xmlid="mail.mt_comment",
+                        )
+
+                except UserError:
+                    if self.env.user.is_public:
+                        self.account_move.message_post(
+                            body=(
+                                "MyInvois could not validate the details provided."
+                                "To finalize e-invoice issuance, please contact the shop directly."
+                            ),
+                            message_type="comment",
+                            subtype_xmlid="mail.mt_comment",
+                        )
+                    else:
+                        raise
 
             if self.env.context.get('generate_pdf', True):
                 self.account_move.with_context(skip_invoice_sync=True)._generate_and_send()

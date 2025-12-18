@@ -5,7 +5,6 @@ from odoo.tests import tagged
 from odoo.addons.website_event_sale.tests.common import TestWebsiteEventSaleCommon
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestWebsiteEventSale(HttpCaseWithUserPortal, TestWebsiteEventSaleCommon):
 
     def test_website_event_sale_free_tickets(self):

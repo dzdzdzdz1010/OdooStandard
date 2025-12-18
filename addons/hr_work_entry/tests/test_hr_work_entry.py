@@ -7,7 +7,6 @@ from odoo.exceptions import ValidationError
 from odoo.tools import mute_logger
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestHrWorkEntry(TransactionCase):
 
     @classmethod

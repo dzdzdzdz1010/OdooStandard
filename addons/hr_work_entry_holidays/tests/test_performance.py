@@ -7,7 +7,6 @@ from odoo.tests.common import users, warmup, tagged
 
 
 @tagged('work_entry_holidays_perf')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestWorkEntryHolidaysPerformance(TestWorkEntryHolidaysBase):
 
     @classmethod
@@ -55,7 +54,6 @@ class TestWorkEntryHolidaysPerformance(TestWorkEntryHolidaysBase):
 
 
 @tagged('work_entry_perf')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestWorkEntryHolidaysPerformancesBigData(TestWorkEntryHolidaysBase):
 
     @classmethod

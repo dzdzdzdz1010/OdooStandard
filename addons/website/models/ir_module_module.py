@@ -81,10 +81,11 @@ class IrModuleModule(models.Model):
             self = self.with_context(apply_new_theme=True)
 
         for module in self:
-            if module.name.startswith('theme_') and vals.get('state') == 'installed':
+            module_state = vals.get('state')
+            if module.name.startswith('theme_') and module_state == 'installed':
                 _logger.info('Module %s has been loaded as theme template (%s)' % (module.name, module.state))
 
-                if module.state in ['to install', 'to upgrade']:
+                if module_state in ['to install', 'to upgrade']:
                     websites_to_update = module._theme_get_stream_website_ids()
 
                     if module.state == 'to upgrade' and request:
@@ -94,6 +95,31 @@ class IrModuleModule(models.Model):
 
                     for website in websites_to_update:
                         module._theme_load(website)
+            # If the 'website' module is being uninstalled, clean its robots.txt
+            if module.name == 'website' and module_state == 'to remove':
+                self.env['website']._update_robots_txt(clean_record=True)
+
+            website_module = self.env['ir.module.module'].search(
+                [('name', '=', 'website')], limit=1
+            )
+
+            # If the 'website' module is currently active (not being removed)
+            website_active = bool(
+                website_module and website_module.state != 'to remove'
+            )
+
+            depends_on_website = any(
+                'website' in dep.name for dep in module.dependencies_id
+            )
+
+            # If the module depends on 'website', is being installed/uninstalled
+            # and 'website' is active, then update the robots.txt
+            if (
+                depends_on_website
+                and module_state in ('installed', 'uninstalled')
+                and website_active
+            ):
+                self.env['website']._update_robots_txt()
 
         return super(IrModuleModule, self).write(vals)
 

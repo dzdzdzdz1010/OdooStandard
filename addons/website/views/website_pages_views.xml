@@ -116,6 +116,7 @@
         <list js_class="website_pages_list" type="object" action="open_website_url" multi_edit="1" default_order="url asc, id asc">
             <field name="is_homepage" column_invisible="True"/>  <!-- Use to to display the small house icon from javascript ui -->
             <field name="name" string="Page Title"/>
+            <field name="title" string="New Page Title"/>
             <field name="website_url" string="Page URL"/>
 
             <field name="website_indexed"/>

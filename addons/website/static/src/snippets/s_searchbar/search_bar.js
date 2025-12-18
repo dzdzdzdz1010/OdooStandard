@@ -90,6 +90,7 @@ export class SearchBar extends Interaction {
     }
 
     async fetch() {
+        // this is where the data is fetched
         const res = await rpc("/website/snippet/autocomplete", {
             search_type: this.searchType,
             term: this.inputEl.value,

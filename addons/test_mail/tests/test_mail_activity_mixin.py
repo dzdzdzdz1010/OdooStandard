@@ -334,7 +334,7 @@ class TestActivityMixin(TestActivityCommon):
         new_activity = test_record.activity_ids
         self.assertNotEqual(new_activity.id, first_activity_id)
         self.assertEqual(new_activity.summary, 'Take the second step.')
-        self.assertEqual(new_activity.date_deadline, frozen_now.date() + relativedelta(days=8),
+        self.assertEqual(new_activity.date_deadline, frozen_now.date() + relativedelta(days=new_activity.activity_type_id.delay_count),
                          'New deadline should take into account original activity deadline, not current date')
 
     def test_mail_activity_state(self):

@@ -23,6 +23,21 @@ class HrLeaveAllocation(models.Model):
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _mail_post_access = 'read'
 
+    @api.model
+    def default_get(self, fields):
+        res = super().default_get(fields)
+        holiday_status = None
+
+        if res.get('holiday_status_id'):
+            holiday_status = self.env['hr.leave.type'].browse(res['holiday_status_id'])
+        else:
+            holiday_status = self._default_holiday_status_id()
+
+        if holiday_status:
+            res['number_of_days'] = holiday_status.default_duration
+
+        return res
+
     def _default_holiday_status_id(self):
         if self.env.user.has_group('hr_holidays.group_hr_holidays_user'):
             domain = [('has_valid_allocation', '=', True), ('requires_allocation', '=', True)]
@@ -211,6 +226,11 @@ class HrLeaveAllocation(models.Model):
             allocation.max_leaves = virtual_leave['max_leaves']
             allocation.leaves_taken = virtual_leave['leaves_taken']
             allocation.virtual_remaining_leaves = virtual_leave['virtual_remaining_leaves']
+
+    @api.onchange('holiday_status_id')
+    def _onchange_holiday_status_id_set_default_duration(self):
+        if self.holiday_status_id and self.allocation_type != 'accrual':
+            self.number_of_days = self.holiday_status_id.default_duration
 
     @api.depends('number_of_days')
     def _compute_number_of_days_display(self):
@@ -925,7 +945,7 @@ class HrLeaveAllocation(models.Model):
         if self.allocation_type == 'accrual':
             self.number_of_days = 0.0
         elif not self.number_of_days_display:
-            self.number_of_days = 1.0
+            self.number_of_days = self.holiday_status_id.default_duration or 1.0
 
     # Allows user to simulate how many days an accrual plan would give from a certain start date.
     # it uses the actual computation function but resets values of lastcall, nextcall and nbr of days

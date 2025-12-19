@@ -488,46 +488,91 @@
                                     </t>
                                 </section>
                             </div>
-                            <div t-else="" class="text-center text-muted mt128 mb256">
-                                <t t-if="not search">
-                                    <div class="mt-5 mb-3"><t t-call="website.empty_search_svg"/></div>
-                                    <h3
-                                        class="mt8"
-                                        style="text-align: center;"
-                                    >
-                                        No product defined
-                                    </h3>
-                                    <p
-                                        t-if="category"
-                                        style="text-align: center;"
-                                    >
-                                        No product defined in this category.
-                                    </p>
-                                </t>
-                                <t t-else="">
-                                    <div class="mt-5 mb-3"><t t-call="website.empty_search_svg"/></div>
-                                    <h3 class="mt8" style="text-align: center;">No results</h3>
-                                    <p style="text-align: center;">
-                                        No results for "<strong t-out='search'/>"<t t-if="category"> in category "<strong t-out="category.display_name"/>"</t>.
-                                    </p>
-                                    <p style="text-align: center;">
-                                        <a
-                                            t-if="category"
-                                            t-att-href="keep(shop_path, search=search)"
-                                            t-attf-title="Search {{search}} globally"
-                                            class="d-block pb-5"
+                            <div t-else="" class="text-center mt128 mb256">
+                                <t groups="base.group_public">
+                                    <t t-if="not search">
+                                        <div class="mt-5 mb-3"><t t-call="website.empty_search_svg"/></div>
+                                        <h3
+                                            class="mt8"
+                                            style="text-align: center;"
                                         >
-                                            Search globally
-                                        </a>
-                                    </p>
+                                            No product defined
+                                        </h3>
+                                        <p
+                                            t-if="category"
+                                            style="text-align: center;"
+                                        >
+                                            No product defined in this category.
+                                        </p>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="mt-5 mb-3"><t t-call="website.empty_search_svg"/></div>
+                                        <h3 class="mt8" style="text-align: center;">No results</h3>
+                                        <p style="text-align: center;">
+                                            No results for "<strong t-out='search'/>"<t t-if="category"> in category "<strong t-out="category.display_name"/>"</t>.
+                                        </p>
+                                        <p style="text-align: center;">
+                                            <a
+                                                t-if="category"
+                                                t-att-href="keep(shop_path, search=search)"
+                                                t-attf-title="Search {{search}} globally"
+                                                class="d-block pb-5"
+                                            >
+                                                Search globally
+                                            </a>
+                                        </p>
+                                    </t>
                                 </t>
-                                <div
+                                <t
                                     t-ignore="true"
                                     groups="sales_team.group_sale_manager"
-                                    class="alert alert-info d-inline-block mx-auto text-center"
                                 >
-                                    Click <i>'New'</i> in the top-right corner to create your first product.
-                                </div>
+                                    <!-- Mobile empty screen -->
+                                    <div class="d-md-none">
+                                        <t t-call="website.empty_search_svg"/>
+                                    </div>
+
+                                    <!-- Desktop empty screen -->
+                                    <div class="o_wsale_empty_screen_container d-none d-md-block bg-primary-subtle rounded mx-auto px-5 pt-4">
+                                        <div
+                                            class="o_wsale_empty_screen position-relative border-bottom-0 bg-body overflow-hidden"
+                                            role="img"
+                                            aria-label="Animation showing how to create a new product: Click 'New' in the top-right corner, then select 'Product'."
+                                        >
+                                            <div class="o_wsale_empty_screen_header d-flex align-items-stretch justify-content-end border-bottom" aria-hidden="true">
+                                                <i class="fa fa-lg fa-mobile align-self-center me-3" role="img"/>
+                                                <button class="o-dropdown o-dropdown-caret btn btn-light rounded-0 px-2 pe-none" tabindex="-1">New</button>
+                                                <button class="btn btn-primary rounded-0 lh-1 pe-none" tabindex="-1">Edit</button>
+                                            </div>
+                                            <div class="o_wsale_empty_screen_content position-relative" aria-hidden="true"/>
+                                            <div class="o_wsale_empty_screen_modal_wrapper" aria-hidden="true">
+                                                <div class="o_wsale_skeleton_modal d-grid bg-body border rounded shadow-lg">
+                                                    <div class="o_wsale_empty_screen_cursor position-absolute z-1 pe-none"/>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                    <div class="o_wsale_app_box d-flex gap-2 m-n1 p-1 rounded">
+                                                        <div class="o_wsale_app_icon border rounded p-1 bg-body">
+                                                            <img src="/website_sale/static/description/icon.svg" class="img img-fluid h-100 align-top"/>
+                                                        </div>
+                                                        <div class="d-flex flex-column align-items-start flex-grow-1 smaller">
+                                                            <div class="fw-bold">Product</div>
+                                                            <div class="lh-1">Sell Online</div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                    <div class="o_wsale_skeleton_box position-relative w-100"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h2 class="h4-fs mt-2 mt-md-4">
+                                        Create your first product
+                                    </h2>
+                                </t>
                             </div>
                             <div id="o_wsale_pager" t-attf-class="products_pager d-flex justify-content-center {{opt_wsale_design_grid and 'py-4' or 'py-5 pb-4'}}">
                                 <t t-call="website.pager"/>

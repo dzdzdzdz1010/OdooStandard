@@ -9,6 +9,7 @@ import {
 import {
     childNodes,
     closestElement,
+    createDOMPathGenerator,
     descendants,
     firstLeaf,
     lastLeaf,
@@ -159,6 +160,11 @@ function scrollToSelection(selection) {
         container.scrollTo({ top: offsetBottom - container.clientHeight, behavior: "instant" });
     }
 }
+
+const rightLeafOnlyPath = createDOMPathGenerator(DIRECTIONS.RIGHT, {
+    leafOnly: true,
+    inScope: true,
+});
 
 /**
  * @typedef { Object } SelectionShared
@@ -515,6 +521,43 @@ export class SelectionPlugin extends Plugin {
             focusOffset,
             direction
         );
+        const isFocusNodeLine = (scope = "*", which = "first") => {
+            const focusScope = closestElement(focusNode, scope);
+            if (focusScope === null) {
+                return undefined;
+            }
+            const scopeRects = [];
+            for (const leaf of [...rightLeafOnlyPath(focusScope, 0)]) {
+                switch (leaf.nodeType) {
+                    case Node.TEXT_NODE: {
+                        const textRange = document.createRange();
+                        textRange.selectNodeContents(leaf);
+                        scopeRects.push(...textRange.getClientRects());
+                        break;
+                    }
+                    case Node.ELEMENT_NODE: {
+                        scopeRects.push(...leaf.getClientRects());
+                        break;
+                    }
+                }
+            }
+            scopeRects.sort((a, b) => a.y - b.y);
+            // Always use collapsed range on focus node.
+            const range = this.document.createRange();
+            range.setStart(focusNode, focusOffset);
+            let selectionRects = range.getClientRects();
+            if (!selectionRects.length) {
+                selectionRects =
+                    selection.focusNode.childNodes[selection.focusOffset].getClientRects();
+            }
+            if (!selectionRects.length || !scopeRects.length) {
+                return;
+            }
+            const focusRect =
+                selectionRects[selection.direction === "backward" ? 0 : selectionRects.length - 1];
+            const candidateRect = scopeRects[which === "first" ? 0 : scopeRects.length - 1];
+            return focusRect.y === candidateRect.y;
+        };
 
         const selectionData = {
             documentSelection: documentSelection,
@@ -522,6 +565,7 @@ export class SelectionPlugin extends Plugin {
             documentSelectionIsInEditable: documentSelectionIsInEditable,
             currentSelectionIsInEditable:
                 documentSelectionIsInEditable && this.focusEditableDocument,
+            isFocusNodeLine: isFocusNodeLine,
         };
 
         Object.defineProperty(selectionData, "deepEditableSelection", {

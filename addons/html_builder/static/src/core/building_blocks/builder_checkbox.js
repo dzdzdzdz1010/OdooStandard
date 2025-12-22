@@ -14,6 +14,7 @@ export class BuilderCheckbox extends Component {
     static components = { BuilderComponent, CheckBox };
     static props = {
         ...clickableBuilderComponentProps,
+        disabled: { type: Boolean, optional: true, default: false },
     };
 
     setup() {
@@ -28,8 +29,16 @@ export class BuilderCheckbox extends Component {
                 isActive: isApplied(),
             };
         });
-        this.onPointerEnter = operation.preview;
-        this.onPointerLeave = operation.revert;
+        this.onPointerEnter = () => {
+            if (!this.props.disabled) {
+                operation.preview();
+            }
+        };
+        this.onPointerLeave = () => {
+            if (!this.props.disabled) {
+                operation.revert();
+            }
+        };
         this.onChange = operation.commit;
     }
 

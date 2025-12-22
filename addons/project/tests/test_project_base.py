@@ -91,6 +91,7 @@ class TestProjectCommon(TransactionCase):
             })
 
 
+@tagged('at_install', '-post_install')  # LEGACY at_install, fails post install
 class TestProjectBase(TestProjectCommon):
 
     def test_delete_project_with_tasks(self):

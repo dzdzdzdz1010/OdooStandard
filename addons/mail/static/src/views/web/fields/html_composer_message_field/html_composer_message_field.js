@@ -60,6 +60,7 @@ export class HtmlComposerMessageField extends HtmlMailField {
             }
             this.props.record.data.attachment_ids.linkTo(attachment.id, attachment);
         };
+        config.defaultLinkAttributes = { target: "_blank", rel: "noreferrer noopener" };
         return config;
     }
 

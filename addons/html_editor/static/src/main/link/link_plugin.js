@@ -276,6 +276,8 @@ export class LinkPlugin extends Plugin {
             "[data-oe-model]",
             ":has(>[data-oe-model])",
             ".o_prevent_link_editor a",
+            ".s_website_form_send",
+            ".js_subscribe_btn",
         ],
         legit_empty_link_predicates: (linkEl) => linkEl.hasAttribute("data-mimetype"),
 

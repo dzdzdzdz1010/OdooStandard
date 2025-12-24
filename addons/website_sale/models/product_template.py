@@ -8,7 +8,7 @@ from werkzeug import urls
 from odoo import _, api, fields, models
 from odoo.fields import Domain
 from odoo.http import request
-from odoo.tools import float_is_zero, is_html_empty
+from odoo.tools import float_is_zero, is_html_empty, ormcache
 from odoo.tools.sql import SQL, column_exists, create_column
 from odoo.tools.translate import html_translate
 
@@ -674,6 +674,40 @@ class ProductTemplate(models.Model):
             combination_info['compare_list_price'] = 0
 
         return combination_info
+
+    @ormcache('self.id', 'combination_ids', 'website_id')
+    def _get_dynamic_attribute_images(self, combination_ids, website_id):
+        """Compute the 'closest variant' image for every value based on the current selection.
+
+        It is cached to prevent redundant database queries on high-traffic product pages.
+
+        :param tuple combination_ids: A tuple of integers representing the IDs of the
+            currently selected `product.template.attribute.value` records. This must
+            be a tuple (not a recordset) for valid caching.
+        :param int website_id: The ID of the current website (request.website.id). Used
+            to generate correct image URLs for the specific domain context.
+
+        :return: A dictionary mapping attribute value IDs to their corresponding image
+            URLs. Format: { attribute_value_id: image_url }
+        :rtype: dict
+        """
+        combination = self.env['product.template.attribute.value'].browse(combination_ids)
+        website = self.env['website'].browse(website_id)
+
+        attr_images = defaultdict(lambda: website.image_url(self, 'image_128'))
+
+        for ptal in self.valid_product_template_attribute_line_ids:
+            selected_ptav = combination.filtered(lambda v: v.attribute_line_id == ptal)
+
+            for ptav in ptal.product_template_value_ids:
+                simulated_combination = (combination - selected_ptav) + ptav
+                closest_combination = self._get_closest_possible_combination(simulated_combination)
+                variant = self._get_variant_for_combination(closest_combination)
+
+                if variant:
+                    attr_images[ptav.id] = website.image_url(variant, 'image_128')
+
+        return attr_images
 
     @api.model
     def _apply_taxes_to_price(

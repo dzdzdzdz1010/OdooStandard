@@ -14,6 +14,7 @@ from odoo.exceptions import AccessError, MissingError
 from odoo.fields import Domain
 from odoo.http import request
 from odoo.tools import file_open, ormcache
+from odoo.tools.json import scriptsafe as json_scriptsafe
 from odoo.tools.translate import LazyTranslate, _
 
 from odoo.addons.website_sale import const
@@ -1114,3 +1115,35 @@ class Website(models.Model):
                 'website_id': website.id,
             } for website in self.filtered(lambda w: w._default_feed_is_valid())
         ])
+
+    def _get_company_markup_data(self):
+        """Generate JSON-LD markup data for the company of the website.
+
+        :return: The JSON-LD markup data.
+        :rtype: dict
+        """
+        self.ensure_one()
+        socials = [
+            self.social_twitter,
+            self.social_facebook,
+            self.social_github,
+            self.social_linkedin,
+            self.social_youtube,
+            self.social_instagram,
+            self.social_tiktok,
+        ]
+        base_url = self.get_base_url()
+
+        return {
+            '@type': 'OnlineStore',
+            'name': self.name,
+            'url': base_url,
+            'logo': f"{base_url}/logo.png?company={self.company_id}",
+            'sameAs': [social for social in socials if social],
+        }
+
+    def get_company_markup_json(self):
+        """Dump the data to JSON for the template."""
+        company_markup_data = self._get_company_markup_data()
+        company_markup_data['@context'] = 'https://schema.org'
+        return json_scriptsafe.dumps(company_markup_data, indent=2)

@@ -276,6 +276,21 @@ class WebsiteSale(payment_portal.PaymentPortal):
         """Allow to configure the product page URL's query string."""
         return {}
 
+    def _get_category_markup_data(self, category):
+        """Generate JSON-LD markup data for the current shop category page.
+
+        :param website website: The current website.
+        :return: The JSON-LD markup data.
+        :rtype: dict
+        """
+        website = request.website
+        base_url = website.get_base_url()
+        return {
+            '@context': 'https://schema.org',
+            'owner': website._get_company_markup_data(),
+            'breadcrumb': self._prepare_breadcrumb_markup_data(base_url, category)
+        }
+
     @route(
         [
             SHOP_PATH,
@@ -534,6 +549,9 @@ class WebsiteSale(payment_portal.PaymentPortal):
             values.update({'all_tags': all_tags, 'tags': tags})
         if category:
             values['main_object'] = category
+            values['category_markup_data'] = json_scriptsafe.dumps(
+                [self._get_category_markup_data(category)], indent=2
+            )
         values.update(self._get_additional_shop_values(values, **post))
         return request.render("website_sale.products", values)
 
@@ -853,8 +871,8 @@ class WebsiteSale(payment_portal.PaymentPortal):
             'shop_path': SHOP_PATH,
         }
 
-    def _prepare_breadcrumb_markup_data(self, base_url, category, product_name):
-        """ Generate JSON-LD markup data for the given product category.
+    def _prepare_breadcrumb_markup_data(self, base_url, category, product_name=None):
+        """Generate JSON-LD breadcrumb markup data for the given product or category.
 
         See https://schema.org/BreadcrumbList.
 
@@ -864,28 +882,29 @@ class WebsiteSale(payment_portal.PaymentPortal):
         :return: The JSON-LD markup data.
         :rtype: dict
         """
+        breadcrumb_elements = [{
+            '@type': 'ListItem',
+            'position': 1,
+            'name': 'Shop',
+            'item': base_url,
+        }]
+        if category:
+            breadcrumb_elements += [{
+                    '@type': 'ListItem',
+                    'position': i,
+                    'name': cat.name,
+                    'item': f'{base_url}{self._get_shop_path(cat)}',
+            } for i, cat in enumerate(category.parents_and_self, start=2)]
+        if product_name:
+            breadcrumb_elements.append({
+                '@type': 'ListItem',
+                'position': len(breadcrumb_elements) + 1,
+                'name': product_name,
+            })
+
         return {
-            '@context': 'https://schema.org',
             '@type': 'BreadcrumbList',
-            'itemListElement': [
-                {
-                    '@type': 'ListItem',
-                    'position': 1,
-                    'name': 'All Products',
-                    'item': f'{base_url}{self._get_shop_path()}',
-                },
-                {
-                    '@type': 'ListItem',
-                    'position': 2,
-                    'name': category.name,
-                    'item': f'{base_url}{self._get_shop_path(category)}',
-                },
-                {
-                    '@type': 'ListItem',
-                    'position': 3,
-                    'name': product_name,
-                }
-            ]
+            'itemListElement': breadcrumb_elements,
         }
 
     @route(

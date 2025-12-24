@@ -256,6 +256,28 @@
         <field name="country_id" ref="base.be"/>
     </record>
 
+    <record id="l10n_be_leave_type_postponed_paid_time_off_n1" model="hr.leave.type">
+        <field name="name">Postponed Paid Time Off N-1</field>
+        <field name="requires_allocation">yes</field>
+        <field name="employee_requests">no</field>
+        <field name="request_unit">half_day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_postponed_paid_time_off_n2" model="hr.leave.type">
+        <field name="name">Postponed Paid Time Off N-2</field>
+        <field name="requires_allocation">yes</field>
+        <field name="employee_requests">no</field>
+        <field name="request_unit">half_day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
 <!-- CH: Switzerland -->
 
     <record id="l10n_ch_swissdec_unpaid_lt" model="hr.leave.type">

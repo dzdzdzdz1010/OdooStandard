@@ -651,6 +651,13 @@ export class WysiwygAdapterComponent extends Wysiwyg {
         $extraEditableZones = $extraEditableZones.add($editableSavableZones.find('.tab-pane > .oe_structure'))
             .add(this.websiteService.pageDocument.querySelectorAll(`${this.oeRecordCoverSelector} [data-oe-field]:not([data-oe-field="arch"])`));
 
+        // Image inside grid image items and s_image_gallery can be replaced.
+        $extraEditableZones = $extraEditableZones.add([...$editableSavableZones.find(
+            ".o_grid_item_image > *, .o_grid_item_image > a > *, .s_image_gallery *"
+        )].filter(
+            (el) => isMediaElement(el) || el.tagName === "IMG"
+        ));
+
         return $editableSavableZones.add($extraEditableZones).toArray();
     }
     _getReadOnlyAreas() {
@@ -660,7 +667,33 @@ export class WysiwygAdapterComponent extends Wysiwyg {
         // over all further inactive tabs when using Chrome.
         // grep: .s_tabs
         const doc = this.websiteService.pageDocument;
-        return [...doc.querySelectorAll('.tab-pane > .oe_structure')].map(el => el.parentNode);
+        const tabEls = [...doc.querySelectorAll('.tab-pane > .oe_structure')].map(el => el.parentNode);
+
+        // No text should be added around grid image items nor inside s_image_gallery.
+        const hasMediaOnly = (el) => {
+            const nonEmptyContent = [...el.childNodes].filter(
+                (node) => node.tagName !== "BR" && (node.nodeType !== Node.TEXT_NODE || node.textContent.replaceAll(/\s+/g, ""))
+            );
+            if (nonEmptyContent.length !== 1) {
+                return false;
+            }
+            const singleEl = nonEmptyContent[0];
+            if (isMediaElement(singleEl) || singleEl.tagName === "IMG") {
+                return true;
+            }
+            if (singleEl.tagName === "A") {
+                return hasMediaOnly(singleEl);
+            }
+            return false;
+        };
+        const imageContainerEls = [
+            ...[...doc.querySelectorAll(".o_grid_item_image")]
+            // Make it possible to fix previously broken ones.
+            .filter(hasMediaOnly),
+            ...doc.querySelectorAll(".s_image_gallery"),
+        ];
+
+        return [...tabEls, ...imageContainerEls];
     }
     _getUnremovableElements() {
         return [];

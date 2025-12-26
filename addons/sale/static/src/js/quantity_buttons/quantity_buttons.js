@@ -29,7 +29,7 @@ export class QuantityButtons extends Component {
     /**
      * Set the quantity to a specified value.
      *
-     * @param {Event} event The quantity input's `on change` event, containing the new quantity.
+     * @param {Event} event The quantity input's `on input` event, containing the new quantity.
      */
     async setQuantity(event) {
         const quantity = parseFloat(event.target.value);

@@ -12,7 +12,7 @@
                     name="sale_product_configurator_confirm_button"
                     class="btn btn-primary"
                     t-on-click="onConfirm"
-                    t-att-disabled="!isPossibleConfiguration()">
+                    t-att-disabled="!isPossibleConfiguration() || !state.products[0].quantity">
                     Confirm
                 </button>
                 <button

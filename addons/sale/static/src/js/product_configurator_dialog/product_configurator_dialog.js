@@ -203,7 +203,7 @@ export class ProductConfiguratorDialog extends Component {
      * Set the quantity of the product to a given value.
      *
      * If the value is less than or equal to zero, the product is removed from the product list
-     * instead, unless it is the main product, in which case the quantity is set to 1.
+     * instead, unless it is the main product, in which case the quantity is set to 0.
      *
      * @param {Number} productTmplId - The product template id, as a `product.template` id.
      * @param {Number} quantity - The new quantity of the product.
@@ -212,7 +212,7 @@ export class ProductConfiguratorDialog extends Component {
     async _setQuantity(productTmplId, quantity) {
         if (quantity <= 0) {
             if (productTmplId === this.env.mainProductTmplId) {
-                quantity = 1;
+                quantity = 0;
             } else {
                 this._removeProduct(productTmplId);
                 return true;

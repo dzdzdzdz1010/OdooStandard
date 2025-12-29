@@ -164,7 +164,7 @@ class ProductTemplateAttributeValue(models.Model):
         Eg. on exclusion rules form
         """
         for value in self:
-            value.display_name = f"{value.attribute_id.name}: {value.name}"
+            value.display_name = value.name
 
     def _only_active(self):
         return self.filtered(lambda ptav: ptav.ptav_active)

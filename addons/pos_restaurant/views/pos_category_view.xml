@@ -13,17 +13,6 @@
         </field>
     </record>
 
-    <record id="pos_restaurant_product_pos_category_tree_view" model="ir.ui.view">
-        <field name="name">pos.restaurant.pos.category.list.view</field>
-        <field name="model">pos.category</field>
-        <field name="inherit_id" ref="point_of_sale.product_pos_category_tree_view"/>
-        <field name="arch" type="xml">
-            <field name="parent_id" position="after">
-                <field name="course_id"/>
-            </field>
-        </field>
-    </record>
-
     <record id="pos_restaurant_pos_category_kanban_view" model="ir.ui.view">
         <field name="name">pos.restaurant.pos.category.kanban</field>
         <field name="model">pos.category</field>

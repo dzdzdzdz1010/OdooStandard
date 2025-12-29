@@ -21,10 +21,15 @@ export class MeetingSideActions extends Component {
     setup() {
         this.store = useService("mail.store");
         this.callActions = useCallActions({ channel: () => this.store.rtc.channel });
+        this.rtc = useService("discuss.rtc");
         useSubEnv({ inMeetingSideActions: true });
     }
 
     computeActions() {
+        if (this.rtc.isPipMode) {
+            this.actions = [];
+            return;
+        }
         const quickThreadActionIds = this.props.isSmall ? [] : ["invite-people", "meeting-chat"];
         const threadActions = this.props.threadActions;
         const { quick, other, group } = threadActions.partition;

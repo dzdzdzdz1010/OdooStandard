@@ -20,7 +20,6 @@ from odoo.addons.website_crm_partner_assign.controllers.main import (
 )
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestPartnerAssign(TransactionCase):
 
     def setUp(self):
@@ -97,7 +96,6 @@ class TestPartnerAssign(TransactionCase):
             pass
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestPartnerLeadPortal(TestCrmCommon):
 
     def setUp(self):

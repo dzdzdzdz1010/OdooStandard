@@ -529,7 +529,6 @@ class TestAccountSubcontractingFlows(TestMrpSubcontractingCommon):
         ])
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestBomPriceSubcontracting(TestBomPriceCommon):
 
     def test_01_compute_price_subcontracting_cost(self):

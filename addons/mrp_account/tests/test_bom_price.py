@@ -104,7 +104,6 @@ class TestBomPriceCommon(common.TransactionCase):
         cls.bom_2 = bom_form2.save()
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestBomPrice(TestBomPriceCommon):
     def test_00_compute_price(self):
         """Test multi-level BoM cost"""

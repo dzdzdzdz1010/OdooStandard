@@ -434,7 +434,6 @@ class TestAccessRightsUnlink(TestHrHolidaysAccessRightsCommon):
             leave.with_user(self.user_employee.id).unlink()
 
 
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestMultiCompany(TestHrHolidaysCommon):
 
     @classmethod

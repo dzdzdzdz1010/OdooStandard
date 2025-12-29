@@ -8,7 +8,6 @@ from odoo.addons.mrp_subcontracting.tests.common import TestMrpSubcontractingCom
 
 
 @skip('Temporary to fast merge new valuation')
-@tagged('at_install', '-post_install')  # LEGACY at_install
 class TestSaleDropshippingFlows(TestMrpSubcontractingCommon):
 
     @classmethod

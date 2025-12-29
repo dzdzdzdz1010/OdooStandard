@@ -1,0 +1,4 @@
+"id","name","country_id","tax_payable_account_id","tax_receivable_account_id","tax_advance_account_id"
+"l10n_uz_tax_group_12","12%","base.uz","uz6710","uz4890",""
+"l10n_uz_tax_group_zero_rated","Zero-rated","base.uz","uz6710","uz4890",""
+"l10n_uz_tax_group_exempt","Exempt","base.uz","uz6710","uz4890",""

@@ -17,6 +17,7 @@ This is the base module to manage the accounting chart for Republic of Ireland i
     ],
     'auto_install': ['account'],
     "data": [
+        "data/account.account.tag-ie.csv",
         "data/tax_report-ie.xml",
     ],
     "demo": [

@@ -1446,4 +1446,17 @@ describe("update tab width", () => {
             contentAfter: `<p><span>aa[]</span>${oeTab(tabAfterAA)}</p>`,
         });
     });
+
+    test("should update tab width on content change (RTL)", async () => {
+        const tabAfterA = TAB_WIDTH - getCharWidth("p", "a");
+        const tabAfterAA = TAB_WIDTH - 2 * getCharWidth("p", "a");
+        await testEditor({
+            direction: "rtl",
+            contentBefore: `<p><span>a[]</span>${oeTab(tabAfterA)}</p>`,
+            stepFunction: async (editor) => {
+                await insertText(editor, "a");
+            },
+            contentAfter: `<p><span>aa[]</span>${oeTab(tabAfterAA)}</p>`,
+        });
+    });
 });

@@ -1,7 +1,6 @@
 import { browser } from "@web/core/browser/browser";
 import { Interaction } from '@web/public/interaction';
 import { registry } from '@web/core/registry';
-import { _t } from "@web/core/l10n/translation";
 
 export class PaymentFailedNotification extends Interaction {
     static selector = ".o_website_sale_checkout_container";

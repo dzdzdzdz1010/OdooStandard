@@ -2,7 +2,6 @@ import { browser } from "@web/core/browser/browser";
 import { rpc } from '@web/core/network/rpc';
 import { registry } from '@web/core/registry';
 import { Interaction } from '@web/public/interaction';
-import { _t } from "@web/core/l10n/translation";
 
 export class PaymentPostProcessing extends Interaction {
     static selector = 'div[name="o_payment_status"]';

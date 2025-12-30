@@ -5,11 +5,15 @@
         <field name="model">account.tax</field>
         <field name="inherit_id" ref="account.view_tax_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='country_id']" position="after">
-                <field name="ubl_cii_tax_category_code"/>
-                <field name="ubl_cii_tax_exemption_reason_code"
-                       invisible="ubl_cii_tax_category_code not in ('AE', 'E', 'G', 'O', 'K')"
-                       />
+            <xpath expr="//page[@name='advanced_options']" position="after">
+                <page string="Electronic Invoicing" name="electronic_invoicing">
+                    <group>
+                        <field name="ubl_cii_tax_category_code"/>
+                        <field name="ubl_cii_tax_exemption_reason_code"
+                            invisible="ubl_cii_tax_category_code not in ('AE', 'E', 'G', 'O', 'K')"
+                            />
+                    </group>
+                </page>
             </xpath>
         </field>
     </record>

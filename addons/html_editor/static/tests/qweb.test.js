@@ -307,3 +307,44 @@ test("cleaning removes content editable", async () => {
             <t t-raw="test">Hello</t>
         </div>`);
 });
+
+describe("toolbar visibility on contenteditable false elements", () => {
+    test("should open the toolbar when the selected t-out is contenteditable false", async () => {
+        const { el } = await setupEditor(
+            '<div contenteditable="false"><t t-out="">a[]bc</t></div>',
+            { config }
+        );
+        await dblclick("t");
+        await animationFrame();
+        expect(".o-we-toolbar").toHaveCount(1);
+        expect(getContent(el)).toBe(
+            `[<div contenteditable="false"><t t-out="" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">abc</t></div>]`
+        );
+    });
+
+    test("should open the toolbar when the selected t-field is contenteditable false", async () => {
+        const { el } = await setupEditor(
+            '<div contenteditable="false"><t t-field="">a[]bc</t></div>',
+            { config }
+        );
+        await dblclick("t");
+        await animationFrame();
+        expect(".o-we-toolbar").toHaveCount(1);
+        expect(getContent(el)).toBe(
+            `[<div contenteditable="false"><t t-field="" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">abc</t></div>]`
+        );
+    });
+
+    test("should open the toolbar when the selected t-esc is contenteditable=false", async () => {
+        const { el } = await setupEditor(
+            '<div contenteditable="false"><t t-esc="">a[]bc</t></div>',
+            { config }
+        );
+        await dblclick("t");
+        await animationFrame();
+        expect(".o-we-toolbar").toHaveCount(1);
+        expect(getContent(el)).toBe(
+            `[<div contenteditable="false"><t t-esc="" data-oe-t-inline="true" data-oe-protected="true" contenteditable="false">abc</t></div>]`
+        );
+    });
+});

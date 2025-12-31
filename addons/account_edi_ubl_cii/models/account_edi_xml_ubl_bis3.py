@@ -193,6 +193,13 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
                 'cbc:CompanyID': {'_text': "Foretaksregisteret"},
                 'cac:TaxScheme': {'cbc:ID': {'_text': 'TAX'}},
             })
+            vat = partner.vat
+            if vat[:2] != 'NO':
+                vat = 'NO' + vat
+            if vat[-3:] != 'MVA':
+                vat += 'MVA'
+            party_node['cac:PartyTaxScheme'][0]['cbc:CompanyID']['_text'] = vat
+            party_node['cac:PartyLegalEntity']['cbc:CompanyID']['_text'] = vat
 
         if commercial_partner.country_code == 'NL':
             # For NL, VAT can be used as a Peppol endpoint, but KVK/OIN has to be used as PartyLegalEntity/CompanyID
@@ -642,7 +649,7 @@ class AccountEdiXmlUbl_Bis3(models.AbstractModel):
                 })
 
         if vals['supplier'].country_id.code == 'NO':
-            vat = vals['supplier'].vat
+            vat = vals['document_node']['cac:AccountingSupplierParty']['cac:Party']['cac:PartyTaxScheme'][0]['cbc:CompanyID']['_text']
             constraints.update({
                 # NO-R-001: For Norwegian suppliers, a VAT number MUST be the country code prefix NO followed by a
                 # valid Norwegian organization number (nine numbers) followed by the letters MVA.

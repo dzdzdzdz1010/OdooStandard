@@ -74,7 +74,8 @@ class ResPartner(models.Model):
                 continue
             country_code = partner._deduce_country_code()
             if country_code == 'DK' and partner.nemhandel_identifier_type == '0184':
-                partner.nemhandel_identifier_value = partner.company_registry
+                registry = partner.company_registry
+                partner.nemhandel_identifier_value = registry[2:] if registry and registry.upper().startswith('DK') else registry
             elif country_code == 'DK':
                 partner.nemhandel_identifier_value = partner.nemhandel_identifier_value
             else:
@@ -96,6 +97,16 @@ class ResPartner(models.Model):
         if self.filtered(lambda partner: partner.invoice_edi_format != 'oioubl_21' and partner.invoice_sending_method == 'nemhandel'):
             raise ValidationError(_('On Nemhandel, only OIOUBL 2.1 is supported.'))
 
+    @api.constrains('nemhandel_identifier_type', 'nemhandel_identifier_value')
+    def _check_nemhandel_identifier_value(self):
+        for partner in self:
+            if (
+                partner.nemhandel_identifier_type == '0184' and
+                partner.nemhandel_identifier_value and
+                partner.nemhandel_identifier_value.upper().startswith('DK') and
+                partner.nemhandel_identifier_value == partner._origin.nemhandel_identifier_value
+            ):
+                raise ValidationError(_('The Nemhandel Identifier Value should not include the country code prefix "DK" when the Identifier Type is CVR.'))
     # -------------------------------------------------------------------------
     # OVERRIDE AND HELPERS
     # -------------------------------------------------------------------------

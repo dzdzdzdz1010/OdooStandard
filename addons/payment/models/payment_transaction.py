@@ -513,9 +513,10 @@ class PaymentTransaction(models.Model):
             'state': self.state,
             'state_message': self.state_message,
         })
+        notification_channel = payment_utils.generate_notification_channel(self)
         # Send notification that will trigger the postprocesing
         self.env['bus.bus']._sendone(
-            'PAYMENT_PROCESSING_CHANNEL',
+            notification_channel,
             'PAYMENT_TRIGGER_POST_PROCESSING',
             {},
         )

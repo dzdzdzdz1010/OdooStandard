@@ -6,6 +6,8 @@ from odoo import http
 from odoo.http import request
 from odoo.tools.translate import LazyTranslate
 
+from odoo.addons.payment import utils as payment_utils
+
 _lt = LazyTranslate(__name__)
 _logger = logging.getLogger(__name__)
 
@@ -33,7 +35,14 @@ class PaymentPostProcessing(http.Controller):
         """
         monitored_tx = self._get_monitored_transaction()
         # The session might have expired, or the transaction never existed.
-        values = {'tx': monitored_tx} if monitored_tx else {'payment_not_found': True}
+        if monitored_tx:
+            notification_channel = payment_utils.generate_notification_channel(monitored_tx)
+            values = {
+                'tx': monitored_tx,
+                'notification_channel': notification_channel,
+            }
+        else:
+            values = {'payment_not_found': True}
         return request.render('payment.payment_status', values)
 
     @http.route('/payment/post_process', type='jsonrpc', auth='public')

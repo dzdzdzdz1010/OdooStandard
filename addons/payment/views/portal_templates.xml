@@ -126,6 +126,7 @@
                                 name="o_payment_status"
                                 class="d-flex flex-column"
                                 t-att-data-landing-route="tx.landing_route"
+                                t-att-data-notification-channel="notification_channel"
                             >
                                 <t t-call="payment.state_header" is_processing="True"/>
                                 <div class="o_payment_summary d-flex gap-3">
@@ -307,7 +308,7 @@
                 </div>
                 <div id="o_payment_status_message" class="w-100">
                     <t t-foreach="status_message.split('\n')" t-as="status_message_line">
-                        <p><t t-out="status_message_line"/></p>
+                        <p class="mb-0"><t t-out="status_message_line"/></p>
                     </t>
                 </div>
             </div>

@@ -240,3 +240,11 @@ def generate_idempotency_key(tx, scope=None):
     """
     database_uuid = tx.env['ir.config_parameter'].sudo().get_str('database.uuid')
     return sha1(f'{database_uuid}{tx.reference}{scope or ""}'.encode()).hexdigest()
+
+
+# Socket Notification Channel Generation
+
+def generate_notification_channel(tx):
+    notification_access_token = generate_access_token(tx.id, tx.amount, tx.currency_id.id)
+    notification_channel = f'PAYMENT_PROCESSING_CHANNEL_{notification_access_token}'
+    return notification_channel

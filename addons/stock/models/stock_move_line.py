@@ -886,7 +886,7 @@ class StockMoveLine(models.Model):
         returns: dictionary {product_id+name+description+uom: {product, name, description, quantity, uom_id}, ...}
         """
         aggregated_move_lines = {}
-
+        strict = kwargs.get('strict')
         # Loops to get backorders, backorders' backorders, and so and so...
         backorders = self.env['stock.picking']
         pickings = self.picking_id
@@ -894,6 +894,7 @@ class StockMoveLine(models.Model):
             backorders |= pickings.backorder_ids
             pickings = pickings.backorder_ids
 
+        processed_moves = set()
         for move_line in self:
             if kwargs.get('except_package') and move_line.result_package_id:
                 continue
@@ -902,10 +903,9 @@ class StockMoveLine(models.Model):
             quantity = move_line.uom_id._compute_quantity(move_line.quantity, uom)
             packaging_quantity = move_line.uom_id._compute_quantity(quantity, move_line.move_id.packaging_uom_id)
             if line_key not in aggregated_move_lines:
-                qty_ordered = None
+                qty_ordered = None if strict else move_line.move_id.product_uom_qty
                 packaging_qty_ordered = None
-                if backorders and not kwargs.get('strict'):
-                    qty_ordered = move_line.move_id.product_uom_qty
+                if backorders and not strict:
                     # Filters on the aggregation key (product, description and uom) to add the
                     # quantities delayed to backorders to retrieve the original ordered qty.
                     following_move_lines = backorders.move_line_ids.filtered(
@@ -922,19 +922,21 @@ class StockMoveLine(models.Model):
                     **aggregated_properties,
                     'quantity': quantity,
                     'packaging_quantity': packaging_quantity,
-                    'qty_ordered': qty_ordered or quantity,
+                    'qty_ordered': qty_ordered,
                     'packaging_qty_ordered': packaging_qty_ordered or packaging_quantity,
                     'product': move_line.product_id,
                 }
+                processed_moves.add(move_line.move_id.id)
             else:
-                aggregated_move_lines[line_key]['qty_ordered'] += quantity
+                if strict or move_line.move_id.id not in processed_moves:
+                    aggregated_move_lines[line_key]['qty_ordered'] += quantity if strict else move_line.move_id.product_uom_qty
                 aggregated_move_lines[line_key]['packaging_qty_ordered'] += packaging_quantity
                 aggregated_move_lines[line_key]['quantity'] += quantity
                 aggregated_move_lines[line_key]['packaging_quantity'] += packaging_quantity
 
         # Does the same for empty move line to retrieve the ordered qty. for partially done moves
         # (as they are splitted when the transfer is done and empty moves don't have move lines).
-        if kwargs.get('strict'):
+        if strict:
             return aggregated_move_lines
         pickings = (self.picking_id | backorders)
         for empty_move in pickings.move_ids:

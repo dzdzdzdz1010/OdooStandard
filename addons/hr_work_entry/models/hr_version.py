@@ -505,7 +505,7 @@ class HrVersion(models.Model):
             if version_id in tz_by_version:
                 return tz_by_version[version_id]
             version = self.env['hr.version'].browse(version_id)
-            tz = version.resource_calendar_id.tz or version.employee_id.resource_calendar_id.tz or version.company_id.resource_calendar_id.tz
+            tz = version.resource_calendar_id.tz or version.employee_id.resource_calendar_id.tz or version.employee_id.tz or version.company_id.resource_calendar_id.tz
             if not tz:
                 raise UserError(_('Missing timezone for work entries generation.'))
             tz = ZoneInfo(tz)

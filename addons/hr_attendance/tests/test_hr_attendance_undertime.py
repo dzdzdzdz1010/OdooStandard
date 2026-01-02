@@ -297,13 +297,19 @@ class TestHrAttendanceUndertime(HttpCase):
         # Check that the calendar's timezones take priority and that overtimes and attendances dates are consistent
         self.europe_employee.resource_calendar_id.tz = 'America/New_York'
 
+        """
+        Attendnace splitted acording to employee local midnight into 2 records:
+        1st record : 30/5 03:00 (UTC) -> 30/5 04:00 (UTC) (1 hours worked "No Lunch", 0 hours overtime)
+        2nd record : 30/5 04:00 (UTC) -> 30/5 10:00 (UTC) (6 hours worked "No Lunch", -1 hours overtime)
+        """
         early_attendance2 = self.env['hr.attendance'].create({
             'employee_id': self.europe_employee.id,
             'check_in': datetime(2024, 5, 30, 3, 0),  # 23:00 NY prev day
             'check_out': datetime(2024, 5, 30, 10, 0),  # 6:00 NY
         })
         # First day you only work 1 hour and second day you work 6 hours, that's -1 hours of overtime
-        self.assertAlmostEqual(early_attendance2.overtime_hours, -1, 2)
+        self.assertItemsEqual(early_attendance2.mapped('worked_hours'), [1.0, 6.0])
+        self.assertItemsEqual(early_attendance2.mapped('overtime_hours'), [0.0, -1.0])
 
         overtime_record2 = early_attendance2.linked_overtime_ids
         self.assertEqual(len(overtime_record2), 1, "One undertime records should be created for that attendance.")

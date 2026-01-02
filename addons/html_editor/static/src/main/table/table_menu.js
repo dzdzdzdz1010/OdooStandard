@@ -4,6 +4,8 @@ import { getColumnIndex, getRowIndex } from "@html_editor/utils/table";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
+import { isEmpty } from "@html_editor/utils/dom_info";
+import { getBaseContainerSelector } from "@html_editor/utils/base_container";
 
 export class TableMenu extends Component {
     static template = "html_editor.TableMenu";
@@ -83,6 +85,27 @@ export class TableMenu extends Component {
         );
     }
 
+    get hasContent() {
+        const baseContainerSelector = getBaseContainerSelector();
+        const cellHasContent = (td) => {
+            const { children } = td;
+            return !(
+                children.length === 1 &&
+                children[0].matches(baseContainerSelector) &&
+                isEmpty(children[0])
+            );
+        };
+
+        const cell = this.props.target;
+        if (this.props.type === "row") {
+            return [...cell.parentElement.children].some(cellHasContent);
+        }
+
+        const table = closestElement(cell, "table");
+        const columnIndex = getColumnIndex(cell);
+        return [...table.rows].some((row) => cellHasContent(row.cells[columnIndex]));
+    }
+
     onSelected(item) {
         item.action(this.props.target);
         this.props.overlay.close();
@@ -159,7 +182,7 @@ export class TableMenu extends Component {
                 text: _t("Reset table size"),
                 action: (target) => this.props.resetTableSize(target.closest("table")),
             },
-            {
+            this.hasContent && {
                 name: "clear_content",
                 icon: "fa-times-circle",
                 text: _t("Clear content"),
@@ -238,7 +261,7 @@ export class TableMenu extends Component {
                 text: _t("Reset table size"),
                 action: (target) => this.props.resetTableSize(target.closest("table")),
             },
-            {
+            this.hasContent && {
                 name: "clear_content",
                 icon: "fa-times-circle",
                 text: _t("Clear content"),

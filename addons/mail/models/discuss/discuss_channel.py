@@ -457,6 +457,12 @@ class DiscussChannel(models.Model):
             Store(bus_channel=self.env.user).add(channels, "_store_channel_fields").bus_send()
         return channels
 
+    def action_reset_invitation_uuid(self):
+        self.ensure_one()
+        if self.self_member_id.channel_role not in ("admin", "owner"):
+            raise AccessError(_("Only channel owners or administrators can reset the invite link."))
+        self.uuid = self._generate_random_token()
+
     @api.ondelete(at_uninstall=False)
     def _unlink_except_all_employee_channel(self):
         # Delete discuss.channel

@@ -12,7 +12,7 @@ import { withSequence } from "@html_editor/utils/resource";
 import { makeContentsInline, unwrapContents } from "@html_editor/utils/dom";
 
 /**
- * @typedef {((editableEls: HTMLElement[]) => void)[]} mark_translatable_nodes
+ * @typedef {((editableEls: HTMLElement[]) => void)[]} mark_translatable_nodes_listeners
  */
 
 const TRANSLATED_ATTRS = ["placeholder", "title", "alt", "value"];
@@ -57,9 +57,9 @@ export class TranslationPlugin extends Plugin {
 
     /** @type {import("plugins").WebsiteResources} */
     resources = {
-        clean_for_save_handlers: this.cleanForSave.bind(this),
+        clean_for_save_listeners: this.cleanForSave.bind(this),
         get_dirty_els: this.getDirtyTranslations.bind(this),
-        after_setup_editor_handlers: () => {
+        after_setup_editor_overrides: () => {
             const translationSavableEls = getTranslationAttributeEls(
                 this.services.website.pageDocument
             );
@@ -79,7 +79,7 @@ export class TranslationPlugin extends Plugin {
             }
             return true;
         },
-        start_edition_handlers: withSequence(5, () => {
+        start_edition_listeners: withSequence(5, () => {
             this.prepareTranslation();
         }),
         system_classes: ["o_savable_attribute"],
@@ -310,7 +310,7 @@ export class TranslationPlugin extends Plugin {
                 });
             });
         }
-        this.dispatchTo("mark_translatable_nodes", this.editableEls);
+        this.trigger("mark_translatable_nodes_listeners", this.editableEls);
     }
 
     updateTranslationMap(translateEl, translation, attrName) {

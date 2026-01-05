@@ -1,4 +1,5 @@
 import { Plugin } from "@html_editor/plugin";
+import { isPromise } from "@html_editor/utils/functions";
 import { withSequence } from "@html_editor/utils/resource";
 import { groupBy } from "@web/core/utils/arrays";
 import { uniqueId } from "@web/core/utils/functions";
@@ -11,7 +12,7 @@ import { uniqueId } from "@web/core/utils/functions";
  */
 
 /**
- * @typedef {(() => void)[]} after_save_handlers
+ * @typedef {(() => void)[]} after_save_listeners
  * @typedef {((el?: HTMLElement) => Promise<void>)[]} before_save_handlers
  * Called at the very beginning of the save process.
  *
@@ -33,10 +34,10 @@ export class SavePlugin extends Plugin {
 
     /** @type {import("plugins").BuilderResources} */
     resources = {
-        handleNewRecords: this.handleMutations.bind(this),
-        start_edition_handlers: this.startObserving.bind(this),
+        handle_new_records_listeners: this.handleMutations.bind(this),
+        start_edition_listeners: this.startObserving.bind(this),
         // Resource definitions:
-        clean_for_save_handlers: [
+        clean_for_save_listeners: [
             // ({root}) => {
             //     clean DOM before save (leaving edit mode)
             //     root is the clone of a node that was o_dirty
@@ -55,12 +56,12 @@ export class SavePlugin extends Plugin {
     async save({ shouldSkipAfterSaveHandlers = async () => true } = {}) {
         let skipAfterSaveHandlers;
         try {
-            await Promise.all(this.getResource("before_save_handlers").map((handler) => handler()));
+            await Promise.all(this.dispatchTo("before_save_handlers"));
             await this._save();
             skipAfterSaveHandlers = await shouldSkipAfterSaveHandlers();
         } finally {
             if (!skipAfterSaveHandlers) {
-                this.getResource("after_save_handlers").forEach((handler) => handler());
+                this.trigger("after_save_listeners");
             }
         }
     }
@@ -89,7 +90,7 @@ export class SavePlugin extends Plugin {
             const cleanedEls = dirtyEls.map((dirtyEl) => {
                 dirtyEl.classList.remove("o_dirty");
                 const cleanedEl = dirtyEl.cloneNode(true);
-                this.dispatchTo("clean_for_save_handlers", { root: cleanedEl });
+                this.trigger("clean_for_save_listeners", { root: cleanedEl });
                 return cleanedEl;
             });
             for (const saveElementsOverride of this.getResource("save_elements_overrides")) {
@@ -98,13 +99,13 @@ export class SavePlugin extends Plugin {
                 }
             }
             for (const cleanedEl of cleanedEls) {
-                for (const saveElementHandler of this.getResource("save_element_handlers")) {
-                    await saveElementHandler(cleanedEl);
-                }
+                await Promise.all(
+                    this.dispatchTo("save_element_handlers", cleanedEl).filter(isPromise)
+                );
             }
         });
         // used to track dirty out of the editable scope, like header, footer or wrapwrap
-        const willSaves = this.getResource("save_handlers").map((c) => c());
+        const willSaves = this.dispatchTo("save_handlers");
         await Promise.all(saveProms.concat(willSaves));
         this.dependencies.history.reset();
     }

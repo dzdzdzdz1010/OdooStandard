@@ -53,13 +53,13 @@ class ImageGalleryOption extends Plugin {
             IndicatorsStyleClassAction,
         },
         system_classes: ["o_empty_gallery_alert"],
-        get_gallery_items_handlers: this.getGalleryItems.bind(this),
-        reorder_items_handlers: this.reorderGalleryItems.bind(this),
-        on_will_remove_handlers: this.onWillRemove.bind(this),
-        on_removed_handlers: this.onRemoved.bind(this),
-        on_replaced_media_handlers: ({ newMediaEl }) => this.updateCarouselThumbnail(newMediaEl),
-        on_image_updated_handlers: ({ imageEl }) => this.updateCarouselThumbnail(imageEl),
-        on_image_saved_handlers: ({ imageEl }) => this.updateCarouselThumbnail(imageEl),
+        get_gallery_items_providers: this.getGalleryItems.bind(this),
+        reorder_items_listeners: this.reorderGalleryItems.bind(this),
+        on_will_remove_listeners: this.onWillRemove.bind(this),
+        on_removed_listeners: this.onRemoved.bind(this),
+        on_replaced_media_listeners: ({ newMediaEl }) => this.updateCarouselThumbnail(newMediaEl),
+        on_image_updated_listeners: ({ imageEl }) => this.updateCarouselThumbnail(imageEl),
+        on_image_saved_listeners: ({ imageEl }) => this.updateCarouselThumbnail(imageEl),
         on_snippet_dropped_handlers: ({ snippetEl }) => {
             const carousels = snippetEl.querySelectorAll(".s_image_gallery .carousel");
             this.addCarouselListener(carousels);

@@ -43,7 +43,7 @@ const IMAGE_SIZE = [
 
 /**
  * @typedef {((img: HTMLImageElement) => void | true)[]} delete_image_overrides
- * @typedef {((img: HTMLImageElement) => boolean)[]} image_name_predicates
+ * @typedef {((img: HTMLImageElement) => boolean)[]} image_name_providers
  */
 
 export class ImagePlugin extends Plugin {
@@ -211,9 +211,9 @@ export class ImagePlugin extends Plugin {
         ],
 
         /** Handlers */
-        selectionchange_handlers: this.updateImageParams.bind(this),
-        post_undo_handlers: this.updateImageParams.bind(this),
-        post_redo_handlers: this.updateImageParams.bind(this),
+        selectionchange_listeners: this.updateImageParams.bind(this),
+        post_undo_listeners: this.updateImageParams.bind(this),
+        post_redo_listeners: this.updateImageParams.bind(this),
 
         /** Providers */
         paste_media_url_command_providers: this.getCommandForImageUrlPaste.bind(this),
@@ -294,7 +294,7 @@ export class ImagePlugin extends Plugin {
         }
         let imageName;
         // Keep the result from the first predicate that returns something.
-        this.getResource("image_name_predicates").find((p) => {
+        this.getResource("image_name_providers").find((p) => {
             imageName = p(targetedImg);
             return imageName;
         });

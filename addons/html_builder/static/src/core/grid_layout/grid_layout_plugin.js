@@ -32,23 +32,23 @@ export class GridLayoutPlugin extends Plugin {
             getButtons: this.getActiveOverlayButtons.bind(this),
         }),
         on_cloned_handlers: this.onCloned.bind(this),
-        on_removed_handlers: this.onRemoved.bind(this),
+        on_removed_listeners: this.onRemoved.bind(this),
         // Drag and drop from sidebar
-        on_snippet_dragged_handlers: this.onSnippetDragged.bind(this),
-        on_snippet_over_dropzone_handlers: this.onSnippetOverDropzone.bind(this),
-        on_snippet_move_handlers: this.onSnippetMove.bind(this),
-        on_snippet_out_dropzone_handlers: this.onSnippetOutDropzone.bind(this),
-        on_snippet_dropped_over_handlers: this.onSnippetDroppedOver.bind(this),
-        on_snippet_dropped_near_handlers: this.onSnippetDroppedNear.bind(this),
+        on_snippet_dragged_listeners: this.onSnippetDragged.bind(this),
+        on_snippet_over_dropzone_listeners: this.onSnippetOverDropzone.bind(this),
+        on_snippet_move_listeners: this.onSnippetMove.bind(this),
+        on_snippet_out_dropzone_listeners: this.onSnippetOutDropzone.bind(this),
+        on_snippet_dropped_over_listeners: this.onSnippetDroppedOver.bind(this),
+        on_snippet_dropped_near_listeners: this.onSnippetDroppedNear.bind(this),
         on_snippet_dropped_handlers: withSequence(1000, this.onSnippetDropped.bind(this)),
         // Drag and drop from the page
-        is_draggable_handlers: this.isDraggable.bind(this),
-        on_element_dragged_handlers: this.onElementDragged.bind(this),
-        on_element_over_dropzone_handlers: this.onDropzoneOver.bind(this),
-        on_element_move_handlers: this.onDragMove.bind(this),
-        on_element_out_dropzone_handlers: this.onDropzoneOut.bind(this),
-        on_element_dropped_over_handlers: this.onElementDroppedOver.bind(this),
-        on_element_dropped_near_handlers: this.onElementDroppedNear.bind(this),
+        is_draggable_predicates: this.isDraggable.bind(this),
+        on_element_dragged_listeners: this.onElementDragged.bind(this),
+        on_element_over_dropzone_listeners: this.onDropzoneOver.bind(this),
+        on_element_move_listeners: this.onDragMove.bind(this),
+        on_element_out_dropzone_listeners: this.onDropzoneOut.bind(this),
+        on_element_dropped_over_listeners: this.onElementDroppedOver.bind(this),
+        on_element_dropped_near_listeners: this.onElementDroppedNear.bind(this),
         on_element_dropped_handlers: this.onElementDropped.bind(this),
         // Ignore background grid in history
         savable_mutation_record_predicates: this.ignoreBackgroundGrid.bind(this),
@@ -87,7 +87,6 @@ export class GridLayoutPlugin extends Plugin {
                 return false;
             }
         }
-        return true;
     }
 
     getActiveOverlayButtons(target) {

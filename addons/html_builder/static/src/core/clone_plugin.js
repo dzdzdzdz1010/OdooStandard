@@ -4,6 +4,7 @@ import { _t } from "@web/core/l10n/translation";
 import { isElementInViewport } from "@html_builder/utils/utils";
 import { isRemovable } from "./remove_plugin";
 import { BuilderAction } from "@html_builder/core/builder_action";
+import { isPromise } from "@html_editor/utils/functions";
 
 /**
  * @typedef { Object } CloneShared
@@ -14,7 +15,7 @@ import { BuilderAction } from "@html_builder/core/builder_action";
  * @typedef {((arg: { cloneEl: HTMLElement, originalEl: HTMLElement }) => Promise<void>)[]} on_cloned_handlers
  * Called after an element was cloned and inserted in the DOM.
  *
- * @typedef {((arg: { originalEl: HTMLElement }) => void)[]} on_will_clone_handlers
+ * @typedef {((arg: { originalEl: HTMLElement }) => void)[]} on_will_clone_listeners
  * Called on the original element before clone.
  */
 
@@ -82,7 +83,7 @@ export class ClonePlugin extends Plugin {
         el,
         { position = "afterend", scrollToClone = false, activateClone = true } = {}
     ) {
-        this.dispatchTo("on_will_clone_handlers", { originalEl: el });
+        this.trigger("on_will_clone_listeners", { originalEl: el });
         const cloneEl = el.cloneNode(true);
         this.dependencies.dom.removeSystemProperties(cloneEl); // TODO check that
         el.insertAdjacentElement(position, cloneEl);
@@ -97,9 +98,9 @@ export class ClonePlugin extends Plugin {
             cloneEl.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
-        for (const onCloned of this.getResource("on_cloned_handlers")) {
-            await onCloned({ cloneEl, originalEl: el });
-        }
+        await Promise.all(
+            this.dispatchTo("on_cloned_handlers", { cloneEl, originalEl: el }).filter(isPromise)
+        );
 
         return cloneEl;
     }

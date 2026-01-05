@@ -27,8 +27,8 @@ import { isProtected, isProtecting } from "@html_editor/utils/dom_info";
  */
 
 /**
- * @typedef {((link: HTMLLinkElement) => boolean)[]} ineligible_link_for_selection_indication_predicates
- * @typedef {((link: HTMLLinkElement) => boolean)[]} ineligible_link_for_zwnbsp_predicates
+ * @typedef {((link: HTMLLinkElement) => boolean | void)[]} eligible_link_for_selection_indication_predicates
+ * @typedef {((link: HTMLLinkElement) => boolean | void)[]} eligible_link_for_zwnbsp_predicates
  */
 
 export class LinkSelectionPlugin extends Plugin {
@@ -37,9 +37,9 @@ export class LinkSelectionPlugin extends Plugin {
     /** @type {import("plugins").EditorResources} */
     resources = {
         /** Handlers */
-        selectionchange_handlers: this.resetLinkInSelection.bind(this),
-        clean_for_save_handlers: ({ root }) => this.clearLinkInSelectionClass(root),
-        normalize_handlers: () => this.resetLinkInSelection(),
+        selectionchange_listeners: this.resetLinkInSelection.bind(this),
+        clean_for_save_listeners: ({ root }) => this.clearLinkInSelectionClass(root),
+        normalize_listeners: () => this.resetLinkInSelection(),
         feff_providers: this.addFeffsToLinks.bind(this),
         system_classes: ["o_link_in_selection"],
         selection_placeholder_container_predicates: (container) => {
@@ -67,16 +67,15 @@ export class LinkSelectionPlugin extends Plugin {
             this.editable.contains(link) &&
             !isProtected(link) &&
             !isProtecting(link) &&
-            !this.getResource("ineligible_link_for_zwnbsp_predicates").some((p) => p(link))
+            (this.checkPredicates("eligible_link_for_zwnbsp_predicates", link) ?? true)
         );
     }
 
     isLinkEligibleForVisualIndication(link) {
         return (
             this.isLinkEligibleForZwnbsp(link) &&
-            !this.getResource("ineligible_link_for_selection_indication_predicates").some(
-                (predicate) => predicate(link)
-            )
+            (this.checkPredicates("eligible_link_for_selection_indication_predicates", link) ??
+                true)
         );
     }
 

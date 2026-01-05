@@ -41,7 +41,7 @@ export class SaveSnippetPlugin extends Plugin {
     /**
      * Execute the `before_save_handlers` on {@link snippetEl},
      * then execute {@link callback}, and finally execute the
-     * `after_save_handlers` on {@link snippetEl}.
+     * `after_save_listeners` on {@link snippetEl}.
      * This is used, for example, to stop the interactions before cloning a
      * snippet, and restarting them after cloning it.
      *
@@ -49,14 +49,12 @@ export class SaveSnippetPlugin extends Plugin {
      * @param {Function} callback
      */
     async wrapWithBeforeAfterSaveHandlers(snippetEl, callback) {
-        await Promise.all(
-            this.getResource("before_save_handlers").map((handler) => handler(snippetEl))
-        );
+        await Promise.all(this.dispatchTo("before_save_handlers", snippetEl));
         let node;
         try {
             node = callback();
         } finally {
-            this.getResource("after_save_handlers").forEach((handler) => handler(snippetEl));
+            this.trigger("after_save_listeners", snippetEl);
         }
         return node;
     }
@@ -70,7 +68,7 @@ export class SaveSnippetPlugin extends Plugin {
             }
         }
         const cleanForSaveHandlers = [
-            ...this.getResource("clean_for_save_handlers"),
+            ...this.getResource("clean_for_save_listeners"),
             ({ root }) => escapeTextNodes(root),
         ];
         const savedName = await this.config.saveSnippet(
@@ -79,7 +77,7 @@ export class SaveSnippetPlugin extends Plugin {
             this.wrapWithBeforeAfterSaveHandlers.bind(this)
         );
         if (savedName) {
-            if (this.delegateTo("custom_snippets_notification_handlers", savedName)) {
+            if (this.delegateTo("custom_snippets_notification_overrides", savedName)) {
                 return;
             }
             const message = _t(

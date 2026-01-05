@@ -31,15 +31,15 @@ export const DEFAULT_IMAGE_QUALITY = "92";
  *     svgAspectRatio: number,
  *     svgWidth: number,
  *   }>
- * )[]} process_image_warmup_handlers
+ * )[]} process_image_warmup_processors
  * @typedef {(
  *   (
  *     url: string,
  *     newDataset: object,
  *     processContext: { svg: SVGElement, svgAspectRatio: number, svgWidth: number }
  *   ) => Promise<[newUrl: string, handlerDataset: object]>
- * )[]} process_image_post_handlers
- * @typedef {((args: {imageEl: HTMLElement}) => void)[]} on_image_updated_handlers
+ * )[]} process_image_post_processors
+ * @typedef {((args: {imageEl: HTMLElement}) => void)[]} on_image_updated_listeners
  */
 
 export class ImagePostProcessPlugin extends Plugin {
@@ -68,7 +68,7 @@ export class ImagePostProcessPlugin extends Plugin {
                 return;
             }
         }
-        for (const cb of this.getResource("process_image_warmup_handlers")) {
+        for (const cb of this.getResource("process_image_warmup_processors")) {
             const addedContext = await cb(img, newDataset);
             if (addedContext) {
                 if (addedContext.newDataset) {
@@ -265,7 +265,7 @@ export class ImagePostProcessPlugin extends Plugin {
         return getDataURLBinarySize(processed.url);
     }
     async postProcessImage(url, newDataset, processContext) {
-        for (const cb of this.getResource("process_image_post_handlers")) {
+        for (const cb of this.getResource("process_image_post_processors")) {
             const [newUrl, handlerDataset] = (await cb(url, newDataset, processContext)) || [];
             url = newUrl || url;
             newDataset = handlerDataset || newDataset;
@@ -287,7 +287,7 @@ export class ImagePostProcessPlugin extends Plugin {
                 delete el.dataset[key];
             }
         }
-        this.dispatchTo("on_image_updated_handlers", { imageEl: el });
+        this.trigger("on_image_updated_listeners", { imageEl: el });
     }
 }
 

@@ -66,12 +66,17 @@ export class TabulationPlugin extends Plugin {
         contenteditable_to_remove_selector: "span.oe-tabs",
 
         /** Handlers */
-        normalize_handlers: this.normalize.bind(this),
+        normalize_listeners: this.normalize.bind(this),
 
         /** Overrides */
         delete_forward_overrides: this.handleDeleteForward.bind(this),
 
-        unsplittable_node_predicates: isEditorTab, // avoid merge
+        splittable_node_predicates: (node) => {
+            // avoid merge
+            if (isEditorTab(node)) {
+                return false;
+            }
+        },
     };
 
     handleTab() {

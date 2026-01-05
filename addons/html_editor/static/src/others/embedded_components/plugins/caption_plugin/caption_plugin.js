@@ -39,24 +39,38 @@ export class CaptionPlugin extends Plugin {
                 isActive: () => this.hasImageCaption(this.dependencies.image.getTargetedImage()),
             },
         ],
-        clean_for_save_handlers: this.cleanForSave.bind(this),
-        mount_component_handlers: this.setupNewCaption.bind(this),
-        delete_handlers: this.afterDelete.bind(this),
+        clean_for_save_listeners: this.cleanForSave.bind(this),
+        mount_component_listeners: this.setupNewCaption.bind(this),
+        delete_listeners: this.afterDelete.bind(this),
         delete_image_overrides: this.handleDeleteImage.bind(this),
-        after_save_media_dialog_handlers: this.onImageReplaced.bind(this),
+        after_save_media_dialog_listeners: this.onImageReplaced.bind(this),
         hints: [{ selector: "FIGCAPTION", text: _t("Write a caption...") }],
-        unsplittable_node_predicates: [
-            (node) => ["FIGURE", "FIGCAPTION"].includes(node.nodeName), // avoid merge
+        splittable_node_predicates: [
+            (node) => {
+                // avoid merge
+                if (["FIGURE", "FIGCAPTION"].includes(node.nodeName)) {
+                    return false;
+                }
+            },
         ],
-        image_name_predicates: [this.getImageName.bind(this)],
-        link_compatible_selection_predicates: [this.isLinkAllowedOnSelection.bind(this)],
+        link_compatible_selection_predicates: () => {
+            if (this.isLinkAllowedOnSelection()) {
+                return true;
+            }
+        },
         // Consider a <figure> element as empty if it only contains a
         // <figcaption> element (e.g. when its image has just been
         // removed).
-        empty_node_predicates: (el) =>
-            el.matches?.("figure") &&
-            el.children.length === 1 &&
-            el.children[0].matches("figcaption"),
+        empty_node_predicates: (el) => {
+            if (
+                el.matches?.("figure") &&
+                el.children.length === 1 &&
+                el.children[0].matches("figcaption")
+            ) {
+                return true;
+            }
+        },
+        image_name_providers: this.getImageName.bind(this),
         move_node_whitelist_selectors: "figure",
     };
 

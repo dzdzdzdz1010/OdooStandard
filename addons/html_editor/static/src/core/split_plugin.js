@@ -51,12 +51,12 @@ const [getPreviousLeavesInBlock, getNextLeavesInBlock] = [DIRECTIONS.LEFT, DIREC
  */
 
 /**
- * @typedef {(({element: HTMLElement, secondPart: HTMLElement}) => void)[]} after_split_element_handlers
- * @typedef {(() => void)[]} before_split_block_handlers
+ * @typedef {(({element: HTMLElement, secondPart: HTMLElement}) => void)[]} after_split_element_listeners
+ * @typedef {(() => void)[]} before_split_block_listeners
  *
  * @typedef {((params: { targetNode: Node, targetOffset: number, blockToSplit: HTMLElement | null }) => void | true)[]} split_element_block_overrides
  *
- * @typedef {((node: Node) => boolean)[]} unsplittable_node_predicates
+ * @typedef {((node: Node) => boolean | undefined)[]} splittable_node_predicates
  */
 
 export class SplitPlugin extends Plugin {
@@ -74,18 +74,26 @@ export class SplitPlugin extends Plugin {
     ];
     /** @type {import("plugins").EditorResources} */
     resources = {
-        beforeinput_handlers: this.onBeforeInput.bind(this),
+        beforeinput_listeners: this.onBeforeInput.bind(this),
 
-        unsplittable_node_predicates: [
+        splittable_node_predicates: [
             // An unremovable element is also unmergeable (as merging two
             // elements results in removing one of them).
             // An unmergeable element is unsplittable and vice-versa (as
             // split and merge are reverse operations from one another).
             // Therefore, unremovable nodes are also unsplittable.
-            (node) => this.dependencies.delete.isUnremovable(node),
+            (node) => {
+                if (this.dependencies.delete.isUnremovable(node)) {
+                    return false;
+                }
+            },
             // "Unbreakable" is a legacy term that means unsplittable and
             // unmergeable.
-            (node) => node.classList?.contains("oe_unbreakable"),
+            (node) => {
+                if (node.classList?.contains("oe_unbreakable")) {
+                    return false;
+                }
+            },
             (node) => {
                 const isExplicitlyNotContentEditable = (node) =>
                     // In the `contenteditable` attribute consideration,
@@ -93,7 +101,7 @@ export class SplitPlugin extends Plugin {
                     // explicitly set under a contenteditable="false" element.
                     !isContentEditable(node) &&
                     (node.isConnected || closestElement(node, "[contenteditable]"));
-                return (
+                if (
                     isExplicitlyNotContentEditable(node) ||
                     // If node sets contenteditable='true' and is inside a non-editable
                     // context, it has to be unsplittable since splitting it would modify
@@ -101,9 +109,15 @@ export class SplitPlugin extends Plugin {
                     (node.parentElement &&
                         isContentEditableAncestor(node) &&
                         isExplicitlyNotContentEditable(node.parentElement))
-                );
+                ) {
+                    return false;
+                }
             },
-            (node) => node.nodeName === "SECTION",
+            (node) => {
+                if (node.nodeName === "SECTION") {
+                    return false;
+                }
+            },
         ],
         selection_blocker_predicates: (blocker) => {
             if (this.isUnsplittable(blocker)) {
@@ -116,7 +130,7 @@ export class SplitPlugin extends Plugin {
     // commands
     // --------------------------------------------------------------------------
     splitBlock() {
-        this.dispatchTo("before_split_block_handlers");
+        this.trigger("before_split_block_listeners");
         let selection = this.dependencies.selection.getSelectionData().deepEditableSelection;
         if (!selection.isCollapsed) {
             // @todo @phoenix collapseIfZWS is not tested
@@ -206,7 +220,7 @@ export class SplitPlugin extends Plugin {
      * @returns {boolean}
      */
     isUnsplittable(node) {
-        return this.getResource("unsplittable_node_predicates").some((p) => p(node));
+        return !(this.checkPredicates("splittable_node_predicates", node) ?? true);
     }
 
     /**
@@ -223,7 +237,7 @@ export class SplitPlugin extends Plugin {
         const children = childNodes(element);
         secondPart.append(...children.slice(offset));
         element.after(secondPart);
-        this.dispatchTo("after_split_element_handlers", { element, secondPart });
+        this.trigger("after_split_element_listeners", { element, secondPart });
         return [element, secondPart];
     }
 

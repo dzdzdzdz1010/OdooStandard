@@ -331,8 +331,8 @@ export class SnippetModel extends Reactive {
      * to have access to it directly.
      *
      * @param {HTMLElement} snippetEl the snippet we want to save
-     * @param {Array<Function>} cleanForSaveHandlers all the handlers of the
-     *     `clean_for_save_handlers` resources
+     * @param {Array<Function>} cleanForSaveListeners all the handlers of the
+     *     `clean_for_save_listeners` resources
      * @param {Function} wrapWithSaveSnippetHandlers a function that processes the snippet
      * before and/or after the cloning. E.g. stopping the interactions before
      * cloning and restarting them after cloning.
@@ -340,7 +340,7 @@ export class SnippetModel extends Reactive {
      */
     async saveSnippet(
         snippetEl,
-        cleanForSaveHandlers,
+        cleanForSaveListeners,
         wrapWithSaveSnippetHandlers = (_, callback) => callback()
     ) {
         const isButton = snippetEl.matches("a.btn");
@@ -351,7 +351,7 @@ export class SnippetModel extends Reactive {
             snippetEl.cloneNode(true)
         );
         // "CleanForSave" the snippet copy
-        this.cleanSnippetForSave(snippetCopyEl, cleanForSaveHandlers);
+        this.cleanSnippetForSave(snippetCopyEl, cleanForSaveListeners);
 
         const defaultSnippetName = isButton
             ? _t("Custom Button")

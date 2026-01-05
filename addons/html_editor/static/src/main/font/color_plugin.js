@@ -64,17 +64,22 @@ export class ColorPlugin extends Plugin {
             },
         ],
         /** Handlers */
-        remove_all_formats_handlers: this.removeAllColor.bind(this),
+        remove_all_formats_listeners: this.removeAllColor.bind(this),
         color_combination_getters: getColorCombinationFromClass,
 
         /** Predicates */
-        has_format_predicates: [
-            (node) => hasColor(closestElement(node), "color"),
-            (node) => hasColor(closestElement(node), "backgroundColor"),
-        ],
-        format_class_predicates: (className) =>
-            TEXT_CLASSES_REGEX.test(className) || BG_CLASSES_REGEX.test(className),
-        normalize_handlers: this.normalize.bind(this),
+        has_format_predicates: (node) => {
+            const el = closestElement(node);
+            if (hasColor(el, "color") || hasColor(el, "backgroundColor")) {
+                return true;
+            }
+        },
+        format_class_predicates: (className) => {
+            if (TEXT_CLASSES_REGEX.test(className) || BG_CLASSES_REGEX.test(className)) {
+                return true;
+            }
+        },
+        normalize_listeners: this.normalize.bind(this),
     };
 
     normalize(root) {
@@ -92,10 +97,10 @@ export class ColorPlugin extends Plugin {
         const hasGradient = isColorGradient(gradient);
         const hasTextGradientClass = el.classList.contains("text-gradient");
 
-        let backgroundColor = elStyle.backgroundColor;
-        for (const processor of this.getResource("get_background_color_processors")) {
-            backgroundColor = processor(backgroundColor);
-        }
+        const backgroundColor = this.processThrough(
+            "get_background_color_processors",
+            elStyle.backgroundColor
+        );
 
         return {
             color: hasGradient && hasTextGradientClass ? gradient : rgbaToHex(elStyle.color),
@@ -145,9 +150,7 @@ export class ColorPlugin extends Plugin {
     applyColor(color, mode, previewMode = false) {
         this.dependencies.selection.selectAroundNonEditable();
         if (mode === "backgroundColor") {
-            for (const processor of this.getResource("apply_background_color_processors")) {
-                color = processor(color, mode);
-            }
+            color = this.processThrough("apply_background_color_processors", color, mode);
         }
         if (this.delegateTo("color_apply_overrides", color, mode, previewMode)) {
             return;

@@ -45,7 +45,7 @@ import { BuilderAction } from "@html_builder/core/builder_action";
  * @typedef {((arg: {
  *      el: HTMLElement;
  *      template: Template;
- * }) => void)[]} dynamic_snippet_template_updated
+ * }) => void)[]} dynamic_snippet_template_updated_listeners
  */
 
 export const DYNAMIC_SNIPPET = SNIPPET_SPECIFIC_END;
@@ -219,7 +219,7 @@ class DynamicSnippetOptionPlugin extends Plugin {
             el.classList.remove(...(oldTemplate.extraSnippetClasses?.split(" ") || []));
             el.classList.add(...(template.extraSnippetClasses?.split(" ") || []));
         }
-        this.dispatchTo("dynamic_snippet_template_updated", { el: el, template: template });
+        this.trigger("dynamic_snippet_template_updated_listeners", { el: el, template: template });
     }
     async fetchDynamicFilters(params) {
         this.fetchedDynamicFilters = await this.dynamicFiltersCache.read(params);

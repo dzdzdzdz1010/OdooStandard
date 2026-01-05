@@ -47,19 +47,22 @@ import { setElementContent } from "@web/core/utils/html";
  * @property { import("./editor").EditorConfig } config
  * @property { import("services").ServiceFactories } services
  * @property { Editor['getResource'] } getResource
+ * @property { Editor['trigger'] } trigger
  * @property { Editor['dispatchTo'] } dispatchTo
  * @property { Editor['delegateTo'] } delegateTo
+ * @property { Editor['processThrough'] } processThrough
+ * @property { Editor['checkPredicates'] } checkPredicates
  */
 
 /**
- * @typedef {((arg: {root: EditorContext["editable"]}) => void)[]} clean_for_save_handlers
- * @typedef {(() => void)[]} start_edition_handlers
+ * @typedef {((arg: {root: EditorContext["editable"]}) => void)[]} clean_for_save_listeners
+ * @typedef {(() => void)[]} start_edition_listeners
  */
 
 /**
  * Clean up DOM before taking into account for next history step remaining in
  * edit mode
- * @typedef {((root: EditorContext["editable"] | HTMLElement) => void)[]} normalize_handlers
+ * @typedef {((root: EditorContext["editable"] | HTMLElement) => void)[]} normalize_listeners
  */
 
 /**
@@ -197,8 +200,8 @@ export class Editor {
         for (const plugin of this.plugins) {
             plugin.setup();
         }
-        this.resources["normalize_handlers"].forEach((cb) => cb(this.editable));
-        this.resources["start_edition_handlers"].forEach((cb) => cb());
+        this.trigger("normalize_listeners", this.editable);
+        this.trigger("start_edition_listeners");
     }
 
     getDependencies(dependencies) {
@@ -261,8 +264,11 @@ export class Editor {
             config: this.config,
             services: this.services,
             getResource: this.getResource.bind(this),
+            trigger: this.trigger.bind(this),
             dispatchTo: this.dispatchTo.bind(this),
             delegateTo: this.delegateTo.bind(this),
+            processThrough: this.processThrough.bind(this),
+            checkPredicates: this.checkPredicates.bind(this),
         };
     }
 
@@ -282,21 +288,45 @@ export class Editor {
      * This function is meant to enhance code readability by clearly expressing
      * its intent.
      *
-     * This function can be thought as an event dispatcher, calling the handlers
-     * with `args` as the payload.
+     * This function can be thought as an event dispatcher, calling the
+     * listeners with `args` as the payload.
      *
      * Example:
      * ```js
-     * this.dispatchTo("my_event_handlers", arg1, arg2);
+     * this.trigger("my_event_listeners", arg1, arg2);
      * ```
      *
      * @template {GlobalResourcesId} R
      * @param {R} resourceId
-     * @param {Parameters<GlobalResources[R][0]>} args The arguments to pass to the handlers.
+     * @param {Parameters<GlobalResources[R][0]>} args The arguments to pass to the listeners.
      */
-    dispatchTo(resourceId, ...args) {
+    trigger(resourceId, ...args) {
         this.getResource(resourceId).forEach((handler) => handler(...args));
     }
+
+    /**
+     * Execute the functions registered under resourceId with the given
+     * arguments.
+     *
+     * This function is meant to enhance code readability by clearly expressing
+     * its intent.
+     *
+     * Examples:
+     * ```js
+     * const values = this.dispatchTo("my_event_handlers", arg1, arg2);
+     * const asyncValues = this.dispatchTo("my_async_event_handlers", arg1, arg2);
+     * await Promise.all(asyncValues.filter(isPromise));
+     * ```
+     *
+     * @template {GlobalResourcesId} R
+     * @param {R} resourceId
+     * @param {Parameters<GlobalResources[R][0]>} args The arguments to pass to the listeners.
+     * @returns {Array<any>}
+     */
+    dispatchTo(resourceId, ...args) {
+        return this.getResource(resourceId).map((handler) => handler(...args));
+    }
+
     /**
      * Execute a series of functions until one of them returns a truthy value.
      *
@@ -325,13 +355,70 @@ export class Editor {
         return this.getResource(resourceId).some((fn) => fn(...args));
     }
 
+    /**
+     * Execute a series of functions that each process an item, and return its
+     * final value.
+     *
+     * This function is meant to enhance code readability by clearly expressing
+     * its intent.
+     *
+     * An item is processed by each processor in sequence, each processor
+     * returning the new value of the item. If a processor returns a falsy
+     * value, the item remains unchanged.
+     *
+     * Example:
+     * ```js
+     * const processedItem = this.processThrough("my_item_processors", item, arg1, arg2);
+     * ```
+     *
+     * @template {GlobalResourcesId} R
+     * @param {R} resourceId
+     * @param {Parameters<GlobalResources[R][0]>[0]} item The item to process.
+     * @param  {Parameters<GlobalResources[R][0]>} args The other arguments to pass to the processors.
+     * @returns {Parameters<GlobalResources[R][0]>[0]} The processed value of the item.
+     */
+    processThrough(resourceId, item, ...args) {
+        this.getResource(resourceId).forEach((processor) => {
+            item = processor(item, ...args) || item;
+        });
+        return item;
+    }
+
+    /**
+     * Test the given arguments against all the predicates registered under
+     * `resourceId` (which ends with "_predicates" by convention), and return
+     * true if any predicate returns `true` and none returns `false` (ignoring
+     * those that return `undefined`).
+     *
+     * Important note: since this function treats booleans and nullish results
+     * differently, make sure that:
+     * 1. Predicates only return a boolean when it's meaningful.
+     * 2. Any call to `checkPredicates` involves the declaration of a default
+     *    value in case it returns `undefined`.
+     *
+     * Example:
+     * ```js
+     * const isTrue = this.checkPredicates("my_predicates", arg1, arg2) ?? true;
+     * ```
+     *
+     * @param {string} resourceId
+     * @param  {...any} args The arguments to pass to the predicates.
+     * @returns {boolean | undefined}
+     */
+    checkPredicates(resourceId, ...args) {
+        const results = this.getResource(resourceId)
+            .map((predicate) => predicate(...args))
+            .filter((result) => result !== undefined);
+        return results.length ? results.every(Boolean) : undefined;
+    }
+
     getContent() {
         return this.getElContent().innerHTML;
     }
 
     getElContent() {
         const el = this.editable.cloneNode(true);
-        this.resources["clean_for_save_handlers"].forEach((cb) => cb({ root: el }));
+        this.trigger("clean_for_save_listeners", { root: el });
         return el;
     }
 

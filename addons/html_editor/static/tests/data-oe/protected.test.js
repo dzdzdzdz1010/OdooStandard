@@ -624,7 +624,6 @@ test("protected plugin is robust against other plugins which can filter mutation
                 // Artificially hide the removal of `a` node
                 return false;
             }
-            return true;
         }
     }
     const { editor, el, plugins } = await setupEditor(

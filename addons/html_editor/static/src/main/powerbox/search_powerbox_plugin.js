@@ -11,11 +11,11 @@ export class SearchPowerboxPlugin extends Plugin {
     static dependencies = ["powerbox", "selection", "history", "input"];
     /** @type {import("plugins").EditorResources} */
     resources = {
-        beforeinput_handlers: this.onBeforeInput.bind(this),
-        input_handlers: this.onInput.bind(this),
-        delete_handlers: this.update.bind(this),
-        post_undo_handlers: this.update.bind(this),
-        post_redo_handlers: this.update.bind(this),
+        beforeinput_listeners: this.onBeforeInput.bind(this),
+        input_listeners: this.onInput.bind(this),
+        delete_listeners: this.update.bind(this),
+        post_undo_listeners: this.update.bind(this),
+        post_redo_listeners: this.update.bind(this),
     };
     setup() {
         const categoryIds = new Set();

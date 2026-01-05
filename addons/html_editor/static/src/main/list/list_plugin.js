@@ -179,9 +179,9 @@ export class ListPlugin extends Plugin {
         hints: [{ selector: `LI, LI > ${baseContainerGlobalSelector}`, text: _t("List") }],
 
         /** Handlers */
-        normalize_handlers: this.normalize.bind(this),
-        step_added_handlers: this.updateToolbarButtons.bind(this),
-        delete_handlers: this.adjustListPaddingOnDelete.bind(this),
+        normalize_listeners: this.normalize.bind(this),
+        step_added_listeners: this.updateToolbarButtons.bind(this),
+        delete_listeners: this.adjustListPaddingOnDelete.bind(this),
 
         /** Overrides */
         delete_backward_overrides: this.handleDeleteBackward.bind(this),
@@ -190,7 +190,7 @@ export class ListPlugin extends Plugin {
         shift_tab_overrides: this.handleShiftTab.bind(this),
         split_element_block_overrides: this.handleSplitBlock.bind(this),
         color_apply_overrides: this.applyColorToListItem.bind(this),
-        format_selection_handlers: this.applyFormatToListItem.bind(this),
+        format_selection_listeners: this.applyFormatToListItem.bind(this),
         node_to_insert_processors: this.processNodeToInsert.bind(this),
         clipboard_content_processors: this.processContentForClipboard.bind(this),
         before_insert_within_pre_processors: this.insertListWithinPre.bind(this),
@@ -201,15 +201,16 @@ export class ListPlugin extends Plugin {
                 const nonListChildren = childNodes(node).filter(
                     (n) => !["UL", "OL"].includes(n.nodeName)
                 );
-                if (!nonListChildren.length) {
-                    return;
+                if (nonListChildren.length) {
+                    const startLeaf = firstLeaf(nonListChildren[0]);
+                    const endLeaf = lastLeaf(nonListChildren[nonListChildren.length - 1]);
+                    if (
+                        range.isPointInRange(startLeaf, 0) &&
+                        range.isPointInRange(endLeaf, nodeSize(endLeaf))
+                    ) {
+                        return true;
+                    }
                 }
-                const startLeaf = firstLeaf(nonListChildren[0]);
-                const endLeaf = lastLeaf(nonListChildren[nonListChildren.length - 1]);
-                return (
-                    range.isPointInRange(startLeaf, 0) &&
-                    range.isPointInRange(endLeaf, nodeSize(endLeaf))
-                );
             }
         },
     };
@@ -828,7 +829,7 @@ export class ListPlugin extends Plugin {
     // Handlers of other plugins commands
     // --------------------------------------------------------------------------
 
-    processNodeToInsert({ nodeToInsert, container }) {
+    processNodeToInsert(nodeToInsert, container) {
         if (isListItemElement(container) && isParagraphRelatedElement(nodeToInsert)) {
             nodeToInsert = this.dependencies.dom.setTagName(nodeToInsert, "LI");
         }

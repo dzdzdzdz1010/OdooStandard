@@ -70,11 +70,11 @@ function getConnectedParents(nodes) {
  */
 
 /**
- * @typedef {((insertedNodes: Node[]) => void)[]} after_insert_handlers
- * @typedef {((el: HTMLElement) => void)[]} before_set_tag_handlers
+ * @typedef {((insertedNodes: Node[]) => void)[]} after_insert_listeners
+ * @typedef {((el: HTMLElement) => void)[]} before_set_tag_listeners
  *
  * @typedef {((container: Element, block: Element) => container)[]} before_insert_processors
- * @typedef {((arg: { nodeToInsert: Node, container: HTMLElement }) => nodeToInsert)[]} node_to_insert_processors
+ * @typedef {((nodeToInsert: Node, container: HTMLElement) => nodeToInsert)[]} node_to_insert_processors
  *
  * @typedef {string[]} system_attributes
  * @typedef {string[]} system_classes
@@ -107,11 +107,15 @@ export class DomPlugin extends Plugin {
             },
         ],
         /** Handlers */
-        clean_for_save_handlers: ({ root }) => {
+        clean_for_save_listeners: ({ root }) => {
             this.removeEmptyClassAndStyleAttributes(root);
         },
         clipboard_content_processors: this.removeEmptyClassAndStyleAttributes.bind(this),
-        functional_empty_node_predicates: [isSelfClosingElement, isEditorTab],
+        functional_empty_node_predicates: (node) => {
+            if (isSelfClosingElement(node) || isEditorTab(node)) {
+                return true;
+            }
+        },
     };
 
     setup() {
@@ -147,19 +151,17 @@ export class DomPlugin extends Plugin {
             container.textContent = content;
         } else {
             if (content.nodeType === Node.ELEMENT_NODE) {
-                this.dispatchTo("normalize_handlers", content);
+                this.trigger("normalize_listeners", content);
             } else {
                 for (const child of children(content)) {
-                    this.dispatchTo("normalize_handlers", child);
+                    this.trigger("normalize_listeners", child);
                 }
             }
             container.replaceChildren(content);
         }
 
         const block = closestBlock(selection.anchorNode);
-        for (const cb of this.getResource("before_insert_processors")) {
-            container = cb(container, block);
-        }
+        container = this.processThrough("before_insert_processors", container, block);
         if (!container.hasChildNodes()) {
             return [];
         }
@@ -402,9 +404,7 @@ export class DomPlugin extends Plugin {
             // Ensure that all adjacent paragraph elements are converted to
             // <li> when inserting in a list.
             const block = closestBlock(currentNode);
-            for (const processor of this.getResource("node_to_insert_processors")) {
-                nodeToInsert = processor({ nodeToInsert, container: block });
-            }
+            nodeToInsert = this.processThrough("node_to_insert_processors", nodeToInsert, block);
             if (insertBefore) {
                 currentNode.before(nodeToInsert);
                 insertBefore = false;
@@ -420,7 +420,7 @@ export class DomPlugin extends Plugin {
         // Remove the empty text node created earlier
         textNode.remove();
         allInsertedNodes.push(...lastInsertedNodes);
-        this.getResource("after_insert_handlers").forEach((handler) => handler(allInsertedNodes));
+        this.trigger("after_insert_listeners", allInsertedNodes);
         let insertedNodesParents = getConnectedParents(allInsertedNodes);
         for (const parent of insertedNodesParents) {
             if (
@@ -653,7 +653,7 @@ export class DomPlugin extends Plugin {
                 if (newCandidate.matches(baseContainerGlobalSelector) && isListItemElement(block)) {
                     continue;
                 }
-                this.dispatchTo("before_set_tag_handlers", block, tagName, cursors);
+                this.trigger("before_set_tag_listeners", block, tagName, cursors);
                 const newEl = this.setTagName(block, tagName);
                 cursors.remapNode(block, newEl);
                 // We want to be able to edit the case `<h2 class="h3">`

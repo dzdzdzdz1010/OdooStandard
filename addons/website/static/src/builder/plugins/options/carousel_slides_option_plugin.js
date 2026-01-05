@@ -20,8 +20,12 @@ export class CarouselSlidesOptionPlugin extends Plugin {
             MakeSlideClickableAction,
             SetSlideAnchorUrlAction,
         },
-        clean_for_save_handlers: this.cleanForSave.bind(this),
-        legit_empty_link_predicates: (linkEl) => linkEl.matches(".carousel-item a.slide-link"),
+        clean_for_save_listeners: this.cleanForSave.bind(this),
+        legit_empty_link_predicates: (linkEl) => {
+            if (linkEl.matches(".carousel-item a.slide-link")) {
+                return true;
+            }
+        },
     };
 
     /**

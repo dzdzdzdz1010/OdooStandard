@@ -101,9 +101,9 @@ const ONLY_LINK_REGEX = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
  */
 
 /**
- * @typedef {((img: HTMLImageElement) => void)[]} added_image_handlers
- * @typedef {(() => void)[]} after_paste_handlers
- * @typedef {(() => void)[]} before_paste_handlers
+ * @typedef {((img: HTMLImageElement) => void)[]} added_image_listeners
+ * @typedef {(() => void)[]} after_paste_listeners
+ * @typedef {(() => void)[]} before_paste_listeners
  *
  * @typedef {((selection: EditorSelection, text: string) => boolean)[]} paste_text_overrides
  *
@@ -155,16 +155,18 @@ export class ClipboardPlugin extends Plugin {
         }
 
         // Prepare text content for clipboard.
-        let textContent = selection.textContent();
-        for (const processor of this.getResource("clipboard_text_processors")) {
-            textContent = processor(textContent);
-        }
+        const textContent = this.processThrough(
+            "clipboard_text_processors",
+            selection.textContent()
+        );
         ev.clipboardData.setData("text/plain", textContent);
 
         // Prepare html content for clipboard.
-        for (const processor of this.getResource("clipboard_content_processors")) {
-            clonedContents = processor(clonedContents, selection) || clonedContents;
-        }
+        clonedContents = this.processThrough(
+            "clipboard_content_processors",
+            clonedContents,
+            selection
+        );
         this.dependencies.dom.removeSystemProperties(clonedContents);
         fillClipboardData(ev, clonedContents);
     }
@@ -184,7 +186,7 @@ export class ClipboardPlugin extends Plugin {
 
         this.dependencies.history.stageSelection();
 
-        this.dispatchTo("before_paste_handlers", selection, ev);
+        this.trigger("before_paste_listeners", selection, ev);
         // refresh selection after potential changes from `before_paste` handlers
         selection = this.dependencies.selection.getEditableSelection();
 
@@ -193,7 +195,7 @@ export class ClipboardPlugin extends Plugin {
             this.handlePasteHtml(selection, ev.clipboardData) ||
             this.handlePasteText(selection, ev.clipboardData);
 
-        this.dispatchTo("after_paste_handlers", selection);
+        this.trigger("after_paste_listeners", selection);
         this.dependencies.history.addStep();
     }
     /**
@@ -682,7 +684,7 @@ export class ClipboardPlugin extends Plugin {
         for (const imageFile of imageFiles) {
             const imageNode = this.document.createElement("img");
             imageNode.classList.add("img-fluid");
-            this.dispatchTo("added_image_handlers", imageNode);
+            this.trigger("added_image_listeners", imageNode);
             imageNode.dataset.fileName = imageFile.name;
             promises.push(
                 getImageUrl(imageFile).then((url) => {

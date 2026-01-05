@@ -12,9 +12,9 @@ export class MailComposerPlugin extends Plugin {
     static id = "mail_composer";
     static dependencies = ["clipboard", "hint", "input", "selection"];
     resources = {
-        before_paste_handlers: this.config.composerPluginDependencies.onBeforePaste.bind(this),
+        before_paste_listeners: this.config.composerPluginDependencies.onBeforePaste.bind(this),
         bypass_paste_image_files: () => true,
-        create_link_handlers: (linkEl) => (linkEl.target = "_blank"),
+        create_link_listeners: (linkEl) => (linkEl.target = "_blank"),
         hints: [
             withSequence(1, {
                 selector: `.odoo-editor-editable > ${baseContainerGlobalSelector}:only-child`,
@@ -34,7 +34,7 @@ export class MailComposerPlugin extends Plugin {
                 return [];
             }
         },
-        input_handlers: this.config.composerPluginDependencies.onInput.bind(this),
+        input_listeners: this.config.composerPluginDependencies.onInput.bind(this),
     };
 
     setup() {

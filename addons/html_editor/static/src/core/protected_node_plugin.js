@@ -19,13 +19,22 @@ export class ProtectedNodePlugin extends Plugin {
     /** @type {import("plugins").EditorResources} */
     resources = {
         /** Handlers */
-        clean_for_save_handlers: ({ root }) => this.cleanForSave(root),
-        normalize_handlers: withSequence(0, this.normalize.bind(this)),
-        before_filter_mutation_record_handlers: this.beforeFilteringMutationRecords.bind(this),
+        clean_for_save_listeners: ({ root }) => this.cleanForSave(root),
+        normalize_listeners: withSequence(0, this.normalize.bind(this)),
+        before_filter_mutation_record_listeners: this.beforeFilteringMutationRecords.bind(this),
 
-        unsplittable_node_predicates: [
-            isProtecting, // avoid merge
-            isUnprotecting,
+        splittable_node_predicates: [
+            (node) => {
+                // avoid merge
+                if (isProtecting(node)) {
+                    return false;
+                }
+            },
+            (node) => {
+                if (isUnprotecting(node)) {
+                    return false;
+                }
+            },
         ],
         savable_mutation_record_predicates: this.isMutationRecordSavable.bind(this),
         removable_descendants_providers: this.filterDescendantsToRemove.bind(this),
@@ -128,13 +137,16 @@ export class ProtectedNodePlugin extends Plugin {
      */
     isMutationRecordSavable(record) {
         if (record.type === "childList") {
-            return !(
+            if (
                 (this.protectedNodes.has(record.target) &&
                     !record.target.matches(UNPROTECTED_SELECTOR)) ||
                 record.target.matches(PROTECTED_SELECTOR)
-            );
+            ) {
+                return false;
+            }
+        } else if (this.protectedNodes.has(record.target)) {
+            return false;
         }
-        return !this.protectedNodes.has(record.target);
     }
 
     forEachProtectingElem(elem, callback) {

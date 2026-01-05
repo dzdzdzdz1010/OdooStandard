@@ -25,14 +25,14 @@ export class HintPlugin extends Plugin {
     /** @type {import("plugins").EditorResources} */
     resources = {
         /** Handlers */
-        selectionchange_handlers: this.updateHints.bind(this),
-        external_history_step_handlers: () => {
+        selectionchange_listeners: this.updateHints.bind(this),
+        external_history_step_listeners: () => {
             this.clearHints();
             this.updateHints();
         },
-        normalize_handlers: this.normalize.bind(this),
-        clean_for_save_handlers: ({ root }) => this.clearHints(root),
-        content_updated_handlers: this.updateHints.bind(this),
+        normalize_listeners: this.normalize.bind(this),
+        clean_for_save_listeners: ({ root }) => this.clearHints(root),
+        content_updated_listeners: this.updateHints.bind(this),
 
         hint_targets_providers: (selectionData, editable) => {
             if (!selectionData.currentSelectionIsInEditable || !selectionData.documentSelection) {

@@ -22,11 +22,11 @@ export class SelectionPlaceholderPlugin extends Plugin {
     static id = "selectionPlaceholder";
     static dependencies = ["baseContainer", "history", "selection"];
     resources = {
-        external_history_step_handlers: this.updatePlaceholders.bind(this),
-        normalize_handlers: this.updatePlaceholders.bind(this),
-        step_added_handlers: this.updatePlaceholders.bind(this),
-        selectionchange_handlers: (selectionData) => this.onSelectionChange(selectionData),
-        clean_for_save_handlers: withSequence(0, ({ root }) => {
+        external_history_step_listeners: this.updatePlaceholders.bind(this),
+        normalize_listeners: this.updatePlaceholders.bind(this),
+        step_added_listeners: this.updatePlaceholders.bind(this),
+        selectionchange_listeners: (selectionData) => this.onSelectionChange(selectionData),
+        clean_for_save_listeners: withSequence(0, ({ root }) => {
             for (const placeholder of root.querySelectorAll(PLACEHOLDER_SELECTOR)) {
                 placeholder.remove();
             }
@@ -55,8 +55,11 @@ export class SelectionPlaceholderPlugin extends Plugin {
                 return true;
             }
         },
-        power_buttons_visibility_predicates: ({ anchorNode }) =>
-            !closestElement(anchorNode, PLACEHOLDER_SELECTOR),
+        power_buttons_visibility_predicates: ({ anchorNode }) => {
+            if (closestElement(anchorNode, PLACEHOLDER_SELECTOR)) {
+                return false;
+            }
+        },
         move_node_blacklist_selectors: PLACEHOLDER_SELECTOR,
         system_node_selectors: PLACEHOLDER_SELECTOR,
         system_classes: BLINKER_CLASS,
@@ -79,15 +82,12 @@ export class SelectionPlaceholderPlugin extends Plugin {
      * everywhere we need them, and absent wherever they are not useful.
      */
     updatePlaceholders() {
-        const checkPredicate = (resourceId, node) => {
-            const results = this.getResource(resourceId)
-                .map((p) => p(node))
-                .filter((result) => result !== undefined);
-            return !!results.length && results.every(Boolean);
-        };
-        const isSelectionBlocker = (node) => checkPredicate("selection_blocker_predicates", node);
-        const placeholderParents = selectElements(this.editable, "*").filter((container) =>
-            checkPredicate("selection_placeholder_container_predicates", container)
+        const isSelectionBlocker = (node) =>
+            this.checkPredicates("selection_blocker_predicates", node) ?? false;
+        const placeholderParents = selectElements(this.editable, "*").filter(
+            (container) =>
+                this.checkPredicates("selection_placeholder_container_predicates", container) ??
+                false
         );
 
         // 1. Update current placeholders.

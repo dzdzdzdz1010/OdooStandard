@@ -39,7 +39,7 @@ import { addStep, deleteBackward, deleteForward, redo, undo } from "./_helpers/u
 import { makeMockEnv, patchWithCleanup } from "@web/../tests/web_test_helpers";
 import { Deferred } from "@web/core/utils/concurrency";
 import { Plugin } from "@html_editor/plugin";
-import { cleanHints, dispatchCleanForSave } from "./_helpers/dispatch";
+import { cleanHints, triggerCleanForSave } from "./_helpers/dispatch";
 import { expectElementCount } from "./_helpers/ui_expectations";
 import { renderToElement } from "@web/core/utils/render";
 
@@ -865,7 +865,7 @@ describe("Mount processing", () => {
             static id = "simple";
             static dependencies = ["selection", "embeddedComponents", "dom", "history"];
             resources = {
-                mount_component_handlers: this.setupNewComponent.bind(this),
+                mount_component_listeners: this.setupNewComponent.bind(this),
             };
 
             setupNewComponent({ name, env }) {
@@ -992,7 +992,7 @@ describe("In-editor manipulations", () => {
             }
         );
         const clone = el.cloneNode(true);
-        dispatchCleanForSave(editor, { root: clone });
+        triggerCleanForSave(editor, { root: clone });
         expect(getContent(clone)).toBe(`<div><p>a</p></div><div data-embedded="counter"></div>`);
     });
 
@@ -1028,7 +1028,7 @@ describe("In-editor manipulations", () => {
             `<div data-embedded="unknown"><p>UNKNOWN</p></div>`,
             { config: getConfig([]) }
         );
-        dispatchCleanForSave(editor, { root: el });
+        triggerCleanForSave(editor, { root: el });
         expect(getContent(el)).toBe(`<div data-embedded="unknown"><p>UNKNOWN</p></div>`);
     });
 
@@ -1236,7 +1236,7 @@ describe("editable descendants", () => {
             }
         );
         const clone = el.cloneNode(true);
-        dispatchCleanForSave(editor, { root: clone });
+        triggerCleanForSave(editor, { root: clone });
         expect(getContent(clone)).toBe(
             unformat(`
                 <div data-embedded="wrapper">

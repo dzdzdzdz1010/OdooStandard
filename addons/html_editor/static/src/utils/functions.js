@@ -22,3 +22,7 @@ export function weakMemoize(func) {
         },
     }[funcName];
 }
+
+export function isPromise(value) {
+    return !!value && typeof value.then === "function";
+}

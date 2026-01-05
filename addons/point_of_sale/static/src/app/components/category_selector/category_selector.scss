@@ -1,3 +1,22 @@
+<<<<<<< 7a60471da0bf762c943dccd8e8765a4cf104d870:addons/point_of_sale/static/src/app/components/category_selector/category_selector.scss
+||||||| 1519e22086e0764aa4e14fe816eb42414b2ffa8a:addons/point_of_sale/static/src/app/generic_components/category_selector/category_selector.scss
+.category-button {
+    --btn-border-color: #{$o-gray-200};
+}
+
+=======
+.category-button {
+    --btn-border-color: #{$o-gray-200};
+
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+>>>>>>> 7f3e8f5f3df0f1f8287b18523fb209320a0b0296:addons/point_of_sale/static/src/app/generic_components/category_selector/category_selector.scss
 .category-list {
     grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
 

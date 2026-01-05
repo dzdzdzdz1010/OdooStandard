@@ -373,6 +373,9 @@ export const htmlField = {
         if ("baseContainers" in options) {
             editorConfig.baseContainers = options.baseContainers;
         }
+        if ("defaultLinkAttributes" in options) {
+            editorConfig.defaultLinkAttributes = options.defaultLinkAttributes;
+        }
         if ("cleanEmptyStructuralContainers" in options) {
             editorConfig.cleanEmptyStructuralContainers = Boolean(
                 options.cleanEmptyStructuralContainers

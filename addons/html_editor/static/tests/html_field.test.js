@@ -41,9 +41,9 @@ import { patch } from "@web/core/utils/patch";
 import { delay } from "@web/core/utils/concurrency";
 import { FormController } from "@web/views/form/form_controller";
 import { Counter, EmbeddedWrapperMixin } from "./_helpers/embedded_component";
-import { moveSelectionOutsideEditor, setSelection } from "./_helpers/selection";
+import { getContent, moveSelectionOutsideEditor, setSelection } from "./_helpers/selection";
 import { insertText, pasteOdooEditorHtml, pasteText, undo } from "./_helpers/user_actions";
-import { unformat } from "./_helpers/format";
+import { cleanLinkArtifacts, unformat } from "./_helpers/format";
 import { expandToolbar } from "./_helpers/toolbar";
 import { expectElementCount } from "./_helpers/ui_expectations";
 
@@ -1255,6 +1255,28 @@ test("MediaDialog does not contain 'Videos' tab in html field when 'allowVideo' 
         "Documents",
         "Icons",
     ]);
+});
+
+test("Link should be created with default attributes passed in 'defaultLinkAttributes'", async () => {
+    await mountView({
+        type: "form",
+        resId: 1,
+        resModel: "partner",
+        arch: `
+            <form>
+            <field name="txt" widget="html" options="{'defaultLinkAttributes': {'target': '_blank', 'rel': 'noreferrer noopener'}}"/>
+            </form>`,
+    });
+
+    setSelectionInHtmlField();
+    await insertText(htmlEditor, "/link");
+    await animationFrame();
+    await click(".o-we-command-name:first");
+
+    await contains(".o-we-linkpopover input.o_we_href_input_link").fill("test.com");
+    expect(cleanLinkArtifacts(getContent(htmlEditor.editable))).toBe(
+        '<p><a href="https://test.com" target="_blank" rel="noreferrer noopener">test.com[]</a>first</p>'
+    );
 });
 
 test("MediaDialog does not contain 'Videos' tab when sanitize = true and embedded_components = false", async () => {

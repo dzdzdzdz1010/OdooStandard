@@ -4,8 +4,10 @@ import { ImageFilterOption } from "@html_builder/plugins/image/image_filter_opti
 import { ImageFormatOption } from "@html_builder/plugins/image/image_format_option";
 import { ImageTransformOption } from "./image_transform_option";
 import { MediaSizeOption } from "./media_size_option";
+import { registry } from "@web/core/registry";
 
 export class ImageToolOption extends BaseOptionComponent {
+    static id = "image_tool_option";
     static template = "html_builder.ImageToolOption";
     static components = {
         ImageShapeOption,
@@ -14,9 +16,6 @@ export class ImageToolOption extends BaseOptionComponent {
         ImageTransformOption,
         MediaSizeOption,
     };
-    static selector = "img";
-    static exclude = "[data-oe-type='image'] > img";
-    static name = "imageToolOption";
     setup() {
         super.setup();
         this.state = useDomState((editingElement) => ({
@@ -26,3 +25,5 @@ export class ImageToolOption extends BaseOptionComponent {
         }));
     }
 }
+
+registry.category("builder-options").add(ImageToolOption.id, ImageToolOption);

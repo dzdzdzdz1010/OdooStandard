@@ -5,6 +5,11 @@ import { isClonable } from "./clone_plugin";
 import { getElementsWithOption, isElementInViewport } from "@html_builder/utils/utils";
 import { OptionsContainer } from "@html_builder/sidebar/option_container";
 import { shouldEditableMediaBeEditable } from "@html_builder/utils/utils_css";
+import { BaseOptionComponent } from "@html_builder/core/utils";
+import { BorderConfigurator } from "@html_builder/plugins/border_configurator_option";
+import { ShadowOption } from "@html_builder/plugins/shadow_option";
+import { registry } from "@web/core/registry";
+import { renderToElement } from "@web/core/utils/render";
 
 /** @typedef {import("@html_builder/core/utils").BaseOptionComponent} BaseOptionComponent */
 /** @typedef {import("@odoo/owl").Component} Component */
@@ -54,6 +59,7 @@ import { shouldEditableMediaBeEditable } from "@html_builder/utils/utils_css";
  * @property { BuilderOptionsPlugin['getReloadSelector'] } getReloadSelector
  * @property { BuilderOptionsPlugin['setNextTarget'] } setNextTarget
  * @property { BuilderOptionsPlugin['getBuilderOptionContext'] } getBuilderOptionContext
+ * @property { BuilderOptionsPlugin['getBuilderOptions'] } getBuilderOptions
  */
 
 /**
@@ -70,7 +76,6 @@ import { shouldEditableMediaBeEditable } from "@html_builder/utils/utils_css";
  *     props: object;
  *     editableOnly?: boolean;
  * }[]} builder_header_middle_buttons
- * @typedef {BaseOptionComponent[]} builder_options
  * @typedef {{
  *     selector: CSSSelector;
  *     getTitleExtraInfo: (editingElement: HTMLElement) => string;
@@ -85,6 +90,7 @@ import { shouldEditableMediaBeEditable } from "@html_builder/utils/utils_css";
  * }[]} has_overlay_options
  * @typedef {CSSSelector[]} no_parent_containers
  * @typedef {((el: HTMLElement) => boolean)[]} keep_overlay_options
+ * @typedef {{[key: string]: string}[]} builder_options_render_context
  */
 /**
  * @typedef {((arg: { el: HTMLElement, reasons: [] }) => void)[]} clone_disabled_reason_providers
@@ -126,6 +132,7 @@ export class BuilderOptionsPlugin extends Plugin {
         "getReloadSelector",
         "setNextTarget",
         "getBuilderOptionContext",
+        "getBuilderOptions",
     ];
     /** @type {import("plugins").BuilderResources} */
     resources = {
@@ -143,11 +150,14 @@ export class BuilderOptionsPlugin extends Plugin {
     };
 
     setup() {
-        this.builderOptions = this.getResource("builder_options");
+        this.builderOptions = this.getBuilderOptionsFromTemplate();
         this.builderOptionsContext = new Map();
         this.builderOptionsDependencies = new Map();
         const options = this.builderOptions.concat([OptionsContainer]);
+        // TODO DUAU: better way to do this?
+        const defaultComponents = { BorderConfigurator, ShadowOption };
         for (const Option of options) {
+            Option.components = { ...defaultComponents, ...(Option.components || {}) };
             this.getBuilderDependencies(Option);
             this.getBuilderOptionContext(Option);
         }
@@ -155,10 +165,6 @@ export class BuilderOptionsPlugin extends Plugin {
         this.elementsToOptionsTitleComponents = withIds(
             this.getResource("elements_to_options_title_components")
         );
-        // todo: remove that resource as we should be able to patch the class the normal way
-        this.getResource("patch_builder_options").forEach((option) => {
-            this.patchBuilderOptions(option);
-        });
         this.builderHeaderMiddleButtons = withIds(
             this.getResource("builder_header_middle_buttons")
         );
@@ -507,38 +513,6 @@ export class BuilderOptionsPlugin extends Plugin {
         return reasons.length ? reasons.join(" ") : undefined;
     }
 
-    patchBuilderOptions({ target_name, target_element, method, value }) {
-        if (!target_name || !target_element || !method || (!value && method !== "remove")) {
-            throw new Error(
-                `Missing patch_builder_options required parameters: target_name, target_element, method, value`
-            );
-        }
-
-        const builderOption = this.builderOptions.find((option) => option.name === target_name);
-        if (!builderOption) {
-            throw new Error(`Builder option ${target_name} not found`);
-        }
-
-        switch (method) {
-            case "replace":
-                builderOption[target_element] = value;
-                break;
-            case "remove":
-                delete builderOption[target_element];
-                break;
-            case "add":
-                if (!builderOption[target_element]) {
-                    throw new Error(
-                        `Builder option ${target_name} does not have ${target_element}`
-                    );
-                }
-                builderOption[target_element] += `, ${value}`;
-                break;
-            default:
-                throw new Error(`Unknown method ${method}`);
-        }
-    }
-
     /**
      * Finds the given option in the given element closest options container, as
      * well as in the parent containers if specified, and returns it and its
@@ -578,6 +552,140 @@ export class BuilderOptionsPlugin extends Plugin {
 
         return { option: requestedOption, targetEl };
     }
+
+    getBuilderOptionsFromTemplate() {
+        const template = renderToElement(
+            this.config.builderOptionsTemplate,
+            this.getBuilderOptionsRenderContext()
+        );
+        return Array.from(template.children, (node) => this.createOptionClassFromNode(node));
+    }
+
+    getBuilderOptions() {
+        return [...this.builderOptions];
+    }
+
+    createOptionClassFromNode(node) {
+        const optionId = node.tagName.toLowerCase();
+        const {
+            template,
+            selector,
+            exclude,
+            applyTo,
+            title,
+            editableOnly,
+            reloadTarget,
+            groups,
+            props,
+        } = this.getOptionAttributes(node);
+        if (!selector) {
+            throw new Error(`Missing selector name in builder option ${optionId}`);
+        }
+
+        const optionRegistry = this.getOptionRegistry(optionId);
+        if (!optionRegistry) {
+            if (!template) {
+                throw new Error(`Missing template name in builder option ${optionId}`);
+            }
+            return this.createOptionClass(optionId, {
+                template,
+                selector,
+                exclude,
+                applyTo,
+                title,
+                editableOnly,
+                reloadTarget,
+                groups,
+                props,
+            });
+        }
+        if (template) {
+            throw new Error(
+                `If a BaseOptionComponent class exists, template should be in the class: ${optionId}`
+            );
+        }
+        const ComplexOptionClass = optionRegistry.get(optionId);
+        if (!ComplexOptionClass.template) {
+            throw new Error(`Missing template name in builder option ${optionId}`);
+        }
+        // TODO DUAU: REMOVE THE ERROR, JUST TO CHECK THAT NOTHING WAS FORGOTTEN
+        if (
+            ComplexOptionClass.selector ||
+            ComplexOptionClass.exclude ||
+            ComplexOptionClass.applyTo ||
+            ComplexOptionClass.title ||
+            !ComplexOptionClass.editableOnly ||
+            ComplexOptionClass.reloadTarget ||
+            ComplexOptionClass.groups
+        ) {
+            throw new Error(
+                `Can't have selector, exclude, applyTo, title, editableOnly, groups in BaseOptionComponent: ${optionId}`
+            );
+        }
+        const OptionClass = { [optionId]: class extends ComplexOptionClass {} }[optionId];
+        return Object.assign(OptionClass, {
+            selector,
+            exclude,
+            applyTo,
+            title,
+            editableOnly,
+            reloadTarget,
+            groups,
+            propsValue: props,
+        });
+    }
+
+    createOptionClass(
+        name,
+        { template, selector, exclude, applyTo, title, editableOnly, reloadTarget, groups }
+    ) {
+        const OptionClass = {
+            [name]: class extends BaseOptionComponent {
+                static template = template;
+                static selector = selector;
+                static exclude = exclude;
+                static applyTo = applyTo;
+                static title = title;
+                static editableOnly = editableOnly;
+                static reloadTarget = reloadTarget;
+                static groups = groups;
+            },
+        }[name];
+        return OptionClass;
+    }
+
+    getOptionAttributes(node) {
+        const jsonProps = node.getAttribute("props");
+        const jsonGroups = node.getAttribute("groups");
+        return {
+            template: node.getAttribute("template"),
+            selector: node.getAttribute("selector"),
+            exclude: node.getAttribute("exclude"),
+            applyTo: node.getAttribute("applyTo") || undefined,
+            title: node.getAttribute("title"),
+            editableOnly: node.getAttribute("editableOnly") !== "false",
+            reloadTarget: node.getAttribute("reloadTarget") === "true",
+            groups: jsonGroups ? JSON.parse(jsonGroups) : [],
+            props: jsonProps ? JSON.parse(jsonProps) : {},
+        };
+    }
+
+    getOptionRegistry(optionId) {
+        if (!this.baseOptionRegistry) {
+            this.baseOptionRegistry = registry.category("builder-options");
+            this.specificOptionRegistry = this.config.builderOptionsRegistry
+                ? registry.category(this.config.builderOptionsRegistry)
+                : null;
+        }
+        if (this.specificOptionRegistry?.contains(optionId)) {
+            return this.specificOptionRegistry;
+        }
+        if (this.baseOptionRegistry.contains(optionId)) {
+            return this.baseOptionRegistry;
+        }
+        return null;
+    }
+
     /**
      * Get all dependencies of an OptionComponent and all its descendants.
      */
@@ -606,6 +714,15 @@ export class BuilderOptionsPlugin extends Plugin {
             return context;
         }
         return context;
+    }
+
+    getBuilderOptionsRenderContext() {
+        if (!this.builderOptionsRenderContext) {
+            const resourceResult = this.getResource("builder_options_render_context");
+            const context = Object.assign({}, ...resourceResult);
+            this.builderOptionsRenderContext = Object.freeze(context);
+        }
+        return this.builderOptionsRenderContext;
     }
 }
 

@@ -65,6 +65,8 @@ export class MassMailingBuilder extends Component {
                 : []),
         ];
         builderProps.Plugins = [...builderEditorPlugins, ...massMailingPlugins, ...optionalPlugins];
+        builderProps.config.builderOptionsTemplate = "mass_mailing.BuilderOptions";
+        builderProps.config.builderOptionsRegistry = "mass_mailing-options";
         return builderProps;
     }
 }

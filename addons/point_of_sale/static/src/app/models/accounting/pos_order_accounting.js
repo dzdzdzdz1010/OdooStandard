@@ -77,9 +77,22 @@ export class PosOrderAccounting extends Base {
             return 0;
         }
 
+<<<<<<< fe1d222d12e78e2282e3ee0a1f78fcbb7153e598
         const tolerance = this.orderIsRounded ? this.config.rounding_method.rounding : 0;
         const amount = Math.abs(remaining) <= tolerance ? 0 : remaining;
         return this.currency.round(amount);
+||||||| 871604e392c3948bff036e13a3d059b0fce80b66
+        const tolerance = this.orderIsRounded ? this.config.rounding_method.rounding : 0;
+        const amount = Math.abs(total - this.amountPaid) <= tolerance ? 0 : Math.abs(remaining);
+        return isNegative ? this.currency.round(-amount) : this.currency.round(amount);
+=======
+        const amount =
+            this.orderIsRounded &&
+            this.config.rounding_method.asymmetricRound(isNegative ? -remaining : remaining) == 0
+                ? 0
+                : Math.abs(remaining);
+        return isNegative ? this.currency.round(-amount) : this.currency.round(amount);
+>>>>>>> cdeac0bbe14bc4727c552ef38b67960914698199
     }
     get change() {
         const isNegative = this.totalDue < 0;
@@ -109,8 +122,11 @@ export class PosOrderAccounting extends Base {
         const total = this.prices.taxDetails.total_amount_no_rounding;
         const isNegative = this.amountPaid > total;
         const remaining = total - this.amountPaid;
-        const tolerance = this.orderIsRounded ? this.config.rounding_method.rounding : 0;
-        const amount = Math.abs(total - this.amountPaid) <= tolerance ? Math.abs(remaining) : 0;
+        const amount =
+            this.orderIsRounded &&
+            this.config.rounding_method.asymmetricRound(total < 0 ? -remaining : remaining) == 0
+                ? Math.abs(remaining)
+                : 0;
         return isNegative ? this.currency.round(amount) : this.currency.round(-amount);
     }
 

@@ -134,6 +134,9 @@ class AccountPayment(models.Model):
         index='btree_not_null',
         compute='_compute_outstanding_account_id',
         check_company=True)
+    outstanding_account_type = fields.Selection(
+        related='outstanding_account_id.account_type',
+        store=True)
     destination_account_id = fields.Many2one(
         comodel_name='account.account',
         string='Destination Account',
@@ -1083,7 +1086,12 @@ class AccountPayment(models.Model):
         self.filtered(lambda pay: pay.state in {False, 'draft', 'in_process'}).state = 'in_process'
 
     def action_validate(self):
-        self.state = 'paid'
+        for payment in self:
+            if payment.outstanding_account_type == 'asset_cash':
+                raise UserError(_("Payments linked to an Asset Cash account cannot be reconciled."))
+            if payment.state != 'in_process':
+                raise UserError(_("Payment must be in in_process state to be reconciled."))
+            payment.state = 'paid'
 
     def action_reject(self):
         self.state = 'rejected'

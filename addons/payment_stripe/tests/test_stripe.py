@@ -28,6 +28,8 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
         with patch.object(
             type(self.env['payment.transaction']), '_stripe_create_intent',
             mock_stripe_stripe_create_intent,
+        ), patch(
+            'odoo.addons.payment.utils.generate_access_token', new=self._generate_test_access_token
         ), mute_logger('odoo.addons.payment.models.payment_transaction'):
             processing_values = tx._get_processing_values()
 

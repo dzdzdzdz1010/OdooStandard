@@ -1,5 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from unittest.mock import patch
+
 from odoo.tests import tagged
 from odoo.tools import mute_logger
 
@@ -58,7 +60,10 @@ class TestPaymentTransaction(APSCommon):
             'payment_option',
             'return_url',
         ]
-        processing_values = tx._get_processing_values()
+        with patch(
+            'odoo.addons.payment.utils.generate_access_token', new=self._generate_test_access_token
+        ):
+            processing_values = tx._get_processing_values()
         form_info = self._extract_values_from_html_form(processing_values['redirect_form_html'])
         self.assertEqual(form_info['action'], 'https://sbcheckout.payfort.com/FortAPI/paymentPage')
         self.assertEqual(form_info['method'], 'post')

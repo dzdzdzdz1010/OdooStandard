@@ -9,8 +9,7 @@ export class PaymentPostProcessing extends Interaction {
     setup() {
         // Create a bus listener to trigger post processing
         const notificationType = 'PAYMENT_TRIGGER_POST_PROCESSING';
-        const {notificationChannel, landingRoute} = this.el.dataset;
-        debugger;
+        const { notificationChannel, landingRoute } = this.el.dataset;
         this.busService = this.services.bus_service;
         this.busService.addChannel(notificationChannel);
         this.busService.subscribe(notificationType, this.triggerPostProcessing.bind(this));
@@ -31,8 +30,8 @@ export class PaymentPostProcessing extends Interaction {
         const postProcessingData = await rpc('/payment/post_process', { csrf_token: odoo.csrf_token });
         const { provider_code, state, landing_route, status_message } = postProcessingData;
         if (['cancel', 'error'].includes(state)) {
-            const notificationMessage = status_message || "Payment was not successful, please try again."
-            browser.sessionStorage.setItem("errorMessage", notificationMessage);
+            const defaultErrorMessage = "Payment was not successful, please try again.";
+            browser.sessionStorage.setItem("errorMessage", status_message || defaultErrorMessage);
         }
         if (PaymentPostProcessing.getFinalStates(provider_code).has(state)) {
             window.location = landing_route;

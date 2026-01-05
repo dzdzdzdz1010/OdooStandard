@@ -115,6 +115,7 @@ export async function setupWebsiteBuilder(
         headerContent = "",
         beforeWrapwrapContent = "",
         translateMode = false,
+        enableIframeTransitions = false,
         onIframeLoaded = () => {},
         delayReload = async () => {},
     } = {}
@@ -141,7 +142,9 @@ export async function setupWebsiteBuilder(
         resolveIframeLoaded = async (el) => {
             const iframe = el;
             const styleEl = iframe.contentDocument.createElement("style");
-            styleEl.textContent = /*css*/ `* { transition: none !important; } `;
+            if (!enableIframeTransitions) {
+                styleEl.textContent = /*css*/ `* { transition: none !important; }`;
+            }
             if (styleContent) {
                 styleEl.textContent += styleContent;
             }

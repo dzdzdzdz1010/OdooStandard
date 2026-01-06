@@ -174,6 +174,8 @@ class HrVersion(models.Model):
 
         tz_dates = {}
         for version in self:
+            if version.tracking_method == 'work_entry':
+                continue
             employee = version.employee_id
             calendar = version.resource_calendar_id
             resource = employee.resource_id

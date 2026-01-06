@@ -40,7 +40,45 @@ msgstr ""
 
 #. module: base_vat
 #: model_terms:ir.ui.view,arch_db:base_vat.res_config_settings_view_form
+<<<<<<< 0f110564571d1fde2bc0208fdc37198dc02a841b
 msgid "If this checkbox is ticked, you will not be able to save a contact if its VAT number cannot be verified by the European VIES service."
+||||||| ec6e5596ead009265c3ac8a64a2d28e0397d8383
+msgid ""
+"If this checkbox is ticked, you will not be able to save a contact if its "
+"VAT number cannot be verified by the European VIES service."
+msgstr ""
+
+#. module: base_vat
+#. odoo-python
+#: code:addons/base_vat/models/res_partner.py:0
+#, python-format
+msgid "MXGODE561231GR8 or GODE561231GR8"
+msgstr ""
+
+#. module: base_vat
+#. odoo-python
+#: code:addons/base_vat/models/res_partner.py:0
+#, python-format
+msgid "TR1234567890 (VERGINO) or TR17291716060 (TCKIMLIKNO)"
+=======
+msgid ""
+"If this checkbox is ticked, you will not be able to save a contact if its "
+"VAT number cannot be verified by the European VIES service."
+msgstr ""
+
+#. module: base_vat
+#. odoo-python
+#: code:addons/base_vat/models/res_partner.py:0
+#, python-format
+msgid "MXGODE561231GR8 or GODE561231GR8"
+msgstr ""
+
+#. module: base_vat
+#. odoo-python
+#: code:addons/base_vat/models/res_partner.py:0
+#, python-format
+msgid "TR1234567890 (VERGINO) or TR1111111111 (TCKIMLIKNO)"
+>>>>>>> 12fa6ed04f472f2fe9a36939c7ada5f2b7286e69
 msgstr ""
 
 #. module: base_vat

@@ -475,17 +475,14 @@ class TestAccountSubcontractingFlows(TestMrpSubcontractingCommon):
         picking_receipt._action_done()
 
         amls = self.env['account.move.line'].search([('id', 'not in', all_amls_ids)])
-        self.assertRecordValues(amls, [
+        self.assertRecordValues(amls.sorted("account_id, product_id"), [
             # Receipt from subcontractor
-            {'account_id': stock_valu_acc_id,   'product_id': self.finished.id,    'debit': 40.0,  'credit': 0.0},
-            {'account_id': stock_in_acc_id,     'product_id': self.finished.id,    'debit': 0.0,   'credit': 10.0},   # adjust according to the difference
-            {'account_id': stock_cop_acc_id,    'product_id': self.finished.id,    'debit': 0.0,   'credit': 30.0},
-            # Delivery com2 to subcontractor
-            {'account_id': stock_valu_acc_id,   'product_id': self.comp2.id,       'debit': 0.0,   'credit': 20.0},
-            {'account_id': stock_cop_acc_id,    'product_id': self.comp2.id,       'debit': 20.0,  'credit': 0.0},
-            # Delivery com2 to subcontractor
-            {'account_id': stock_valu_acc_id,   'product_id': self.comp1.id,       'debit': 0.0,   'credit': 10.0},
-            {'account_id': stock_cop_acc_id,    'product_id': self.comp1.id,       'debit': 10.0,  'credit': 0.0},
+            {'account_id': self.account_production.id,    'product_id': self.comp1.id,       'debit': 10.0,  'credit': 0.0},
+            {'account_id': self.account_production.id,    'product_id': self.comp2.id,       'debit': 20.0,  'credit': 0.0},
+            {'account_id': self.account_production.id,    'product_id': self.finished.id,    'debit': 0.0,   'credit': 40.0},
+            {'account_id': self.account_stock_valuation.id,   'product_id': self.comp1.id,       'debit': 0.0,   'credit': 10.0},
+            {'account_id': self.account_stock_valuation.id,   'product_id': self.comp2.id,       'debit': 0.0,   'credit': 20.0},
+            {'account_id': self.account_stock_valuation.id,   'product_id': self.finished.id,    'debit': 40.0,  'credit': 0.0},
         ])
 
     def test_input_output_accout_with_subcontract(self):

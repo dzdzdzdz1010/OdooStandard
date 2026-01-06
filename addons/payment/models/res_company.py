@@ -16,6 +16,19 @@ class ResCompany(models.Model):
         compute='_compute_onboarding_payment_module',
     )
 
+    direct_payment_label = fields.Char(string="Direct Payment Label",
+                                        translate=True,
+                                        default="Pay now",
+                                        help="Label to be displayed on the payment button "
+                                        "for 'Pay Now' methods."
+                                       )
+    delayed_payment_label = fields.Char(string="Delayed Payment Label",
+                                        translate=True,
+                                        default="Confirm",
+                                        help="Label to be displayed on the payment button "
+                                        "for 'Pay Later' methods."
+                                        )
+
     @api.depends('currency_id', 'country_id')
     def _compute_onboarding_payment_module(self):
         for company in self:

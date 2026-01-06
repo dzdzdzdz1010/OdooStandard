@@ -25,6 +25,7 @@
         'views/payment_transaction_views.xml',
         'views/payment_token_views.xml',  # Depends on `action_payment_transaction_linked_to_token`.
         'views/res_partner_views.xml',
+        'views/res_company_views.xml',
 
         # Security.
         'security/ir.model.access.csv',

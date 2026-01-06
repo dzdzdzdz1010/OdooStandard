@@ -283,15 +283,19 @@ export class PaymentForm extends Interaction {
      * @return {void}
      */
     _adaptSubmitButtonLabel(paymentMethodCode) {
-        const buttonLabel = this._isPayLaterPaymentMethod(paymentMethodCode)
-            ? _t("Confirm")
-            : this.defaultSubmitButtonLabel;
-        for (const btn of document.querySelectorAll('button[name="o_payment_submit_button"]')) {
-            if (btn.textContent !== buttonLabel) {
-                btn.textContent = buttonLabel;
-            }
+    const isPayLater = this._isPayLaterPaymentMethod(paymentMethodCode);
+    const buttons = document.querySelectorAll('button[name="o_payment_submit_button"]');
+    
+    buttons.forEach(btn => {
+        const directLabel = btn.querySelector('.o_payment_label_direct');
+        const delayedLabel = btn.querySelector('.o_payment_label_delayed');
+
+        if (directLabel && delayedLabel) {
+            directLabel.classList.toggle('d-none', isPayLater);
+            delayedLabel.classList.toggle('d-none', !isPayLater);
         }
-    }
+    });
+}
 
     /**
      * Check whether the given payment method expects immediate payment.

@@ -148,7 +148,8 @@ class Website(Home):
             domain_to = get_base_domain(website.domain)
             if domain_from != domain_to:
                 # redirect to correct domain for a correct routing map
-                url_to = werkzeug.urls.url_join(website.domain, '/website/force/%s?isredir=1&path=%s' % (website.id, path))
+                path_param = werkzeug.urls.url_encode({'path': path})
+                url_to = werkzeug.urls.url_join(website.domain, f'/website/force/{website.id}?isredir=1&{path_param}')
                 return request.redirect(url_to)
         website._force()
         return request.redirect(path)

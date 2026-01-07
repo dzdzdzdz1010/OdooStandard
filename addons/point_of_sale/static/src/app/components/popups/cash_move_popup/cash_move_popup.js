@@ -29,13 +29,22 @@ export class CashMovePopup extends Component {
             type: "out",
             amount: "",
             reason: "",
+            hasCashMoves: false,
         });
         this.confirm = useAsyncLockedMethod(this.confirm);
         this.ui = useService("ui");
+        this.checkCashMoves();
     }
 
     get partnerId() {
         return this.pos.user.partner_id.id;
+    }
+
+    async checkCashMoves() {
+        const cashMoves = await this.pos.data.call("pos.session", "get_cash_in_out_list", [
+            this.pos.session.id,
+        ]);
+        this.state.hasCashMoves = cashMoves.length > 0;
     }
 
     async confirm() {

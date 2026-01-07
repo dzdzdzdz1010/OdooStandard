@@ -906,6 +906,22 @@ class TestRepair(TestRepairCommon):
                 'company_id': company.id,
             })
 
+    def test_missing_inventory_loss_location_while_creating_warehouse(self):
+        """
+        Test that a missing inventory loss location doesnt raise an error when creating a warehouse.
+        """
+        inv_locations = self.env['stock.location'].search([
+            ('usage', '=', 'inventory'),
+            ('company_id', '=', self.env.company.id),
+        ])
+        if inv_locations:
+            inv_locations.write({'usage': "internal"})
+        warehouse = self.env['stock.warehouse'].create({
+            'name': 'ELCT',
+            'code': 'ET',
+        })
+        self.assertFalse(warehouse.repair_type_id.default_remove_location_dest_id)
+
     def test_add_product_from_catalog(self):
         """Check that only consumable products are available in the catalog."""
         catalog_action = self.repair0.action_add_from_catalog()

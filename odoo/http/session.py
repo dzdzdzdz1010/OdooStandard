@@ -6,6 +6,7 @@ import re
 import secrets
 import tempfile
 import time
+import uuid
 from collections.abc import MutableMapping
 from contextlib import suppress
 from datetime import datetime
@@ -76,6 +77,7 @@ def get_default_session():
         'uid': None,
         'session_token': None,
         '_devices': {},
+        '_device_sign': str(uuid.uuid4()),
     }
 
 
@@ -285,6 +287,7 @@ class Session(MutableMapping):
             'last_activity': None,
             'country': geoip.country.name,
             'city': geoip.city.name,
+            'trusted': not self['_devices'],  # First device in a session is always trusted
         }
         self.is_dirty = True
         return new_device
@@ -313,6 +316,18 @@ class Session(MutableMapping):
         device['last_activity'] = now
         self.is_dirty = True
         return device
+
+    def update_device_fingerprint(self, request, fingerprint):
+        """
+        :return: ``True`` if the current device is trusted, ``False`` otherwise
+        """
+        device = self.get_device(request)
+        if device['trusted']:
+            self['_device_fingerprint'] = fingerprint
+        elif consteq(self.setdefault('_device_fingerprint', fingerprint), fingerprint):
+            device['trusted'] = True
+            self.is_dirty = True
+        return device['trusted']
 
     def _delete_old_sessions(self):
         root.session_store.delete_old_sessions(self)

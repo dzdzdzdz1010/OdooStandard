@@ -5,6 +5,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { redirect } from "@web/core/utils/urls";
 import { post } from "@web/core/network/http_service";
+import { session } from "@web/session";
 
 /**
  * CheckIdentityForm component
@@ -41,6 +42,13 @@ export class CheckIdentityForm extends Component {
         });
         onWillStart(async () => {
             const data = await this.checkIdentityService.getInitData();
+
+            // Attempting to verify the identity of the device using its fingerprint
+            if (data.fingerprint_check && await this.checkIdentityService.updateFingerprint()) {
+                // There is no need to re-authenticate the user explicitly via the form
+                this.checkIdentityService.checkSignaling();
+            }
+
             this.user = {
                 userId: data.user_id,
                 name: data.login,
@@ -142,6 +150,7 @@ export class CheckIdentity {
         this.channel = new BroadcastChannel("check_identity");
         this.dialogService = services["dialog"];
         this.started = false;
+        this.fingerprint = null;
 
         this.bus.addEventListener("start", () => { this.started = true; });
         this.bus.addEventListener("stop", () => { this.started = false; });
@@ -156,20 +165,69 @@ export class CheckIdentity {
             this.verifyUserErrorHandler.bind(this),
             { force: true },
         );
+
+        // Check the fingerprint each time webclient is loaded
+        if (session.device_sign) {
+            this.updateFingerprint()
+                .then(result => !result && this.run())
+                .catch(error => console.error("Failed to update fingerprint:", error));
+        }
+    }
+
+    async getFingerprint() {
+        if (this.fingerprint) {
+            return this.fingerprint;
+        }
+        // Ask the machine to generate an image (canvas).
+        const canvas = new OffscreenCanvas(200, 200);
+        const context = canvas.getContext('2d');
+        const txt = session.device_sign;
+        context.textBaseline = "top";
+        context.font = "14px 'Arial'";
+        context.textBaseline = "alphabetic";
+        const txtWidth = context.measureText(txt).width;
+        const txtX = 2;
+        const txtY = 15;
+        context.fillStyle = "#f60";
+        context.fillRect(2 + txtWidth / 2, 1, txtWidth / 2, 20);  // X, Y, width, height
+        context.rotate(0.0174533);  // 1 * Math.PI / 180
+        context.fillStyle = "rgba(0, 100, 0, 0.6)";
+        context.fillText(txt, txtX + 1, txtY + 1);
+        context.fillStyle = "#069";
+        context.fillText(txt, txtX, txtY);
+        const blob = await canvas.convertToBlob();
+        const buffer = await blob.arrayBuffer();
+
+        const hashBuffer = await window.crypto.subtle.digest("SHA-256", buffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        this.fingerprint = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+        return this.fingerprint;
     }
 
     async getInitData() {
         return await rpc("/web/session/identity/check");
     };
 
+    async updateFingerprint() {
+        const result = await rpc("/web/session/identity/fingerprint/check", {
+            fingerprint: await this.getFingerprint()
+        });
+        return result.success;
+    }
+
     async check(credential) {
         const result = await rpc("/web/session/identity/check", credential);
         if (result?.mfa) {
             return { success: false, mfa: result.mfa, auth_methods: result.auth_methods };
         }
+        this.checkSignaling();
+    };
+
+    checkSignaling() {
         this.bus.trigger("identityChecked");
         this.channel.postMessage("identityChecked");
-    };
+    }
 
     async run() {
         if (!this.started) {
@@ -182,7 +240,18 @@ export class CheckIdentity {
             this.bus.addEventListener("identityChecked", resolve, { once: true });
         });
         // Reload the view to display back the data that was displayed before.
-        this.env.services.action && this.env.services.action.doAction("soft_reload");
+        if (this.env.services.action) {
+            if (this.env.services.action.currentController) {
+                this.env.services.action.doAction("soft_reload");
+            } else {
+                // In the case of multiple concurrent ``CheckIdentityException``
+                // managed by differents dispatchers.
+                // We get render from HTTP but error from JSONRPC.
+                // ``soft_reload`` leaves an empty page.
+                // Example: full refresh with an untrusted device.
+                this.env.services.action.doAction("reload");
+            }
+        }
     };
 
     verifyUserErrorHandler(env, error, originalError) {

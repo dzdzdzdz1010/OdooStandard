@@ -94,6 +94,7 @@ class IrHttp(models.AbstractModel):
         is_internal_user = user._is_internal()
         session_info = {
             "uid": session_uid,
+            "device_sign": request.session.get('_device_sign', '') if session_uid else False,  # TODO (v20): remove backward compatibility
             "is_system": user._is_system() if session_uid else False,
             "is_admin": user._is_admin() if session_uid else False,
             "is_public": user._is_public(),

@@ -6,6 +6,17 @@
         --background-color: RGBA(#{to-rgb($purple)}, var(--bg-opacity));
     }
 
+    &.o-mail-DiscussSidebarChannel-selfMember {
+        background:
+            repeating-linear-gradient(
+                45deg,
+                rgba($purple, 0.15),
+                rgba($purple, 0.15) 6px,
+                transparent 6px,
+                transparent 12px
+            );
+    }
+
     .o-mail-DiscussSidebarChannel.o-active &,
     .o-mail-DiscussSidebarChannel &:hover,
     .o-mail-DiscussSidebarChannel &:focus-visible {
@@ -19,7 +30,8 @@
     .o-mail-DiscussSidebarChannel:hover &.bg-warning {
         --background-color: #{mix($o-webclient-background-color, $warning, 80%)};
     }
-    .o-mail-DiscussSidebarChannel:hover &.bg-info {
+    .o-mail-DiscussSidebarChannel:hover &.bg-info,
+    .o-mail-DiscussSidebarChannel:hover &.o-mail-DiscussSidebarChannel-selfMember {
         --background-color: #{mix($o-webclient-background-color, $purple, 80%)};
     }
 
@@ -27,7 +39,8 @@
         --background-color: #{mix($o-webclient-background-color, $warning, 70%)};
         --border-color: #{rgba($warning, 0.75)};
     }
-    .o-mail-DiscussSidebarChannel.o-active &.bg-info {
+    .o-mail-DiscussSidebarChannel.o-active &.bg-info,
+    .o-mail-DiscussSidebarChannel.o-active &.o-mail-DiscussSidebarChannel-selfMember {
         --background-color: #{mix($o-webclient-background-color, $purple, 90%)};
         --border-color: #{rgba($indigo, 0.75)};
     }

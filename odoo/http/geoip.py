@@ -1,4 +1,5 @@
 import functools
+import logging
 import warnings
 from collections.abc import Mapping
 
@@ -14,12 +15,36 @@ try:
 except ImportError:
     maxminddb = None
 
+from odoo.tools import config, lazy
+
+_logger = logging.getLogger('odoo.http')
 
 # Two empty objects used when the geolocalization failed. They have the
 # sames attributes as real countries/cities except that accessing them
 # evaluates to None.
 GEOIP_EMPTY_COUNTRY = geoip2.models.Country({})
 GEOIP_EMPTY_CITY = geoip2.models.City({})
+
+
+@lazy
+def geoip_city_db():
+    try:
+        return geoip2.database.Reader(config['geoip_city_db'])
+    except (OSError, maxminddb.InvalidDatabaseError):
+        _logger.debug(
+            "Couldn't load Geoip City file at %s. IP Resolver disabled.",
+            config['geoip_city_db'], exc_info=True,
+        )
+        raise
+
+
+@lazy
+def geoip_country_db():
+    try:
+        return geoip2.database.Reader(config['geoip_country_db'])
+    except (OSError, maxminddb.InvalidDatabaseError) as exc:
+        _logger.debug("Couldn't load Geoip Country file (%s). Fallbacks on Geoip City.", exc)
+        raise
 
 
 class GeoIP(Mapping):
@@ -55,7 +80,7 @@ class GeoIP(Mapping):
     @functools.cached_property
     def _city_record(self):
         try:
-            return root.geoip_city_db.city(self.ip)
+            return geoip_city_db.city(self.ip)
         except (OSError, maxminddb.InvalidDatabaseError):
             return GEOIP_EMPTY_CITY
         except geoip2.errors.AddressNotFoundError:
@@ -68,7 +93,7 @@ class GeoIP(Mapping):
             # city record is in cache already, save a geolocalization
             return self._city_record
         try:
-            return root.geoip_country_db.country(self.ip)
+            return geoip_country_db.country(self.ip)
         except (OSError, maxminddb.InvalidDatabaseError):
             return self._city_record
         except geoip2.errors.AddressNotFoundError:
@@ -126,7 +151,3 @@ class GeoIP(Mapping):
     def __len__(self):
         e = "The dictionnary GeoIP API is deprecated."
         raise NotImplementedError(e)
-
-
-# ruff: noqa: E402
-from .router import root

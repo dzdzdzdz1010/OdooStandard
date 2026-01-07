@@ -335,7 +335,7 @@
             <form string="Meetings" class="o_calendar_event_form_quick_create" js_class="calendar_quick_create_form_view">
                 <div class="o_unavailable_attendees_alert alert alert-warning border-0 d-flex flex-wrap m-0 mb-3" role="alert"
                     invisible="not unavailable_partner_ids or allday">
-                    <span class="me-1">The following attendees are not available at the selected time</span>
+                    <span class="me-1">Those attendees are not available at the selected time:</span>
                     <field name="unavailable_partner_ids" widget="many2many_tags"/>
                 </div>
                 <field name="invalid_email_partner_ids" invisible="1"/> <!--used in many2many_attendees widget-->
@@ -370,18 +370,17 @@
                     </span>
                     <field name="stop" invisible="1"/>
                 </div>
-                <div class="d-flex pt-1 pb-2" colspan="2">
-                    <i class="fa fa-fw flex-shrink-0 fa-user mt-1 text-600 me-2" title="Participants"/>
+                <div class="d-flex align-items-center pt-1 pb-2" colspan="2">
+                    <i class="fa fa-fw flex-shrink-0 fa-user text-600 me-2" title="Participants"/>
                     <field name="partner_ids" nolabel="1"
                         widget="many2many_tags"
                         placeholder="Participants"
-                        class="w-75 mb-0"
                     />
                 </div>
                 <div class="d-flex align-items-center pt-1 pb-2" colspan="2">
                     <i class="fa fa-fw flex-shrink-0 fa-map text-600 me-2" title="Location"/>
                     <field name="location" nolabel="1"
-                        placeholder="Location"
+                        placeholder="Room or Location"
                         class="w-100 mb-0"
                     />
                     <!--fields set via the fake front-end only actions must be force saved (see calendar_form)-->
@@ -391,7 +390,7 @@
                     <field name="videocall_source" force_save="1" invisible="1"/>
                     <button name="set_discuss_videocall_location" type="object" class="ms-1 pe-0 btn-link text-nowrap"
                         invisible="videocall_location" context="{'recurrence_update': recurrence_update}">
-                        <span class="fa fa-plus me-1"/>Video
+                        <span class="fa fa-plus me-1"/>Video conference
                     </button>
                 </div>
                 <div class="d-flex align-items-center pt-1 pb-2" colspan="2" invisible="not videocall_location">
@@ -405,6 +404,10 @@
                 <div class="d-flex align-items-center pt-1 pb-2" colspan="2">
                     <i class="fa fa-fw flex-shrink-0 fa-lock text-600 me-2" title="Visibility"/>
                     <field name="privacy" nolabel="1" class="w-100 mb-0" placeholder="Visibility"/>
+                </div>
+                <div class="d-flex align-items-center pt-1 pb-2" colspan="2">
+                    <i class="fa fa-fw flex-shrink-0 fa-circle text-600 me-2" title="Show as"/>
+                    <field name="show_as" nolabel="1" class="w-100 mb-0"/>
                 </div>
                 <div class="d-flex pt-1 pb-2" colspan="2">
                     <i class="fa fa-fw flex-shrink-0 fa-sticky-note mt-2 text-600 me-2" title="Notes"/>

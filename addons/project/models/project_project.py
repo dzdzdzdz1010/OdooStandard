@@ -977,6 +977,7 @@ class ProjectProject(models.Model):
     def action_get_list_view(self):
         action = self.env['ir.actions.act_window']._for_xml_id('project.project_milestone_action')
         action['display_name'] = _("%(name)s's Milestones", name=self.name)
+        action['context'] = {'default_project_id': self.id, 'is_project_template': self.is_template}
         return action
 
     def action_view_tasks_from_project_milestone(self):

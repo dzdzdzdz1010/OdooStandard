@@ -1279,29 +1279,34 @@ class PaymentTransaction(models.Model):
         """
         return self.filtered(lambda t: t.state != 'draft').sorted()[:1]
 
-    def _get_transaction_status_message(self):
+    def _get_transaction_status_message(self, **_kwargs):
+        """ Get the status message relevant to the current transaction.
+
+        :return: status message of the transaction.
+        :rtype: Markup
+        """
         validation_status_messages = {
-            'pending': _("Saving your payment method."),
-            'done': _("Your payment method has been saved."),
-            'cancel': _("The saving of your payment method has been canceled."),
-            'error': _(
-                "An error occurred while saving your payment method.\n%(error_message)s",
-                error_message=self.state_message,
-            ),
+            'pending': Markup(f'<p>{_("Saving your payment method.")}</p>'),
+            'done': Markup(f'<p>{_("Your payment method has been saved.")}</p>'),
+            'cancel': Markup(f'<p>{_("The saving of your payment method has been canceled.")}</p>'),
+            'error': Markup(f'''
+                    <p>{_("An error occurred while saving your payment method.")}</p>
+                    <p>{self.state_message}</p>
+            '''),
         }
         if self.operation == 'validation' and self.state in validation_status_messages:
             status_messages = validation_status_messages
         else:
             provider_sudo = self.provider_id.sudo()
             status_messages = {
-                'draft': _("Your payment has not been processed yet."),
+                'draft': Markup(f'<p>{_("Your payment has not been processed yet.")}</p>'),
                 'pending': provider_sudo.pending_msg,
                 'authorized': provider_sudo.auth_msg,
                 'done': provider_sudo.done_msg,
                 'cancel': provider_sudo.cancel_msg,
-                'error': _(
-                    "An error occurred during the processing of your payment.\n%(error_message)s",
-                    error_message=self.state_message,
-                ),
+                'error': Markup(f'''
+                    <p>{_("An error occurred during the processing of your payment.")}</p>
+                    <p>{self.state_message}</p>
+                '''),
             }
         return status_messages.get(self.state)

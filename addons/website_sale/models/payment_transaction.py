@@ -1,6 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import models
+from markupsafe import Markup
+
+from odoo import _, models
 
 
 class PaymentTransaction(models.Model):
@@ -19,3 +21,22 @@ class PaymentTransaction(models.Model):
         if tx.sale_order_ids.website_id and tx.state in ["cancel", "error"]:
             tx["landing_route"] = "/shop/payment"
         return tx
+
+    def _get_transaction_status_message(self, order=None):
+        """Override of `payment` to add a custom message when cart amount is different after payment
+        in `website_sale`.
+        :param sale.order order: The current cart.
+        """
+        status_message = super()._get_transaction_status_message(order=order)
+        if (
+            order and
+            order.website_id and
+            self.state == 'done' and
+            order.amount_total != self.amount
+        ):
+            return Markup(f'''<p>{
+                _("""Unfortunately your order can not be confirmed as the amount of your payment does not match the amount of your cart.
+Please contact the responsible of the shop for more information."""
+                )}
+            ''')
+        return status_message

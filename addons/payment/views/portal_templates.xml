@@ -307,9 +307,7 @@
                     <i t-attf-class="fa {{alert_icon}}"/>
                 </div>
                 <div id="o_payment_status_message" class="w-100">
-                    <t t-foreach="status_message.split('\n')" t-as="status_message_line">
-                        <p class="mb-0"><t t-out="status_message_line"/></p>
-                    </t>
+                    <t t-out="status_message"/>
                 </div>
             </div>
         </t>

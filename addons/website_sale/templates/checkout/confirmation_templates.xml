@@ -74,7 +74,7 @@
             <t t-set="tx_sudo" t-value="order.get_portal_last_transaction()"/>
             <div
                 t-if="tx_sudo"
-                t-attf-class="alert #{
+                t-attf-class="alert pb-0 #{
                     (tx_sudo.state == 'pending' and 'alert-info') or
                     (tx_sudo.state == 'done' and order.amount_total == tx_sudo.amount and 'alert-success') or
                     (tx_sudo.state == 'done' and order.amount_total != tx_sudo.amount and 'alert-warning') or
@@ -82,27 +82,14 @@
                     'alert-danger'}"
                 role="alert"
             >
-                <div>
-                    <t t-if="tx_sudo.state == 'done' and order.amount_total != tx_sudo.amount">
-                        <p>Unfortunately your order can not be confirmed as the amount of your payment does not match the amount of your cart.
-                        Please contact the responsible of the shop for more information.</p>
-                    </t>
-                    <t t-else="">
-                        <t t-out="tx_sudo._get_transaction_status_message()"/>
-                    </t>
+                <t t-out="tx_sudo._get_transaction_status_message(order=order)"/>
+                <div t-if="tx_sudo.provider_code == 'custom' and tx_sudo.provider_id.sudo().qr_code">
+                    <t t-set="qr_code" t-value="tx_sudo.company_id.partner_id.bank_ids[:1].build_qr_code_base64(order.amount_total,tx_sudo.reference, None, tx_sudo.currency_id, tx_sudo.partner_id)"/>
+                    <div class="mt-2" t-if="qr_code">
+                        <h3>Or scan me with your banking app.</h3>
+                        <img class="border border-dark rounded" t-att-src="qr_code"/>
+                    </div>
                 </div>
-                <t t-if="tx_sudo.provider_code == 'custom'">
-                    <div id="order_reference" t-if="order.reference" class="mt-2">
-                        <b>Communication: </b><span t-out='order.reference'/>
-                    </div>
-                    <div t-if="tx_sudo.provider_id.sudo().qr_code">
-                        <t t-set="qr_code" t-value="tx_sudo.company_id.partner_id.bank_ids[:1].build_qr_code_base64(order.amount_total,tx_sudo.reference, None, tx_sudo.currency_id, tx_sudo.partner_id)"/>
-                        <div class="mt-2" t-if="qr_code">
-                            <h3>Or scan me with your banking app.</h3>
-                            <img class="border border-dark rounded" t-att-src="qr_code"/>
-                        </div>
-                    </div>
-                </t>
             </div>
         </div>
     </template>

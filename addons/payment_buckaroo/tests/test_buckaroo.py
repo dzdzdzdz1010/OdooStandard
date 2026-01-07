@@ -34,7 +34,11 @@ class BuckarooTest(BuckarooCommon, PaymentHttpCommon):
         }
 
         tx_sudo = self._create_transaction(flow='redirect')
-        with mute_logger('odoo.addons.payment.models.payment_transaction'):
+        with mute_logger(
+            'odoo.addons.payment.models.payment_transaction'
+        ), patch(
+            'odoo.addons.payment.utils.generate_access_token', new=self._generate_test_access_token
+        ):
             processing_values = tx_sudo._get_processing_values()
         form_info = self._extract_values_from_html_form(processing_values['redirect_form_html'])
 

@@ -87,13 +87,16 @@ class PaymentTransaction(models.Model):
             )
         return message
 
-    def _get_transaction_status_message(self):
-        status_message = super()._get_transaction_status_message()
-        # Check if its better to do it in the xml template or here since we want to unify entry point.
-        if (
-            self.provider_id.sudo().code == 'custom' and
-            self.state == 'pending' and
-            is_html_empty(status_message)
-        ):
-            return Markup('<h4>Finalize your payment</h4>')
+    def _get_transaction_status_message(self, order=None):
+        """ Override of `payment` to add a custom message to `payment_custom`"""
+        status_message = super()._get_transaction_status_message(order=order)
+        provider_sudo = self.provider_id.sudo()
+        if not provider_sudo.code == 'custom':
+            return status_message
+        if self.state == 'pending' and is_html_empty(status_message):
+            status_message = Markup('<h4>Finalize your payment</h4>')
+        if communication := self._get_communication():
+            status_message += Markup(
+                f'<p><b>{_("Communication:")} </b><span>{communication}</span></p>')
+
         return status_message

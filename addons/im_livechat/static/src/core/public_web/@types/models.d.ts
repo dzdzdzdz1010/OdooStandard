@@ -12,7 +12,4 @@ declare module "models" {
     export interface LivechatChannel {
         appCategory: DiscussAppCategory;
     }
-    export interface Thread {
-        country_id: Country;
-    }
 }

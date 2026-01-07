@@ -12,6 +12,7 @@ declare module "models" {
         discuss_category_id: DiscussCategory;
         discussAppCategory: DiscussAppCategory;
         hasSubChannelFeature: Readonly<boolean>;
+        inChathubOnNewMessage: Readonly<boolean>;
         isDisplayInSidebar: boolean;
         isLocallyPinned: boolean;
         lastSubChannelLoaded: DiscussChannel;

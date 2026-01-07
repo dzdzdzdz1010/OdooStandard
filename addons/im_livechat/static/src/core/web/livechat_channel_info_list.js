@@ -58,14 +58,14 @@ export class LivechatChannelInfoList extends Component {
         this.actionService.doAction({
             type: "ir.actions.act_window",
             res_model: "res.partner",
-            res_id: this.props.thread.livechatVisitorMember.partner_id.id,
+            res_id: this.props.thread.channel.livechatVisitorMember.partner_id.id,
             views: [[false, "form"]],
             target: "current",
         });
     }
 
     get visitorProfileURL() {
-        const visitorMember = this.props.thread?.livechatVisitorMember;
+        const visitorMember = this.props.thread?.channel?.livechatVisitorMember;
         if (visitorMember?.partner_id) {
             return url(`/${startUrl()}/res.partner/${visitorMember.partner_id.id}`);
         }

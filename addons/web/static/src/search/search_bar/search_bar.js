@@ -490,6 +490,14 @@ export class SearchBar extends Component {
                 return [];
             },
             hotkeys: {
+                tab: {
+                    isAvailable: ({ navigator }) =>
+                        navigator.activeItemIndex >= 0 &&
+                        navigator.activeItemIndex < navigator.items.length - 1,
+                },
+                "shift+tab": {
+                    isAvailable: ({ navigator }) => navigator.activeItemIndex > 0,
+                },
                 enter: {
                     isAvailable: () => !this.inputDropdownState.isOpen,
                     callback: () => this.env.searchModel.search() /** @todo keep this thing ?*/,

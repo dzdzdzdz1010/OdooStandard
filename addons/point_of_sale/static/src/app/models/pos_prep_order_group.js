@@ -323,7 +323,7 @@ export class PosPrepOrderGroup extends Base {
             const allChanges = [
                 ...changes.printerData.addedQuantity,
                 ...changes.printerData.removedQuantity,
-            ];
+            ].filter(({ line }) => line?.order_id?.id === originOrder.id);
 
             let prepOrder = null;
             for (const change of allChanges) {
@@ -386,6 +386,7 @@ const keyMaker = (line) => {
         attribute_value_ids: orderline.attribute_value_ids.map((a) => a.id).sort(),
         note: orderline?.getNote?.() || "",
         customer_note: orderline?.getCustomerNote?.() || "",
+        order_id: orderline.order_id.id,
     };
     return JSON.stringify(objectKey);
 };

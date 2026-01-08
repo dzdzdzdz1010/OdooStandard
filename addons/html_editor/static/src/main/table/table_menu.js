@@ -4,6 +4,7 @@ import { getRowIndex, getSelectedCellsMergeInfo } from "@html_editor/utils/table
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { _t } from "@web/core/l10n/translation";
+import { isTableCell } from "@html_editor/utils/dom_info";
 
 export class TableMenu extends Component {
     static template = "html_editor.TableMenu";
@@ -71,21 +72,23 @@ export class TableMenu extends Component {
             return false;
         }
         const rows = [...table.rows];
-        const firstRowCells = [...rows[0].cells];
         const rowHasHeight = rows.some((row) => row.style.height);
-        const cellHasWidth = firstRowCells.some((cell) => cell.style.width);
-        return rowHasHeight || cellHasWidth;
+        const colgroup = table.querySelector("colgroup");
+        return rowHasHeight || colgroup;
     }
 
     get hasCustomRowHeight() {
-        return !!this.props.target.closest("tr").style.height;
+        return !!closestElement(this.props.target, "tr").style.height;
     }
 
     get hasCustomColumnWidth() {
-        return (
-            !!this.props.target.closest("td")?.style?.width ||
-            !!this.props.target.closest("th")?.style?.width
-        );
+        const table = closestElement(this.props.target, "table");
+        const index = this.tableGrid[0].indexOf(closestElement(this.props.target, isTableCell));
+        const colgroup = table.querySelector("colgroup");
+        if (colgroup) {
+            return colgroup.children[index].style.width;
+        }
+        return false;
     }
 
     onSelected(item) {
@@ -201,13 +204,14 @@ export class TableMenu extends Component {
                 name: "reset_column_size",
                 icon: "fa-table",
                 text: _t("Reset column size"),
-                action: (target) => this.props.resetColumnWidth(target.closest("td, th")),
+                action: (target) =>
+                    this.props.resetColumnWidth(closestElement(target, isTableCell)),
             },
             this.hasCustomTableSize && {
                 name: "reset_table_size",
                 icon: "fa-table",
                 text: _t("Reset table size"),
-                action: (target) => this.props.resetTableSize(target.closest("table")),
+                action: (target) => this.props.resetTableSize(closestElement(target, "table")),
             },
             {
                 name: "clear_content",
@@ -303,13 +307,13 @@ export class TableMenu extends Component {
                 name: "reset_row_size",
                 icon: "fa-table",
                 text: _t("Reset row size"),
-                action: (target) => this.props.resetRowHeight(target.closest("tr")),
+                action: (target) => this.props.resetRowHeight(closestElement(target, "tr")),
             },
             this.hasCustomTableSize && {
                 name: "reset_table_size",
                 icon: "fa-table",
                 text: _t("Reset table size"),
-                action: (target) => this.props.resetTableSize(target.closest("table")),
+                action: (target) => this.props.resetTableSize(closestElement(target, "table")),
             },
             {
                 name: "clear_content",

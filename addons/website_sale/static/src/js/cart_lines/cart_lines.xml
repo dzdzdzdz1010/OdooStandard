@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+
+    <t t-name="website_sale.CartLines">
+        <div
+            id="cart_products"
+            t-if="state.cartLines"
+            class="js_cart_lines d-flex flex-column mb32"
+        >
+            <t t-foreach="state.cartLines" t-as="line" t-key="line.id">
+                <CartLine t-props="getLineProps(line)"/>
+            </t>
+        </div>
+    </t>
+
+</templates>

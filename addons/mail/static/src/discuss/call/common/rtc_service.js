@@ -709,6 +709,9 @@ export class Rtc extends Record {
         this.store.fullscreenChannel = null;
         this.hasPendingRequest = true;
         await rpc("/mail/rtc/channel/leave_call", { channel_id: channel.id }, { silent: true });
+        if (channel?.isNewMeeting) {
+            channel.isNewMeeting = false;
+        }
         this.endCall(channel);
         this.hasPendingRequest = false;
     }

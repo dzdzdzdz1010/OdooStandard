@@ -1081,6 +1081,15 @@ class WebsiteSale(payment_portal.PaymentPortal):
             ('type', 'in', ['delivery', 'other']),
             ('id', '=', commercial_partner_sudo.id),
         ], order='id desc') | order_sudo.partner_id
+        delivery_partners_sudo = PartnerSudo.search([
+            '|',
+                ('parent_id', '=', False),
+                ('parent_id', '=', commercial_partner_sudo.id),
+            ('id', 'child_of', commercial_partner_sudo.ids),
+            '|',
+                ('type', 'in', ['delivery', 'other']),
+                ('id', '=', commercial_partner_sudo.id),
+        ], order='id desc') | order_sudo.partner_id
 
         if order_sudo.partner_id != commercial_partner_sudo:  # Child of the commercial partner.
             # Don't display the commercial partner's addresses if they are not complete, as its

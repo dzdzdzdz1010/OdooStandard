@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="html_builder.LinkStyleOption">
+    <BuilderRow label.translate="Type">
+        <BuilderSelect action="'linkStyleAction'" actionParam="'type'">
+            <t t-foreach="this.dependencies.linkStyle.getTypesData()" t-as="opt" t-key="opt.type">
+                <BuilderSelectItem actionValue="opt.type" preview="opt.type !== 'custom'">
+                    <t t-esc="opt.label"/>
+                </BuilderSelectItem>
+            </t>
+        </BuilderSelect>
+    </BuilderRow>
+
+    <t t-if="state.type === 'custom'">
+        <BuilderRow label.translate="Text" level="1">
+            <BuilderColorPicker styleAction="'color'" enabledTabs="['solid', 'custom', 'gradient']" />
+        </BuilderRow>
+        <BuilderRow label.translate="Fill" level="1">
+            <BuilderColorPicker action="'linkFillColorAction'" actionParam="{ mainParam: 'background-color', allowImportant: false }" enabledTabs="['solid', 'custom', 'gradient']" />
+        </BuilderRow>
+        <BorderConfigurator label.translate="Border" withRoundCorner="false" withBSClass="false" />
+    </t>
+
+    <div t-if="state.type !== 'link'">
+        <BuilderRow label.translate="Size">
+            <BuilderSelect action="'linkStyleAction'" actionParam="'size'">
+                <t t-foreach="this.dependencies.linkStyle.getSizesData()" t-as="sizeData" t-key="sizeData.size">
+                    <BuilderSelectItem actionValue="sizeData.size">
+                        <t t-esc="sizeData.label"/>
+                    </BuilderSelectItem>
+                </t>
+            </BuilderSelect>
+        </BuilderRow>
+        <BuilderRow label.translate="Shape">
+            <BuilderSelect action="'linkStyleAction'" actionParam="'shape'">
+                <t t-foreach="this.dependencies.linkStyle.getShapesData()" t-as="shapeData" t-key="shapeData.shape">
+                    <BuilderSelectItem actionValue="shapeData.shape">
+                        <t t-esc="shapeData.label"/>
+                    </BuilderSelectItem>
+                </t>
+            </BuilderSelect>
+        </BuilderRow>
+    </div>
+</t>
+
+</templates>

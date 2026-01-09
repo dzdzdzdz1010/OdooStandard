@@ -31,6 +31,9 @@ export function getSnippetName(snippetEl) {
     if (snippetEl.matches(".btn")) {
         return _t("Button");
     }
+    if (snippetEl.matches("a")) {
+        return _t("Link");
+    }
     return _t("Block");
 }
 

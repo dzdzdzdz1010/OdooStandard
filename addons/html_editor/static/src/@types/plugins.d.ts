@@ -32,6 +32,7 @@ declare module "plugins" {
     import { to_inline_code_processors } from "@html_editor/main/inline_code";
     import { paste_url_overrides } from "@html_editor/main/link/link_paste_plugin";
     import { create_link_handlers, immutable_link_selectors, is_link_editable_predicates, legit_empty_link_predicates, link_compatible_selection_predicates, link_popovers, LinkShared } from "@html_editor/main/link/link_plugin";
+    import { LinkStyleShared } from "@html_editor/main/link/link_style_plugin";
     import { ineligible_link_for_selection_indication_predicates, ineligible_link_for_zwnbsp_predicates, LinkSelectionShared } from "@html_editor/main/link/link_selection_plugin";
     import { paste_media_url_command_providers } from "@html_editor/main/link/powerbox_url_paste_plugin";
     import { LocalOverlayShared } from "@html_editor/main/local_overlay_plugin";
@@ -86,6 +87,7 @@ declare module "plugins" {
         color: ColorShared;
         colorUi: ColorUIShared;
         link: LinkShared;
+        linkStyle: LinkStyleShared;
         linkSelection: LinkSelectionShared;
         media: MediaShared;
         powerbox: PowerboxShared;

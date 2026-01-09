@@ -371,15 +371,26 @@
                             <div id="full_date" class="o_row">
                                 <field
                                     name="request_date_from"
-                                    widget="daterange"
+                                    widget="hr_holidays_daterange"
                                     readonly="state != 'confirm'"
                                     required="not date_from or not date_to"
-                                    options="{'end_date_field': 'request_date_to', 'always_range': '1'}"/>
+                                    options="{
+                                        'end_date_field': 'request_date_to',
+                                        'always_range': '1',
+                                        'end_period_field': 'request_date_to_period',
+                                        'start_period_field': 'request_date_from_period',
+                                        'hour_from_field': 'request_hour_from',
+                                        'hour_to_field': 'request_hour_to'
+                                    }"/>
                                 <field name="request_date_to" required="not date_from or not date_to" invisible="1"/> <!-- For Form view test-->
                                 <div>
                                     ( <field name="duration_display" readonly="1" class="w-auto"/> )
                                 </div>
                             </div>
+                            <field name="request_date_from_period" invisible="1"/>
+                            <field name="request_date_to_period" invisible="1"/>
+                            <field name="request_hour_from"  invisible="1"/>
+                            <field name="request_hour_to"  invisible="1"/>
                             <div colspan="2" class="alert alert-info" role="alert" invisible="leave_type_request_unit != 'hour' or not tz_mismatch or dashboard_warning_message">
                                 <span>The employee has a different timezone than yours! Here dates and times are displayed in the employee's work timezone</span>
                                 (<field name="tz" class="oe_inline fw-bold"/>).

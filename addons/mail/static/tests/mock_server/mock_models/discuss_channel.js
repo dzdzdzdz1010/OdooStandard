@@ -38,6 +38,7 @@ export class DiscussChannel extends models.ServerModel {
         compute: "_compute_channel_name_member_ids",
     });
     channel_type = fields.Generic({ default: "channel" });
+    is_readonly = fields.Boolean({ string: "Is Readonly" });
     discuss_category_id = fields.Many2one({
         relation: "discuss.category",
         string: "Discuss Category",
@@ -225,10 +226,11 @@ export class DiscussChannel extends models.ServerModel {
      * @param {string} name
      * @param {string} [group_id]
      */
-    _create_channel(name, group_id) {
-        const kwargs = getKwArgs(arguments, "name", "group_id");
+    _create_channel(name, group_id, is_readonly) {
+        const kwargs = getKwArgs(arguments, "name", "group_id", "is_readonly");
         name = kwargs.name;
         group_id = kwargs.group_id;
+        is_readonly = kwargs.is_readonly || false;
 
         /** @type {import("mock_models").DiscussChannel} */
         const DiscussChannel = this.env["discuss.channel"];
@@ -240,6 +242,7 @@ export class DiscussChannel extends models.ServerModel {
             channel_type: "channel",
             name,
             group_public_id: group_id,
+            is_readonly,
         });
         this.write([id], { group_public_id: group_id });
         this.message_post(
@@ -258,6 +261,7 @@ export class DiscussChannel extends models.ServerModel {
         return [
             "avatar_cache_key",
             "channel_type",
+            "is_readonly",
             "create_uid",
             "default_display_mode",
             "description",

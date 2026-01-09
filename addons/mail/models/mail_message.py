@@ -424,6 +424,12 @@ class MailMessage(models.Model):
                 forbidden_doc_ids = set((records - existing).ids)
                 operation_result = existing._check_access(record_operation)
             forbidden_doc_ids |= set((operation_result or [self.env[doc_model]])[0]._ids)
+            if hasattr(records, "_check_has_message_access") and (
+                forbidden_records := records._check_has_message_access(
+                    operation, docid_msgids=doc_res_ids
+                )
+            ):
+                forbidden_doc_ids |= set(forbidden_records._ids)
             # keep actually returned records for the opration, that are not forbidden
             allowed_ids += [
                 record.id for record in records

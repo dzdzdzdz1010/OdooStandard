@@ -123,7 +123,8 @@ export class DiscussChannel extends Record {
         return (
             !this.isTransient &&
             this.typesAllowingCalls.includes(this.channel_type) &&
-            !this.correspondent?.persona.eq(this.store.odoobot)
+            !this.correspondent?.persona.eq(this.store.odoobot) &&
+            !this.is_readonly
         );
     }
     canHide = fields.Attr(false, {
@@ -231,6 +232,8 @@ export class DiscussChannel extends Record {
     get hasMemberList() {
         return this.memberListTypes.includes(this.channel_type);
     }
+    /** @type boolean */
+    is_readonly = false;
     get isHideUntilNewMessageSupported() {
         return Boolean(this.self_member_id);
     }
@@ -758,10 +761,32 @@ export class DiscussChannel extends Record {
             undos.push(() => this.openChatWindow(chatWindowOptions));
         }
     }
+    get canSelfInteractWithChannel() {
+        return (
+            !this.is_readonly ||
+            ["owner", "admin"].includes(this.self_member_id?.channel_role) ||
+            this.store.self_user?.is_admin
+        );
+    }
 
     /** @returns {import("models").ChannelMember[]} */
     _computeOfflineMembers() {
         return this.channel_member_ids.filter((member) => !member.isOnline);
+    }
+    get composerHidden() {
+        return !this.canSelfInteractWithChannel;
+    }
+    get composerHiddenText() {
+        if (!this.canSelfInteractWithChannel) {
+            return _t("This channel is readonly.");
+        }
+        return _t("You don't have permission to post messages in this channel.");
+    }
+    get canCreateSubChannels() {
+        return (
+            this.canSelfInteractWithChannel &&
+            (!this.channel.parent_channel_id || this.channel.parent_channel_id.canCreateSubChannels)
+        );
     }
 }
 

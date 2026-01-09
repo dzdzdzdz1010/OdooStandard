@@ -21,7 +21,7 @@ import { AlignPlugin } from "./main/align/align_plugin";
 import { BannerPlugin } from "./main/banner_plugin";
 import { ChatGPTTranslatePlugin } from "./main/chatgpt/chatgpt_translate_plugin";
 import { ColumnPlugin } from "./main/column_plugin";
-import { EmojiPlugin } from "./main/emoji_plugin";
+import { EmojiPlugin } from "./main/emoji/emoji_plugin";
 import { ColorPlugin } from "./main/font/color_plugin";
 import { ColorUIPlugin } from "./main/font/color_ui_plugin";
 import { FeffPlugin } from "./main/feff_plugin";

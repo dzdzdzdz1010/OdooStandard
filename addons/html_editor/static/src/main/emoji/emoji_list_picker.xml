@@ -1,0 +1,12 @@
+<templates xml:space="preserve">
+    <t t-name="html_editor.EmojiListPicker">
+        <div class="o-we-EmojiListPicker" t-ref="emojiListPicker">
+            <t t-foreach="state.emojis" t-as="emoji" t-key="emoji.codepoints">
+                <div class="d-flex align-items-center py-1 px-2 w-100 cursor-pointer o-navigable" t-on-click.stop="() => this.onClick(emoji)">
+                    <strong class="px-2 fs-3" t-esc="emoji.codepoints" />
+                    <em class="text-600 text-truncate" t-esc="emoji.shortcodes[0]" />
+                </div>
+            </t>
+        </div>
+    </t>
+</templates>

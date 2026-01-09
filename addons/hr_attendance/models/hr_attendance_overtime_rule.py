@@ -93,6 +93,7 @@ class HrAttendanceOvertimeRule(models.Model):
         ('work_days', "On any working day"),
         ('non_work_days', "On any non-working day"),
         ('leave', "When employee is off"),
+        ('public_leave', "On a Public holiday"),
         ('schedule', "Outside of a specific schedule"),
         # ('employee', "Outside the employee's working schedule"),
         # ('off_time', "When employee is off"),  # TODO in ..._holidays
@@ -178,6 +179,19 @@ class HrAttendanceOvertimeRule(models.Model):
         ret = _midnight(date) + relativedelta(hours=self.timing_stop)
         return _naive_utc(ret.replace(tzinfo=tz))
 
+    def _get_public_holidays_for_a_company(self, date_start, date_end, company_id):
+        domain = [
+            ('resource_id', '=', False),
+            ('company_id', 'in', company_id.id),
+            ('date_from', '<=', date_end),
+            ('date_to', '>=', date_start),
+            '|',
+            ('calendar_id', '=', False),
+            ('calendar_id', '=', self.resource_calendar_id.id),
+        ]
+
+        return self.env['resource.calendar.leaves'].search(domain)
+
     def _get1_timing_overtime_intervals(self, attendances, version_map):
         self.ensure_one()
         attendances.employee_id.ensure_one()
@@ -238,6 +252,14 @@ class HrAttendanceOvertimeRule(models.Model):
                     resources_per_tz,
                 )[resource.id]
                 overtime_intervals = Intervals(attendance_intervals, keep_distinct=True) & leave_intervals
+
+            elif self.timing_type == 'public_leaves':
+                public_holidays = self._get_public_holidays_for_a_company(start_dt, end_dt, attendances.employee_id.company_id)
+                public_leaves_intervals = Intervals([
+                    (pleave.date_from, pleave.date_to, self.env['resource.calendar'])
+                    for pleave in public_holidays
+                ])
+                overtime_intervals = Intervals(attendance_intervals, keep_distinct=True) & public_leaves_intervals
 
         if self.employer_tolerance:
             overtime_intervals = Intervals((
@@ -463,8 +485,23 @@ class HrAttendanceOvertimeRule(models.Model):
             'leave': schedules_intervals_by_employee['leave'],
             'schedule': defaultdict(lambda: defaultdict(Intervals)),
             'work_days': defaultdict(),
-            'non_work_days': defaultdict()
+            'non_work_days': defaultdict(),
+            'public_leave': defaultdict(),
         }
+
+        holiday_lookup = {}
+        if 'public_leave' in timing_type_set:
+            companies = employees.mapped('company_id')
+
+            for comp in companies:
+                public_holidays = self._get_public_holidays_for_a_company(min_check_in, max_check_out, comp)
+
+                public_leaves_intervals = Intervals([
+                    (pleave.date_from, pleave.date_to, self.env['resource.calendar'])
+                    for pleave in public_holidays
+                ])
+
+                holiday_lookup[comp.id] = _generate_days_intervals(public_leaves_intervals)
 
         for employee in employees:
             if {'work_days', 'non_work_days'} & timing_type_set:
@@ -479,6 +516,9 @@ class HrAttendanceOvertimeRule(models.Model):
                         datetime.combine(max_check_out, datetime.max.time())
                     )
                 )
+            if 'public_leave' in timing_type_set:
+                intervals_by_timing_type['public_leave'][employee] = holiday_lookup.get(employee.company_id.id, Intervals([]))  # fallback to empty interval if company missing
+
         if 'schedule' in timing_type_set:
             for calendar in timing_rule_by_timing_type['schedule'].resource_calendar_id:
                 start_datetime = datetime.combine(min_check_in, datetime.min.time()).replace(tzinfo=UTC) - relativedelta(days=1)  # to avoid timezone shift

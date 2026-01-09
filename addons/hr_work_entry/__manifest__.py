@@ -18,6 +18,7 @@
         'views/hr_employee_views.xml',
         'views/hr_contract_template_views.xml',
         'views/resource_calendar_views.xml',
+        'views/res_config_settings_views.xml',
     ],
     'demo': [
         'data/hr_work_entry_demo.xml',

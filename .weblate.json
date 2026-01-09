@@ -2103,12 +2103,6 @@
                 "language_regex": "^(es)$"
             },
             {
-                "name": "l10n_es_pos",
-                "filemask": "addons/l10n_es_pos/i18n/*.po",
-                "new_base": "addons/l10n_es_pos/i18n/l10n_es_pos.pot",
-                "language_regex": "^(es)$"
-            },
-            {
                 "name": "l10n_et",
                 "filemask": "addons/l10n_et/i18n/*.po",
                 "new_base": "addons/l10n_et/i18n/l10n_et.pot",

@@ -25,7 +25,7 @@ class PaymentTransaction(models.Model):
     def _get_transaction_status_message(self, order=None):
         """Override of `payment` to add a custom message when cart amount is different after payment
         in `website_sale`.
-        :param sale.order order: The current cart.
+        :param sale.order order: The current cart linked to the transaction.
         """
         status_message = super()._get_transaction_status_message(order=order)
         if (

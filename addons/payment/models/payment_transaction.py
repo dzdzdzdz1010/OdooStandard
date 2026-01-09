@@ -1279,9 +1279,10 @@ class PaymentTransaction(models.Model):
         """
         return self.filtered(lambda t: t.state != 'draft').sorted()[:1]
 
-    def _get_transaction_status_message(self, **_kwargs):
+    def _get_transaction_status_message(self, order=None):
         """ Get the status message relevant to the current transaction.
 
+        :param sale.order order: order linked to the transaction.
         :return: status message of the transaction.
         :rtype: Markup
         """

@@ -245,6 +245,10 @@ def generate_idempotency_key(tx, scope=None):
 # Socket Notification Channel Generation
 
 def generate_notification_channel(tx):
+    """ Generate notification channel that the websocket will listen to on the /payment/status page.
+
+    :param payment.transaction tx: The transaction to generate a notification channel for.
+    """
     notification_access_token = generate_access_token(tx.id, tx.amount, tx.currency_id.id)
     notification_channel = f'PAYMENT_PROCESSING_CHANNEL_{notification_access_token}'
     return notification_channel

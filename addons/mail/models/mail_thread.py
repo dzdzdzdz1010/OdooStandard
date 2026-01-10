@@ -35,7 +35,7 @@ from odoo.fields import Domain
 from odoo.tools import (
     is_html_empty, html_escape, html2plaintext,
     clean_context, split_every, SQL,
-    ormcache, is_list_of,
+    OrderedSet, ormcache, is_list_of,
 )
 from odoo.tools.mail import (
     append_content_to_html, decode_message_header,
@@ -3489,10 +3489,17 @@ class MailThread(models.AbstractModel):
             recipients_ids = recipients_group['recipients_ids']
             recipients_to_emails = {r['id']: r['email_normalized'] for r in recipients_group['recipients_data']}
 
+            email_to_deduplicated_recipient_id = {
+                email_address: recipient_id for recipient_id, email_address in reversed(recipients_to_emails.items())
+                if recipient_id
+            }
+            deduplicated_recipient_ids = set(email_to_deduplicated_recipient_id.values())
+
             # create MailMail for partners
             for recipients_ids_chunk in split_every(gen_batch_size, recipients_ids):
+                deduplicated_recipient_ids_chunk = [pid for pid in recipients_ids_chunk if pid in deduplicated_recipient_ids]
                 mail_values = self._notify_by_email_get_final_mail_values(
-                    recipients_ids_chunk,
+                    deduplicated_recipient_ids_chunk,
                     base_mail_values,
                     additional_values={'body_html': mail_body}
                 )
@@ -3504,21 +3511,35 @@ class MailThread(models.AbstractModel):
                         'res_partner_id': recipient_id,
                         'mail_email_address': recipients_to_emails.get(recipient_id),
                         **base_notification_values,
-                    } for recipient_id in recipients_ids_chunk]
+                    } | (
+                        {'notification_status': 'canceled', 'failure_type': 'mail_dup'}
+                        if recipient_id not in deduplicated_recipient_ids_chunk else {}
+                    )
+                    for recipient_id in recipients_ids_chunk]
                 emails += new_email
             # create MailMail for email-only recipients
             if recipients_emails:
+                deduplicated_email_addresses = OrderedSet(recipients_emails) - email_to_deduplicated_recipient_id.keys()
                 mail_values = self._notify_by_email_get_final_mail_values(
                     [], base_mail_values,
                     additional_values={'body_html': mail_body},
                 )
-                mail_values['email_to'] = ','.join(recipients_emails)
+                mail_values['email_to'] = ','.join(deduplicated_email_addresses)
                 new_email = SafeMail.create(mail_values)
-                notif_create_values += [{
+                new_notif_create_values = [{
                     'mail_email_address': email,
                     'mail_mail_id': new_email.id,
                     **base_notification_values,
                 } for email in recipients_emails]
+                # mark all but the first recipient as cancelled (duplicate)
+                success_notif_emails = set(email_to_deduplicated_recipient_id.keys())
+                for notif in new_notif_create_values:
+                    if (email := notif['mail_email_address']) not in success_notif_emails:
+                        success_notif_emails.add(email)
+                    else:
+                        notif['notification_status'] = 'canceled'
+                        notif['failure_type'] = 'mail_dup'
+                notif_create_values += new_notif_create_values
                 emails += new_email
 
         if notif_create_values:

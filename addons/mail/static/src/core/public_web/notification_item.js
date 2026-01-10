@@ -63,6 +63,19 @@ export class NotificationItem extends Component {
         return this.props.thread?.newestPersistentOfAllMessage;
     }
 
+    get shouldHighlight() {
+        const channel_notifications =
+            this.props.thread?.channel?.self_member_id?.custom_notifications ||
+            this.store.settings.channel_notifications;
+        if (this.props.muted) {
+            return false;
+        }
+        if (channel_notifications === "mentions") {
+            return this.props.counter > 0;
+        }
+        return true;
+    }
+
     webkitLineClamp(maxLine) {
         return `
             display: -webkit-box;

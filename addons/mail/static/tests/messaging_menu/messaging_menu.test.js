@@ -484,9 +484,9 @@ test("mark unread channel as read", async () => {
     onRpcBefore("/discuss/channel/mark_as_read", (args) => expect.step("mark_as_read"));
     await start();
     await click(".o_menu_systray i[aria-label='Messages']");
-    await triggerEvents(".o-mail-NotificationItem.o-interest", ["mouseenter"]);
+    await triggerEvents(".o-mail-NotificationItem .badge", ["mouseenter"]);
     await click(".o-mail-NotificationItem [title='Mark As Read']");
-    await contains(".o-mail-NotificationItem:not(.o-interest)");
+    await contains(".o-mail-NotificationItem .badge", { count: 0 });
     await expect.waitForSteps(["mark_as_read"]);
     await triggerEvents(".o-mail-NotificationItem", ["mouseenter"]);
     await contains(".o-mail-NotificationItem [title='Mark As Read']", { count: 0 });

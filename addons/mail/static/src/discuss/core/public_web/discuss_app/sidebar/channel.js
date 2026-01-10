@@ -92,13 +92,20 @@ export class DiscussSidebarChannel extends Component {
     }
 
     get itemNameAttClass() {
+        const channel_notifications =
+            this.channel.self_member_id?.custom_notifications ||
+            this.store.settings.channel_notifications;
         return {
             "o-unread fw-bolder":
-                this.channel.self_member_id?.message_unread_counter > 0 &&
-                !this.channel.self_member_id?.mute_until_dt,
+                !this.channel.self_member_id?.mute_until_dt &&
+                (channel_notifications === "mentions"
+                    ? this.channel.message_needaction_counter > 0
+                    : this.channel.self_member_id?.message_unread_counter > 0),
             "opacity-75 opacity-100-hover":
-                this.channel.self_member_id?.message_unread_counter === 0 ||
-                this.channel.self_member_id?.mute_until_dt,
+                this.channel.self_member_id?.mute_until_dt ||
+                (channel_notifications === "mentions"
+                    ? this.channel.message_needaction_counter === 0
+                    : this.channel.self_member_id?.message_unread_counter === 0),
         };
     }
 

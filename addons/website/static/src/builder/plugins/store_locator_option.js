@@ -1,4 +1,23 @@
 import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
+import { useService } from "@web/core/utils/hooks";
+import { onWillStart } from "@odoo/owl";
+
+export const STORE_LOCATOR_PARTNER_FIELDS = [
+    "city",
+    "name",
+    "contact_address_inline",
+    "country_id",
+    "display_name",
+    "email",
+    "image_256",
+    "name",
+    "partner_latitude",
+    "partner_longitude",
+    "phone",
+    "street",
+    "zip",
+    "website",
+];
 
 export class StoreLocatorOption extends BaseOptionComponent {
     static template = "website.StoreLocatorOption";
@@ -27,11 +46,27 @@ export class StoreLocatorOption extends BaseOptionComponent {
 
     setup() {
         super.setup();
+        this.orm = useService("orm");
         this.state = useDomState((editingElement) => {
             const locations = JSON.parse(editingElement.dataset.locationsList || "[]");
             return {
                 hasLocations: !!locations.length,
+                availableRecords: this.state.availableRecords ?? "[]",
             };
+        });
+
+        onWillStart(async () => {
+            const searchResult = await this.orm.searchRead(
+                "res.partner",
+                [
+                    ["is_company", "=", true],
+                    ["city", "!=", false],
+                    ["street", "!=", false],
+                    ["zip", "!=", false],
+                ],
+                STORE_LOCATOR_PARTNER_FIELDS
+            );
+            this.state.availableRecords = JSON.stringify(searchResult);
         });
     }
 }

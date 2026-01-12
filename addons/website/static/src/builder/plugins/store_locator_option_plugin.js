@@ -1,16 +1,18 @@
 import { BuilderAction } from "@html_builder/core/builder_action";
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
-import { StoreLocatorOption } from "./store_locator_option";
+import { StoreLocatorOption, STORE_LOCATOR_PARTNER_FIELDS } from "./store_locator_option";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { RPCError } from "@web/core/network/rpc";
 import { formatOpeningHours } from "@website/components/location_selector/utils";
+import { withSequence } from "@html_editor/utils/resource";
+import { SNIPPET_SPECIFIC_END } from "@html_builder/utils/option_sequence";
 
 class StoreLocatorOptionPlugin extends Plugin {
     static id = "storeLocatorOption";
     resources = {
-        builder_options: [StoreLocatorOption],
+        builder_options: [withSequence(SNIPPET_SPECIFIC_END, StoreLocatorOption)],
         builder_actions: {
             AddLocationToStoreLocatorAction,
             HideLocationsOffscreenAction,
@@ -147,20 +149,11 @@ export class RefreshStoreLocatorAction extends BuilderAction {
         if (locationsId.length === 0) {
             return;
         }
-        const locationsUpToDate = await this.services.orm.read("res.partner", locationsId, [
-            "city",
-            "contact_address_inline",
-            "commercial_company_name",
-            "country_id",
-            "display_name",
-            "email",
-            "name",
-            "partner_latitude",
-            "partner_longitude",
-            "phone",
-            "street",
-            "zip",
-        ]);
+        const locationsUpToDate = await this.services.orm.read(
+            "res.partner",
+            locationsId,
+            STORE_LOCATOR_PARTNER_FIELDS
+        );
         const locationsUpToDateMap = new Map(
             locationsUpToDate.map((location) => [location.id, location])
         );

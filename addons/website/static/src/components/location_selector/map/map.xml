@@ -32,6 +32,9 @@
         <t t-if="showEmail and location.email">
             <br/><i class="fa fa-envelope fa-fw me-1"/> <t t-out="location.email"/>
         </t>
+        <t t-if="showWebsite and location.website">
+            <br/><i class="fa fa-globe fa-fw me-1"/> <a t-attf-href="{{location.website}}" target="_blank"><t t-out="location.website"/></a>
+        </t>
     </t>
 
 </templates>

@@ -31,7 +31,9 @@
                         t-component="mobileComponent"
                         locations="this.state.locations"
                         showEmail="this.props.showEmail"
+                        showImage="this.props.showImage"
                         showPhone="this.props.showPhone"
+                        showWebsite="this.props.showWebsite"
                         showIndexes="false"
                         selectedLocationId="this.state.selectedLocationId.toString()"
                         setSelectedLocation.bind="setSelectedLocation"
@@ -79,10 +81,12 @@
                     setVisibleLocations.bind="setVisibleLocations"
                     setSelectedLocation.bind="setSelectedLocation"
                     showEmail="this.props.showEmail"
+                    showImage="this.props.showImage"
+                    showPhone="this.props.showPhone"
+                    showWebsite="this.props.showWebsite"
                     showDetailsTextArea="this.props.showDetailsTextArea"
                     showDetailsTooltip="this.props.showDetailsTooltip"
                     showIndexes="false"
-                    showPhone="this.props.showPhone"
                     showLocationNameOnMarkerHover="true"
                 />
             </section>

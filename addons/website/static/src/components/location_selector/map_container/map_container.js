@@ -44,7 +44,9 @@ export class MapContainer extends Component {
         mapZoom: { type: String, optional: true },
         showIndexes: Boolean,
         showEmail: Boolean,
+        showImage: Boolean,
         showPhone: Boolean,
+        showWebsite: Boolean,
         showLocationNameOnMarkerHover: { type: Boolean, optional: true },
     };
     static defaultProps = {

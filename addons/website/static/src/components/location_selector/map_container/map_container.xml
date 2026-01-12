@@ -12,7 +12,9 @@
                 setSelectedLocation="this.props.setSelectedLocation"
                 showIndexes="this.props.showIndexes"
                 showEmail="this.props.showEmail"
+                showImage="this.props.showImage"
                 showPhone="this.props.showPhone"
+                showWebsite="this.props.showWebsite"
                 showLocationNameOnMarkerHover="this.props.showLocationNameOnMarkerHover"
                 mapZoom="this.props.mapZoom"
             />
@@ -37,6 +39,9 @@
                             <small t-out="selectedLocation.street"/>
                             <small t-out="this.getCityAndZipCode(selectedLocation)"/>
                             <br/>
+                            <t t-if="(this.props.showImage and selectedLocation.image_256) or (this.props.showPhone and selectedLocation.phone) or (this.props.showEmail and selectedLocation.email) or (this.props.showWebsite and selectedLocation.website)">
+                                <b>Additional details:</b>
+                            </t>
                             <t t-if="this.props.showPhone and selectedLocation.phone">
                                 <small>
                                     <i class="fa fa-phone fa-fw me-1"/>
@@ -50,6 +55,17 @@
                                         <t t-out="selectedLocation.email"/>
                                     </a>
                                 </small>
+                            </t>
+                            <t t-if="this.props.showWebsite and selectedLocation.website">
+                                <small>
+                                    <i class="fa fa-globe fa-fw me-1"/>
+                                    <a t-attf-href="{{selectedLocation.website}}" target="_blank">
+                                        <t t-out="selectedLocation.website"/>
+                                    </a>
+                                </small>
+                            </t>
+                            <t t-if="this.props.showImage and selectedLocation.image_256">
+                                <img t-attf-src="data:image/png;base64,{{selectedLocation.image_256}}" style="max-width: 256px; width: 100%; height: auto;"/>
                             </t>
                         </div>
                     </div>
@@ -104,31 +120,65 @@
                             <span class="d-block" t-out="this.getCityAndZipCode(selectedLocation)"/>
                         </small>
                     </span>
-                    <t t-if="this.props.showPhone and selectedLocation.phone">
-                        <small>
-                            <i class="fa fa-phone fa-fw me-1"/>
-                            <t t-out="selectedLocation.phone"/>
-                        </small>
-                    </t>
-                    <t t-if="this.props.showEmail and selectedLocation.email">
-                        <small>
-                            <i class="fa fa-envelope fa-fw me-1"/>
-                            <a t-attf-href="mailto:{{selectedLocation.email}}">
-                                <t t-out="selectedLocation.email"/>
-                            </a>
-                        </small>
-                    </t>
-                    <br/>
-                    <span class="d-flex align-items-center gap-1 small fw-bold" t-if="Object.keys(selectedLocation.opening_hours || {}).length">
-                        <i class="fa fa-clock-o" role="img"/>
-                        <t t-out="openingHoursLabel"/>
-                        <i class="o_location_selector_hours_caret fa fa-caret-up ms-auto transition-base"/>
-                    </span>
 
-                    <!-- Schedule -->
-                    <span class="collapse" id="map_collapseHours">
-                        <LocationSchedule openingHours="selectedLocation.opening_hours"/>
-                    </span>
+                    
+                    <!-- Additional details -->
+                    <t t-if="(this.props.showImage and selectedLocation.image_256) or (this.props.showPhone and selectedLocation.phone) or (this.props.showEmail and selectedLocation.email) or (this.props.showWebsite and selectedLocation.website)">
+                        <span class="d-flex align-items-center gap-1 small fw-bold">
+                            Additional details:
+                            <i class="o_location_selector_hours_caret fa fa-caret-up ms-auto transition-base"/>
+                        </span>
+                        <span class="collapse" id="map_collapseHours">
+                            <t t-if="this.props.showPhone and selectedLocation.phone">
+                                <small>
+                                    <i class="fa fa-phone fa-fw me-1"/>
+                                    <t t-out="selectedLocation.phone"/>
+                                </small>
+                                <br/>
+                            </t>
+                            <t t-if="this.props.showEmail and selectedLocation.email">
+                                <small>
+                                    <i class="fa fa-envelope fa-fw me-1"/>
+                                    <a t-attf-href="mailto:{{selectedLocation.email}}">
+                                        <t t-out="selectedLocation.email"/>
+                                    </a>
+                                </small>
+                                <br/>
+                            </t>
+                            <t t-if="this.props.showWebsite and selectedLocation.website">
+                                <small>
+                                    <i class="fa fa-globe fa-fw me-1"/>
+                                    <a t-attf-href="{{selectedLocation.website}}" target="_blank">
+                                        <t t-out="selectedLocation.website"/>
+                                    </a>
+                                </small>
+                                <br/>
+                            </t>
+                            <t t-if="this.props.showImage and selectedLocation.image_256">
+                                <img t-attf-src="data:image/png;base64,{{selectedLocation.image_256}}" style="max-width: 256px; width: 100%; height: auto;"/>
+                                <br/>
+                            </t>
+                            <t t-if="Object.keys(selectedLocation.opening_hours || {}).length">
+                                <small class="d-flex align-items-center gap-1 small">
+                                    <i class="fa fa-clock-o" role="img"/>
+                                    <t t-out="openingHoursLabel"/>
+                                </small>
+                                <LocationSchedule openingHours="selectedLocation.opening_hours"/>
+                            </t>
+                        </span>
+                    </t>
+                    <t t-else="">
+                        <!-- Schedule -->
+                        <span class="d-flex align-items-center gap-1 small fw-bold" t-if="Object.keys(selectedLocation.opening_hours || {}).length">
+                            <i class="fa fa-clock-o" role="img"/>
+                            <t t-out="openingHoursLabel"/>
+                            <i class="o_location_selector_hours_caret fa fa-caret-up ms-auto transition-base"/>
+                        </span>
+                        <span class="collapse" id="map_collapseHours">
+                            <LocationSchedule openingHours="selectedLocation.opening_hours"/>
+                        </span>
+                    </t>    
+
                 </span>
             </button>
         </div>

@@ -42,7 +42,9 @@ export class Map extends Component {
         showDetailsTooltip: Boolean,
         showIndexes: Boolean,
         showEmail: Boolean,
+        showImage: Boolean,
         showPhone: Boolean,
+        showWebsite: Boolean,
         showLocationNameOnMarkerHover: { type: Boolean, optional: true },
         mapZoom: String,
     };
@@ -165,6 +167,7 @@ export class Map extends Component {
                             location: loc,
                             showEmail: this.props.showEmail,
                             showPhone: this.props.showPhone,
+                            showWebsite: this.props.showWebsite,
                         }),
                         {
                             direction: "bottom",

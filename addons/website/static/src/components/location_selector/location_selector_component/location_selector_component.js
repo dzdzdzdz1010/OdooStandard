@@ -17,7 +17,9 @@ export class LocationSelectorComponent extends Component {
         hideOffscreenLocations: Boolean,
         locationsList: String,
         showEmail: Boolean,
+        showImage: Boolean,
         showPhone: Boolean,
+        showWebsite: Boolean,
     };
 
     setup() {

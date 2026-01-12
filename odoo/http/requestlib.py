@@ -97,7 +97,7 @@ class Request:
 
     def _get_session_and_dbname(self):
         sid = self.httprequest._session_id__
-        session = root.session_store.get(sid, keep_sid=True)
+        session = session_store.get(sid, keep_sid=True)
 
         for key, val in get_default_session().items():
             session.setdefault(key, val)
@@ -458,11 +458,11 @@ class Request:
             return
 
         if sess.should_rotate:
-            root.session_store.rotate(sess, env)  # it saves
+            session_store.rotate(sess, env)  # it saves
         elif sess.uid and time.time() >= sess['create_time'] + SESSION_ROTATION_INTERVAL:
-            root.session_store.rotate(sess, env, soft=True)
+            session_store.rotate(sess, env, soft=True)
         elif sess.is_dirty:
-            root.session_store.save(sess)
+            session_store.save(sess)
 
         cookie_sid = self.cookies.get('session_id')
         if sess.is_dirty or cookie_sid != sess.sid:
@@ -678,6 +678,7 @@ from .session import (
     STORED_SESSION_BYTES,
     get_default_session,
     get_session_max_inactivity,
+    session_store,
 )
 from .stream import STATIC_CACHE, Stream
 

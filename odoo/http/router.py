@@ -184,12 +184,6 @@ class Application:
 
         return nodb_routing_map
 
-    @functools.cached_property
-    def session_store(self):
-        path = odoo.tools.config.session_dir
-        _logger.debug('HTTP sessions stored in: %s', path)
-        return SessionStore(path=path)
-
     def get_db_router(self, db):
         if not db:
             return self.nodb_routing_map

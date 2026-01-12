@@ -30,8 +30,11 @@ from odoo import modules
 from odoo.http.requestlib import Request
 from odoo.http.response import Response
 from odoo.http.retrying import retrying
-from odoo.http.router import root
-from odoo.http.session import SessionExpiredException, get_default_session
+from odoo.http.session import (
+    SessionExpiredException,
+    get_default_session,
+    session_store,
+)
 from odoo.modules.registry import Registry
 from odoo.service.server import CommonServer
 from odoo.tools import config
@@ -720,12 +723,12 @@ class Websocket:
           validation.
 
         """
-        session = root.session_store.get(self._session.sid)
+        session = session_store.get(self._session.sid)
         if not session:
             e = "session non longer exists"
             raise SessionExpiredException(e)
         if 'next_sid' in session:
-            self._session = root.session_store.get(session['next_sid'])
+            self._session = session_store.get(session['next_sid'])
             self._assert_session_validity()
             return
         if session.uid is None:
@@ -913,9 +916,9 @@ class WebsocketRequest:
         self.env["ir.websocket"]._serve_ir_websocket(event_name, data)
 
     def _get_session(self):
-        session = root.session_store.get(self.ws._session.sid)
+        session = session_store.get(self.ws._session.sid)
         if 'next_sid' in session:
-            self.ws._session = root.session_store.get(session['next_sid'])
+            self.ws._session = session_store.get(session['next_sid'])
             return self._get_session()
         if not session:
             raise SessionExpiredException()
@@ -1040,9 +1043,9 @@ class WebsocketConnectionHandler:
                     'scheme': request.httprequest.scheme,
                 },
             )
-            session = root.session_store.new()
+            session = session_store.new()
             session.update(get_default_session(), db=request.session.db)
-            root.session_store.save(session)
+            session_store.save(session)
             return session
         return None
 

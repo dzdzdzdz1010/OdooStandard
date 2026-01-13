@@ -213,8 +213,11 @@ class AccountAccruedOrdersWizard(models.TransientModel):
                             unit_price=formatLang(self.env, order_line.price_unit, currency_obj=order.currency_id),
                         )
                         if expense_account and stock_variation_account:
-                            label += " (*)"
-                            amounts_by_perpetual_account[expense_account, stock_variation_account] += amount
+                            perpetual_amount_currency = order_line.move_ids.value
+                            perpetual_amount = order.currency_id._convert(perpetual_amount_currency, self.company_id.currency_id, self.company_id)
+                            if perpetual_amount:
+                                label += " (*)"
+                                amounts_by_perpetual_account[expense_account, stock_variation_account] += perpetual_amount
                     distribution = order_line.analytic_distribution if order_line.analytic_distribution else {}
                     values = _get_aml_vals(order, amount, amount_currency, account.id, label=label, analytic_distribution=distribution)
                     move_lines.append(Command.create(values))

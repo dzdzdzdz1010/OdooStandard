@@ -25,7 +25,11 @@ registerWebsitePreviewTour(
         },
         {
             content: "Check that the loading screen has appeared",
-            trigger: ":iframe .o_loading_screen",
+            trigger: ":iframe body:has(.o_loading_screen)",
+        },
+        {
+            content: "Wait for the loading screen to disappear",
+            trigger: ":iframe body:not(:has(.o_loading_screen))",
         },
         {
             content: "Wait for the builder to mount after iframe reload",

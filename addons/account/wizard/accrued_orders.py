@@ -3,7 +3,7 @@ from collections import defaultdict
 from dateutil.relativedelta import relativedelta
 import json
 from odoo import models, fields, api, _, Command
-from odoo.tools import format_date
+from odoo.tools import float_is_zero, format_date
 from odoo.exceptions import UserError
 from odoo.tools import date_utils
 from odoo.tools.misc import formatLang
@@ -151,6 +151,7 @@ class AccountAccruedOrdersWizard(models.TransientModel):
         orders_with_entries = []
         total_balance = 0.0
         amounts_by_perpetual_account = defaultdict(float)
+        price_diff_values = []
 
         for order, product_lines in lines.grouped('order_id').items():
             if len(orders) == 1 and product_lines and self.amount and order.order_line:
@@ -199,6 +200,51 @@ class AccountAccruedOrdersWizard(models.TransientModel):
                             quantity_received=order_line.qty_received_at_date,
                             unit_price=formatLang(self.env, order_line.price_unit, currency_obj=order.currency_id),
                         )
+
+                        # Generate price diff account move lines if needed.
+                        price_diff_account = False
+                        if product.cost_method == 'standard':
+                            price_diff_account = product.categ_id.property_price_difference_account_id
+                        if price_diff_account:
+                            accrual_date = fields.Date.from_string(self.env.context.get('accrual_entry_date', self.date))
+                            diff_label = _('%(order)s - %(order_line)s; price difference for %(product)s',
+                                order=order.name,
+                                order_line=_ellipsis(order_line.name, 20),
+                                product=product.display_name
+                            )
+                            # Price diff. for already invoiced compute.
+                            account_moves = order_line.invoice_lines.move_id.filtered(lambda am: am.date <= accrual_date)
+                            diff_account_vals = account_moves._stock_account_prepare_anglo_saxon_in_lines_vals()
+                            for vals in diff_account_vals:
+                                price_diff_values.append(_get_aml_vals(
+                                    order,
+                                    vals['balance'],
+                                    vals['amount_currency'],
+                                    vals['account_id'],
+                                    diff_label,
+                                    vals['analytic_distribution']
+                                ))
+                            # Price diff. for to invoice compute.
+                            qty_to_invoice = order_line.qty_received_at_date - order_line.qty_invoiced_at_date
+                            unit_price_diff = order_line.product_id.standard_price - order_line.price_unit
+                            price_diff = qty_to_invoice * unit_price_diff
+                            if not float_is_zero(price_diff, precision_rounding=order_line.currency_id.rounding):
+                                price_diff_values.append(_get_aml_vals(
+                                    order,
+                                    -price_diff,
+                                    price_diff,
+                                    price_diff_account.id,
+                                    label=diff_label,
+                                    analytic_distribution=False
+                                ))
+                                price_diff_values.append(_get_aml_vals(
+                                    order,
+                                    price_diff,
+                                    price_diff,
+                                    product.categ_id.account_stock_variation_id.id,
+                                    label=diff_label,
+                                    analytic_distribution=False
+                                ))
                     else:
                         expense_account, stock_variation_account = self._get_product_expense_and_stock_var_accounts(product)
                         account = self._get_computed_account(order, product, is_purchase)
@@ -246,6 +292,9 @@ class AccountAccruedOrdersWizard(models.TransientModel):
             values = _get_aml_vals(orders, amount, 0.0, stock_variation_account.id, label=label)
             move_lines.append(Command.create(values))
             values = _get_aml_vals(orders, -amount, 0.0, expense_account.id, label=label)
+            move_lines.append(Command.create(values))
+
+        for values in price_diff_values:
             move_lines.append(Command.create(values))
 
         move_type = _('Expense') if is_purchase else _('Revenue')

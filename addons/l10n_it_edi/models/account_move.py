@@ -238,12 +238,53 @@ class AccountMove(models.Model):
             and self.l10n_it_edi_state in (False, 'rejected')
         )
 
+    def _l10n_it_edi_get_oss_line_values(self, base_values, oss_tax):
+        """ Generates the two lines required for OSS: N7 (Product) and N2.2 (VAT). """
+        # Line 1: Modify the Product Line to be N7 (exempt)
+        n7_tax = self.env['account.tax'].new({
+            'amount': 0.0,
+            'amount_type': 'percent',
+            'l10n_it_exempt_reason': 'N7',
+            'l10n_it_law_reference': oss_tax.l10n_it_law_reference
+        })
+
+        product_line = base_values.copy()
+        product_line['vat_tax'] = n7_tax
+
+        # Line 2: Create the VAT Line (N2.2)
+        # We calculate the VAT amount based on the EUR subtotal
+        # Note: accessing line_dict['currency'] from base_values requires passing it or getting it from the line
+        currency = base_values['line'].currency_id
+        oss_vat_amount = currency.round(base_values['subtotal_price_eur'] * (oss_tax.amount / 100))
+
+        n22_tax = self.env['account.tax'].new({
+            'amount': 0.0,
+            'amount_type': 'percent',
+            'l10n_it_exempt_reason': 'N2.2',
+            'l10n_it_law_reference': oss_tax.l10n_it_law_reference
+        })
+
+        vat_line = base_values.copy()
+        vat_line.update({
+            'line_number': base_values['line_number'] + 1,
+            'description': f"TVA {oss_tax.country_id.code} {oss_tax.amount}% collectée via OSS",
+            'unit_price': oss_vat_amount,
+            'subtotal_price': oss_vat_amount,
+            'subtotal_price_eur': oss_vat_amount,
+            'vat_tax': n22_tax,
+            'discount_type': False,
+            'line': self.env['account.move.line'].new({'quantity': 1.0}),
+        })
+
+        return [product_line, vat_line]
+
     def _l10n_it_edi_get_line_values(self, reverse_charge_refund=False, is_downpayment=False, convert_to_euros=True):
         """ Returns a list of dictionaries passed to the template for the invoice lines (DettaglioLinee)
         """
         invoice_lines = []
         lines = self.invoice_line_ids.filtered(lambda l: l.display_type not in ('line_note', 'line_section'))
         base_lines = [invl._convert_to_tax_base_line_dict() for invl in lines]
+        line_counter = 1
         for num, line_dict in enumerate(base_lines):
             if reverse_charge_refund:
                 line_dict['price_subtotal'] = -line_dict['price_subtotal']
@@ -269,33 +310,54 @@ class AccountMove(models.Model):
                     sep = ', ' if description else ''
                     description = f"{description}{sep}{downpayment_moves_description}"
 
-            invoice_lines.append({
+            vat_tax = line.tax_ids._l10n_it_filter_kind('vat')
+            oss_tax = vat_tax if vat_tax and self._l10n_it_is_oss_tax(vat_tax) else None
+
+            current_line_values = {
                 'line': line,
-                'line_number': num + 1,
+                'line_number': line_counter,
                 'description': description or 'NO NAME',
                 'subtotal_price_eur': line_dict['currency'].round(line_dict['subtotal_price_eur']),
                 'subtotal_price': line_dict['currency'].round(line_dict['price_subtotal']),
                 'unit_price': line_dict['price_unit'],
                 'discount_amount': 0,  # kept because we didn't do a get in the line we removed from the template
-                'vat_tax': line.tax_ids._l10n_it_filter_kind('vat'),
+                'vat_tax': vat_tax,
                 'downpayment_moves': downpayment_moves,
                 'discount_type': (
                     'SC' if line.discount > 0
                     else 'MG' if line.discount < 0
                     else False
                 )
-            })
+            }
+
+            if oss_tax:
+                oss_lines = self._l10n_it_edi_get_oss_line_values(current_line_values, oss_tax)
+                invoice_lines.extend(oss_lines)
+                line_counter += len(oss_lines)
+            else:
+                # Standard line
+                invoice_lines.append(current_line_values)
+                line_counter += 1
+
         return invoice_lines
 
     def _l10n_it_edi_get_tax_values(self, tax_details):
         """ Returns a list of dictionaries passed to the template for the invoice lines (DatiRiepilogo)
         """
         tax_lines = []
+        oss_n7_base = 0.0
+        oss_n22_base = 0.0
+
         for _tax_name, tax_dict in tax_details['tax_details'].items():
-            # The assumption is that the company currency is EUR.
+            tax = tax_dict['tax']
+
+            if self._l10n_it_is_oss_tax(tax):
+                oss_n7_base += tax_dict['base_amount']
+                oss_n22_base += tax_dict['tax_amount']
+                continue
+
             base_amount = tax_dict['base_amount']
             tax_amount = tax_dict['tax_amount']
-            tax = tax_dict['tax']
             tax_rate = tax.amount
             tax_exigibility_code = (
                 'S' if tax._l10n_it_is_split_payment()
@@ -305,9 +367,6 @@ class AccountMove(models.Model):
             )
             expected_base_amount = tax_amount * 100 / tax_rate if tax_rate else False
             tax = tax_dict['tax']
-            # Constraints within the edi make local rounding on price included taxes a problem.
-            # To solve this there is a <Arrotondamento> or 'rounding' field, such that:
-            #   taxable base = sum(taxable base for each unit) + Arrotondamento
             if tax.price_include and tax.amount_type == 'percent':
                 if expected_base_amount and float_compare(base_amount, expected_base_amount, 2):
                     tax_dict['rounding'] = base_amount - (tax_amount * 100 / tax_rate)
@@ -321,6 +380,25 @@ class AccountMove(models.Model):
                 'exigibility_code': tax_exigibility_code,
             }
             tax_lines.append(tax_line_dict)
+
+        if oss_n7_base:
+            tax_lines.append({
+                'tax': self.env['account.tax'].new({'amount': 0.0, 'l10n_it_exempt_reason': 'N7'}),
+                'rounding': False,
+                'base_amount': oss_n7_base,
+                'tax_amount': 0.0,
+                'exigibility_code': 'I',
+            })
+        # Add N2.2 Summary (VAT Amount)
+        if oss_n22_base:
+            tax_lines.append({
+                'tax': self.env['account.tax'].new({'amount': 0.0, 'l10n_it_exempt_reason': 'N2.2'}),
+                'rounding': False,
+                'base_amount': oss_n22_base,
+                'tax_amount': 0.0,
+                'exigibility_code': 'I',
+            })
+
         return tax_lines
 
     def _l10n_it_edi_filter_tax_details(self, line, tax_values):
@@ -1647,3 +1725,10 @@ class AccountMove(models.Model):
                 filename, partner_name)))
         }
         return new_state_messages_map.get(new_state)
+
+    def _l10n_it_is_oss_tax(self, tax):
+        """ Returns True if the tax is an OSS tax based on the OSS tag. """
+        if not tax:
+            return False
+        oss_tag = self.env.ref('l10n_eu_oss.tag_oss', raise_if_not_found=False)
+        return oss_tag and oss_tag in tax.invoice_repartition_line_ids.tag_ids

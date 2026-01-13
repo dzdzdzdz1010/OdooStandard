@@ -8,6 +8,7 @@ import { prettifyMessageContent } from "@mail/utils/common/format";
 import { Component, useEffect, useRef, useSubEnv } from "@odoo/owl";
 
 import { startUrl } from "@web/core/browser/router";
+import { _t } from "@web/core/l10n/translation";
 import { rpc } from "@web/core/network/rpc";
 import { usePopover } from "@web/core/popover/popover_hook";
 import { useService } from "@web/core/utils/hooks";
@@ -68,6 +69,10 @@ export class LivechatChannelInfoList extends Component {
             colorIndex: 0,
             className: "me-1 mb-1",
         }));
+    }
+
+    get countryLanguageLabel() {
+        return _t("Country & Language");
     }
 
     onBlurNote() {

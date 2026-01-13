@@ -314,7 +314,7 @@ registry.category("web_tour.tours").add('sale_timesheet_tour', {
     content: 'Go back to the kanban view and the project update will be added on that view',
     run: "click",
 }, {
-    trigger: '.o_controller_with_rightpanel',
+    trigger: '.o_updates_controller',
     content: 'Check the kanban view of project update is rendered to be sure the user leaves the form view and the project update is created',
 },
 ...stepUtils.toggleHomeMenu(),

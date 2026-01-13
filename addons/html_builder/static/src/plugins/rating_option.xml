@@ -35,7 +35,12 @@
     <BuilderRow label.translate="Title Position">
         <BuilderSelect>
             <BuilderSelectItem classAction="''">Top</BuilderSelectItem>
-            <BuilderSelectItem classAction="'s_rating_inline'">Left</BuilderSelectItem>
+            <t t-if="this.langDir.frontend === 'ltr'">
+                <BuilderSelectItem classAction="'s_rating_inline'">Left</BuilderSelectItem>
+            </t>
+            <t t-else="">
+                <BuilderSelectItem classAction="'s_rating_inline'">Right</BuilderSelectItem>
+            </t>
             <BuilderSelectItem classAction="'s_rating_no_title'">None</BuilderSelectItem>
         </BuilderSelect>
     </BuilderRow>

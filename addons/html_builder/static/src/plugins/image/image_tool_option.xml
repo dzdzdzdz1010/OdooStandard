@@ -36,9 +36,16 @@
     <BuilderRow label.translate="Alignment">
         <BuilderSelect>
             <BuilderSelectItem classAction="''" title.translate="Unalign">None</BuilderSelectItem>
-            <BuilderSelectItem classAction="'me-auto float-start'" title.translate="Align Left">Left</BuilderSelectItem>
-            <BuilderSelectItem classAction="'mx-auto d-block'" title.translate="Align Center">Center</BuilderSelectItem>
-            <BuilderSelectItem classAction="'ms-auto float-end'" title.translate="Align Right">Right</BuilderSelectItem>
+            <t t-if="this.langDir.frontend === 'ltr'">
+                <BuilderSelectItem classAction="'me-auto float-start'" title.translate="Align Left">Left</BuilderSelectItem>
+                <BuilderSelectItem classAction="'mx-auto d-block'" title.translate="Align Center">Center</BuilderSelectItem>
+                <BuilderSelectItem classAction="'ms-auto float-end'" title.translate="Align Right">Right</BuilderSelectItem>
+            </t>
+            <t t-else="">
+                <BuilderSelectItem classAction="'me-auto float-start'" title.translate="Align Right">Right</BuilderSelectItem>
+                <BuilderSelectItem classAction="'mx-auto d-block'" title.translate="Align Center">Center</BuilderSelectItem>
+                <BuilderSelectItem classAction="'ms-auto float-end'" title.translate="Align Left">Left</BuilderSelectItem>
+            </t>
         </BuilderSelect>
     </BuilderRow>
     <BuilderRow label.translate="Style">

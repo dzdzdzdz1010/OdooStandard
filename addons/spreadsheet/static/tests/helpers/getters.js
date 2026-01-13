@@ -76,7 +76,7 @@ export function getCells(model, sheetId = model.getters.getActiveSheetId()) {
  */
 export function getCellFormula(model, xc, sheetId = model.getters.getActiveSheetId()) {
     const cell = getCell(model, xc, sheetId);
-    return cell && cell.isFormula ? cell.content : "";
+    return cell && cell.isFormula ? cell.compiledFormula.toFormulaString(model.getters) : "";
 }
 
 /**

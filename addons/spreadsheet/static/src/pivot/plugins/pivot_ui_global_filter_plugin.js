@@ -23,7 +23,7 @@ export class PivotUIGlobalFilterPlugin extends OdooUIPlugin {
                 if (cell !== undefined && cell.content.startsWith("=PIVOT.HEADER(")) {
                     const filters = this._getFiltersMatchingPivot(
                         sheetId,
-                        cell.compiledFormula.tokens
+                        cell.compiledFormula
                     );
                     this.dispatch("SET_MANY_GLOBAL_FILTER_VALUE", { filters });
                 }
@@ -34,12 +34,12 @@ export class PivotUIGlobalFilterPlugin extends OdooUIPlugin {
 
     /**
      * Get the filter impacted by a pivot formula's argument
-     * @param {Token[]} tokens Formula of the pivot cell
+     * @param {CompiledFormula} compiledFormula Formula of the pivot cell
      *
      * @returns {Array<Object>}
      */
-    _getFiltersMatchingPivot(sheetId, tokens) {
-        const functionDescription = this.getters.getFirstPivotFunction(sheetId, tokens);
+    _getFiltersMatchingPivot(sheetId, compiledFormula) {
+        const functionDescription = this.getters.getFirstPivotFunction(sheetId, compiledFormula);
         if (!functionDescription) {
             return [];
         }

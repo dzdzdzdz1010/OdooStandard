@@ -40,3 +40,9 @@ class StockQuant(models.Model):
         if self.env.context.get('default_product_id') and self.env['product.product'].browse(self.env.context.get('default_product_id')).use_expiration_date:
             self_with_context = self.with_context(show_removal_date=True)
         return super(StockQuant, self_with_context)._set_view_context()
+
+    def _compute_display_name(self):
+        super()._compute_display_name()
+        for quant in self:
+            if quant.removal_date:
+                quant.display_name = f"{quant.display_name} - {quant.removal_date.strftime("%b %-d, %Y")}"

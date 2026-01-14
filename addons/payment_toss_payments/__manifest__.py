@@ -10,16 +10,11 @@
     'data': [
         'views/payment_provider_views.xml',
         'views/payment_toss_payments_templates.xml',
-
         'data/payment_provider_data.xml',
     ],
     'post_init_hook': 'post_init_hook',
     'uninstall_hook': 'uninstall_hook',
-    'assets': {
-        'web.assets_frontend': [
-            'payment_toss_payments/static/src/**/*',
-        ],
-    },
+    'assets': {'web.assets_frontend': ['payment_toss_payments/static/src/**/*']},
     'author': 'Odoo S.A.',
     'license': 'LGPL-3',
 }

@@ -18,7 +18,8 @@ class PaymentProvider(models.Model):
     _inherit = 'payment.provider'
 
     code = fields.Selection(
-        selection_add=[('toss_payments', "Toss Payments")], ondelete={'toss_payments': 'set default'},
+        selection_add=[('toss_payments', "Toss Payments")],
+        ondelete={'toss_payments': 'set default'},
     )
 
     toss_payments_client_key = fields.Char(
@@ -43,21 +44,23 @@ class PaymentProvider(models.Model):
     # === COMPUTE METHODS === #
 
     def _get_supported_currencies(self):
-        """ Override of `payment` to return the supported currencies. """
+        """Override of `payment` to return the supported currencies."""
         supported_currencies = super()._get_supported_currencies()
         if self.code == 'toss_payments':
             supported_currencies = supported_currencies.filtered(
-                lambda c: c.name in const.SUPPORTED_CURRENCIES,
+                lambda c: c.name in const.SUPPORTED_CURRENCIES
             )
         return supported_currencies
 
     def _get_toss_payments_webhook_url(self):
-        self.toss_payments_webhook_url = urljoin(self.get_base_url(), TossPaymentsController._webhook_url)
+        self.toss_payments_webhook_url = urljoin(
+            self.get_base_url(), TossPaymentsController._webhook_url
+        )
 
     # === BUSINESS METHODS === #
 
     def _toss_payments_get_inline_form_values(self, pm_code):
-        """ Return a serialized JSON of the required values to initialize payment window.
+        """Return a serialized JSON of the required values to initialize payment window.
 
         Note: `self.ensure_one()`
 
@@ -83,17 +86,21 @@ class PaymentProvider(models.Model):
                 for currency in provider.available_currency_ids
                 if currency.name not in const.SUPPORTED_CURRENCIES
             ]
-            if provider.available_currency_ids.filtered(lambda c: c.name not in const.SUPPORTED_CURRENCIES):
-                raise ValidationError(self.env._(
-                    "Toss Payments does not support the following currencies: %(currencies)s.",
-                    currencies=", ".join(unsupported_currency_codes),
-                ))
+            if provider.available_currency_ids.filtered(
+                lambda c: c.name not in const.SUPPORTED_CURRENCIES
+            ):
+                raise ValidationError(
+                    self.env._(
+                        "Toss Payments does not support the following currencies: %(currencies)s.",
+                        currencies=", ".join(unsupported_currency_codes),
+                    )
+                )
 
     # === CRUD METHODS === #
     # Note: methods below are used by the CRUD methods of the parent payment.provider model
 
     def _get_default_payment_method_codes(self):
-        """ Override of `payment` to return the default payment method codes. """
+        """Override of `payment` to return the default payment method codes."""
         if self.code != 'toss_payments':
             return super()._get_default_payment_method_codes()
         return const.DEFAULT_PAYMENT_METHOD_CODES
@@ -101,25 +108,22 @@ class PaymentProvider(models.Model):
     # === REQUEST HELPERS === #
 
     def _build_request_url(self, endpoint, **kwargs):
-        """ Override of `payment` to build the request URL. """
+        """Override of `payment` to build the request URL."""
         if self.code != 'toss_payments':
             return self._build_request_url(endpoint, **kwargs)
 
         return urljoin('https://api.tosspayments.com/', endpoint)
 
     def _build_request_headers(self, method, *args, **kwargs):
-        """ Override of `payment` to include the encoded secret key in the header """
+        """Override of `payment` to include the encoded secret key in the header."""
         if self.code != 'toss_payments':
             return self._build_request_headers(method, *args, **kwargs)
 
         encoded_key = base64.b64encode(f"{self.toss_payments_secret_key}:".encode()).decode()
-        return {
-            'Authorization': f"Basic {encoded_key}",
-            'Content-Type': "application/json",
-        }
+        return {'Authorization': f"Basic {encoded_key}", 'Content-Type': "application/json"}
 
     def _parse_response_error(self, response):
-        """ Override of `payment` to parse error returned by the payment provider """
+        """Override of `payment` to parse error returned by the payment provider."""
         if self.code != 'toss_payments':
             return super()._parse_response_error(response)
 

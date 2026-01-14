@@ -16,12 +16,11 @@ class PaymentTransaction(models.Model):
     _inherit = 'payment.transaction'
 
     toss_payments_payment_secret = fields.Char(
-        string="Toss Payments Payment Secret",
-        groups='base.group_system',
+        string="Toss Payments Payment Secret", groups='base.group_system'
     )
 
     def _get_specific_processing_values(self, processing_values):
-        """ Override of payment to return Toss-Payment-specific processing values.
+        """Override of payment to return Toss-Payment-specific processing values.
 
         Note: self.ensure_one() from `_get_processing_values`
 
@@ -45,7 +44,7 @@ class PaymentTransaction(models.Model):
 
     @api.model
     def _compute_reference(self, provider_code, prefix=None, separator='-', **kwargs):
-        """ Override of `payment` to ensure that Toss Payments' requirements for references are
+        """Override of `payment` to ensure that Toss Payments' requirements for references are
         satisfied:
         - References can only be made of alphanumeric characters and/or '-' and '_'.
           The prefix is generated with 'tx' as default. This prevents the prefix from being
@@ -61,25 +60,24 @@ class PaymentTransaction(models.Model):
         if provider_code == 'toss_payments':
             prefix = payment_utils.singularize_reference_prefix()
 
-        return super()._compute_reference(provider_code, prefix=prefix, separator=separator, **kwargs)
+        return super()._compute_reference(
+            provider_code, prefix=prefix, separator=separator, **kwargs
+        )
 
     @api.model
     def _extract_reference(self, provider_code, payment_data):
-        """ Override of `payment` to extract reference from `payment_data` returned by the API. """
+        """Override of `payment` to extract reference from `payment_data` returned by the API."""
         if provider_code != 'toss_payments':
             return super()._extract_reference(provider_code, payment_data)
 
         return payment_data['orderId']
 
     def _extract_amount_data(self, payment_data):
-        """ Override of `payment` to extract the amount from the payment data. """
+        """Override of `payment` to extract the amount from the payment data."""
         if self.provider_code != 'toss_payments':
             return super()._extract_amount_data(payment_data)
 
-        return {
-            'amount': float(payment_data.get("totalAmount")),
-            'currency_code': "KRW",
-        }
+        return {'amount': float(payment_data.get("totalAmount")), 'currency_code': "KRW"}
 
     def _apply_updates(self, payment_data):
         """Override of payment to update the transaction based on the payment data.

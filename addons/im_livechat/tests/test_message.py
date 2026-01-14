@@ -245,7 +245,6 @@ class TestImLivechatMessage(ChatbotCase, MailCommon):
 
         def _get_feedback_bus():
             message = self.env["mail.message"].sudo().search([], order="id desc", limit=1)
-            rating = self.env["rating.rating"].sudo().search([], order="id desc", limit=1)
             return (
                 [
                     # unread counter/new message separator (not asserted below)
@@ -281,7 +280,7 @@ class TestImLivechatMessage(ChatbotCase, MailCommon):
                                         "parent_id": False,
                                         "partner_ids": [],
                                         "pinned_at": False,
-                                        "rating_id": rating.id,
+                                        "rating_id": False,
                                         "reactions": [],
                                         "record_name": "Chell Gladys Ernest Employee",
                                         "res_id": channel.id,
@@ -305,14 +304,6 @@ class TestImLivechatMessage(ChatbotCase, MailCommon):
                                         "rating_count": 1,
                                     },
                                 ),
-                                "rating.rating": [
-                                    {
-                                        "id": rating.id,
-                                        "rating": 5.0,
-                                        "rating_image_url": rating.rating_image_url,
-                                        "rating_text": "top",
-                                    },
-                                ],
                                 "res.partner": self._filter_partners_fields(
                                     {
                                         "avatar_128_access_token": self.env.user.partner_id._get_avatar_128_access_token(),
@@ -341,7 +332,7 @@ class TestImLivechatMessage(ChatbotCase, MailCommon):
                 "/im_livechat/feedback",
                 {
                     "channel_id": channel.id,
-                    "rate": 5,
+                    "rate": 3,
                     "reason": "Good service",
                 },
             )

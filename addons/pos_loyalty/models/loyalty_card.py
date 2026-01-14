@@ -65,3 +65,26 @@ class LoyaltyCard(models.Model):
             ('code', '=', code),
             ('program_type', '=', 'loyalty'),
         ], limit=1).partner_id or False
+
+    def _send_creation_communication(self, force_send=False):
+        """
+        Override to log gift card emails in pos.order chatter
+        """
+        super()._send_creation_communication(force_send=force_send)
+
+        for coupon in self:
+            if coupon.program_id.program_type == 'gift_card':
+                pos_order = self.env['pos.order'].search([
+                    ('id', '=', coupon.source_pos_order_id.id)
+                ], limit=1)
+
+                if pos_order and coupon._mail_get_customer():
+                    mail = self.env['mail.mail'].search([
+                        ('model', '=', 'loyalty.card'),
+                        ('res_id', '=', coupon.id),
+                    ], order='id desc', limit=1)
+
+                    if mail:
+                        pos_order.message_post(
+                            body=mail.body_content,
+                        )

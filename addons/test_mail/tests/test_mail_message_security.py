@@ -4,6 +4,7 @@ from markupsafe import Markup
 from unittest.mock import patch
 
 from odoo import SUPERUSER_ID
+from odoo.addons.mail.models.res_partner import Partner
 from odoo.addons.mail.tests.common import mail_new_test_user, MailCommon
 from odoo.addons.test_mail.models.mail_test_access import MailTestAccess
 from odoo.addons.test_mail.models.test_mail_models import MailTestSimple
@@ -298,6 +299,23 @@ class TestMailMessageAccess(MessageAccessCommon):
                         })
                         attachment.with_user(self.user_employee).write({'name': 'doc2.txt'})
                         attachment.with_user(self.user_employee).unlink()
+
+    def test_mail_attachments_permissions(self):
+        partner = self.env["res.partner"].create({"name": "Jane", "email": "jane@example.com"})
+
+        partner.with_user(self.user_employee).check_access_rights('read')
+        with self.assertRaises(AccessError):
+            partner.with_user(self.user_employee).check_access_rights('write')
+
+        with patch.object(Partner, '_mail_post_access', 'read', create=True):
+            for mode in ('create', 'read', 'write', 'unlink'):
+                self.env['ir.attachment'].with_user(self.user_employee).check(mode, {'res_model': 'res.partner', 'res_id': partner.id})
+
+        with patch.object(Partner, '_mail_post_access', 'write', create=True):
+            for mode in ('create', 'write', 'unlink'):
+                with self.assertRaises(AccessError):
+                    self.env['ir.attachment'].with_user(self.user_employee).check(mode, {'res_model': 'res.partner', 'res_id': partner.id})
+            self.env['ir.attachment'].with_user(self.user_employee).check('read', {'res_model': 'res.partner', 'res_id': partner.id})
 
     @mute_logger('odoo.addons.base.models.ir_rule')
     def test_access_create_portal(self):

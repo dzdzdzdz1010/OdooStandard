@@ -31,6 +31,22 @@ class IrAttachment(models.Model):
             except (AccessError, MissingError):
                 raise UserError(_("The attachment %s does not exist or you do not have the rights to access it.", attachment.id))
 
+    def _check_corecord_access(self, records, access_mode):
+        res_model = records._name
+        owner_access_mode = access_mode
+        if owner_access_mode != 'read':
+            owner_access_mode = getattr(self.env[res_model], '_mail_post_access', 'write')
+
+        if not self:  # When creating an attachment
+            return super()._check_corecord_access(records, owner_access_mode)
+
+        owned = self.filtered(lambda att: att.create_uid == self.env.user)
+        owned_record_ids = set(owned.mapped('res_id'))
+        not_owned_record_ids = set((self - owned).mapped('res_id'))
+
+        super()._check_corecord_access(records.filtered(lambda att: att.id in owned_record_ids), owner_access_mode)
+        super()._check_corecord_access(records.filtered(lambda att: att.id in not_owned_record_ids), access_mode)
+
     def _post_add_create(self, **kwargs):
         """ Overrides behaviour when the attachment is created through the controller
         """

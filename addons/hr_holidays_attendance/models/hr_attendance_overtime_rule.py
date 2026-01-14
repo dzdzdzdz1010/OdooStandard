@@ -10,6 +10,12 @@ class HrAttendanceOvertimeRule(models.Model):
 
     compensable_as_leave = fields.Boolean("Give back as time off", default=False)
 
+    def _get_timing_type_selection(self):
+        return [
+            *super()._get_timing_type_selection(),
+            ("leave", "When employee is off"),
+        ]
+
     def _extra_overtime_vals(self):
         if not self:
             return {

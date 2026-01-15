@@ -1,18 +1,30 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+from unittest.mock import patch, PropertyMock
 
 from odoo import Command
 from odoo.addons.crm_livechat.tests import chatbot_common
+from odoo.fields import Domain
 
 
 class CrmChatbotCase(chatbot_common.CrmChatbotCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.belgium = cls.env.ref('base.be')
+        cls.belgium_fr_lang = cls.env["res.lang"].search(
+            Domain("code", "=", "fr_BE") & Domain("active", "=", False), limit=1
+        )
+        cls.belgium_fr_lang.active = True
 
     def test_chatbot_create_lead_public_user(self):
         self._play_session_with_lead()
 
         created_lead = self.env['crm.lead'].sudo().search([], limit=1, order='id desc')
-        self.assertEqual(created_lead.name, "Testing Bot's New Lead")
+        self.assertEqual(created_lead.name, "Nouvelle piste de Testing Bot")
         self.assertEqual(created_lead.email_from, 'test2@example.com')
         self.assertEqual(created_lead.phone, '123456')
+        self.assertEqual(created_lead.lang_id, self.belgium_fr_lang)
+        self.assertEqual(created_lead.country_id, self.belgium)
 
         self.assertEqual(created_lead.team_id, self.sale_team)
         self.assertEqual(created_lead.type, 'opportunity')
@@ -23,11 +35,13 @@ class CrmChatbotCase(chatbot_common.CrmChatbotCase):
         self.step_create_lead.sudo().step_type = "create_lead_and_forward"
         discuss_channel = self._play_session_with_lead()
         not_available_lead = self.env["crm.lead"].sudo().search([], limit=1, order="id desc")
-        self.assertEqual(not_available_lead.name, "Testing Bot's New Lead")
+        self.assertEqual(not_available_lead.name, "Nouvelle piste de Testing Bot")
         self.assertEqual(not_available_lead.email_from, "test2@example.com")
         self.assertEqual(not_available_lead.phone, "123456")
         self.assertEqual(not_available_lead.team_id, self.sale_team)
         self.assertEqual(not_available_lead.type, "opportunity")
+        self.assertEqual(not_available_lead.country_id, self.belgium)
+        self.assertEqual(not_available_lead.lang_id, self.belgium_fr_lang)
         chatbot_partner = self.chatbot_script.operator_partner_id
         # sales team member is not available
         self.assertFalse(not_available_lead.user_id)
@@ -83,7 +97,7 @@ class CrmChatbotCase(chatbot_common.CrmChatbotCase):
     def test_chatbot_create_lead_portal_user(self):
         self.authenticate(self.user_portal.login, self.user_portal.login)
         self.step_create_lead.write({'crm_team_id': self.sale_team_with_lead})
-        self._play_session_with_lead()
+        self._play_session_with_lead(self.user_portal)
 
         created_lead = self.env['crm.lead'].sudo().search([], limit=1, order='id desc')
         self.assertEqual(created_lead.name, "Testing Bot's New Lead")
@@ -92,6 +106,8 @@ class CrmChatbotCase(chatbot_common.CrmChatbotCase):
 
         self.assertEqual(created_lead.team_id, self.sale_team_with_lead)
         self.assertEqual(created_lead.type, 'lead')
+        self.assertEqual(created_lead.country_id, self.belgium)
+        self.assertEqual(created_lead.lang_id.code, self.user_portal.lang)
 
     def test_chatbot_create_lead_company(self):
         self.user_portal.write({"company_ids": self.company_2, "company_id": self.company_2})
@@ -167,23 +183,37 @@ class CrmChatbotCase(chatbot_common.CrmChatbotCase):
         teams.company_id = False
         self.assertFalse(play_script_and_get_created_lead().company_id)
 
-    def _play_session_with_lead(self):
-        data = self.make_jsonrpc_request("/im_livechat/get_session", {
-            'channel_id': self.livechat_channel.id,
-            'chatbot_script_id': self.chatbot_script.id,
-        })
-        discuss_channel = (
-            self.env["discuss.channel"].sudo().browse(data["channel_id"])
-        )
-        self._post_answer_and_trigger_next_step(
-            discuss_channel, chatbot_script_answer=self.step_dispatch_create_lead
-        )
-        self.assertEqual(discuss_channel.chatbot_current_step_id, self.step_create_lead_email)
-        self._post_answer_and_trigger_next_step(discuss_channel, email="test2@example.com")
-        self.assertEqual(discuss_channel.chatbot_current_step_id, self.step_create_lead_phone)
-        self._post_answer_and_trigger_next_step(discuss_channel, '123456')
-        self.assertEqual(discuss_channel.chatbot_current_step_id, self.step_create_lead)
-        return discuss_channel
+    def _play_session_with_lead(self, user=None):
+        with patch(
+            "odoo.http.GeoIP.country_code",
+            new_callable=PropertyMock(return_value=self.belgium.code),
+        ):
+            data = self.make_jsonrpc_request(
+                "/im_livechat/get_session",
+                {
+                    "channel_id": self.livechat_channel.id,
+                    "chatbot_script_id": self.chatbot_script.id,
+                },
+                cookies={
+                    "frontend_lang": self.belgium_fr_lang.code if not user else user.lang,
+                },
+            )
+            discuss_channel = (
+                self.env["discuss.channel"].sudo().browse(data["channel_id"])
+            )
+            self._post_answer_and_trigger_next_step(
+                discuss_channel, chatbot_script_answer=self.step_dispatch_create_lead
+            )
+            self.assertEqual(discuss_channel.chatbot_current_step_id, self.step_create_lead_email)
+            self._post_answer_and_trigger_next_step(discuss_channel, email="test2@example.com")
+            self.assertEqual(discuss_channel.chatbot_current_step_id, self.step_create_lead_phone)
+            self._post_answer_and_trigger_next_step(
+                discuss_channel,
+                "123456",
+                trigger_cookies={"frontend_lang": self.belgium_fr_lang.code if not user else user.lang},
+            )
+            self.assertEqual(discuss_channel.chatbot_current_step_id, self.step_create_lead)
+            return discuss_channel
 
     def test_create_lead_from_chatbot(self):
         chatbot_script = self.env["chatbot.script"].create({"title": "Create lead bot"})

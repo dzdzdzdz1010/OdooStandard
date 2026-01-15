@@ -3,6 +3,7 @@
 from odoo import _, api, models, fields
 from odoo.exceptions import ValidationError
 from odoo.fields import Command, Domain
+from odoo.http import request
 from odoo.tools import html2plaintext, email_normalize
 from odoo.addons.mail.tools.discuss import Store
 
@@ -179,13 +180,37 @@ class ChatbotScriptStep(models.Model):
         })
         input_email = user_inputs.get('email', False)
         input_phone = user_inputs.get('phone', False)
+        guest = self.env["mail.guest"]._get_guest_from_context()
+
+        def get_lang_by_code(code):
+            return self.env["res.lang"].search(Domain("code", "=", code), limit=1)
+
+        if guest:
+            lang = get_lang_by_code(guest.lang) if guest.lang else False
+            country = guest.country_id
+        else:
+            if request:
+                country = self.env["res.country"].search(
+                    Domain("code", "=", request.geoip.country_code), limit=1
+                )
+                frontend_lang = request.cookies.get("frontend_lang", False)
+                lang = get_lang_by_code(frontend_lang) if frontend_lang else False
+            else:
+                country = False
+                lang = False
 
         if self.env.user._is_public() and create_partner:
-            partner = self.env['res.partner'].create({
+            partner_values = {
                 'name': input_email,
                 'email': input_email,
                 'phone': input_phone,
-            })
+            }
+            if guest:
+                partner_values.update({
+                    "lang": lang.code if lang else False,
+                    "country_id": country,
+                })
+            partner = self.env['res.partner'].create(partner_values)
         elif not self.env.user._is_public():
             partner = self.env.user.partner_id
             if update_partner:
@@ -195,6 +220,10 @@ class ChatbotScriptStep(models.Model):
                     update_values['email'] = input_email
                 if input_phone and not partner.phone:
                     update_values['phone'] = input_phone
+                if lang and not partner.lang:
+                    update_values['lang'] = lang.code
+                if country and not partner.country_id:
+                    update_values['country_id'] = country
                 if update_values:
                     partner.write(update_values)
 
@@ -211,6 +240,8 @@ class ChatbotScriptStep(models.Model):
             'email': input_email,
             'phone': input_phone,
             'description': description,
+            'lang': lang,
+            'country': {'id': country.id} if country else False,
         }
 
     def _find_first_user_free_input(self, discuss_channel):

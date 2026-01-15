@@ -20,6 +20,9 @@
                                 <div class="text-warning mt16"><strong>Save</strong> this page and come back here to set up the feature.</div>
                             </div>
                         </setting>
+                        <setting string="Generate meeting link automatically" help="Automatically generate a video meeting link upon creating a new calendar event.">
+                            <field name="generate_videolink_on_meeting_creation"/>
+                        </setting>
                     </block>
                 </app>
             </xpath>

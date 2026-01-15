@@ -14,10 +14,22 @@ export class ProjectMany2OneField extends Component {
         const { record } = this.props;
         props.cssClass = "w-100";
         if (!record.data.project_id && !record._isRequired("project_id")) {
-            props.placeholder = _t("Private");
+            if (!record.data.is_template) {
+                props.placeholder = _t("Private");
+            } else {
+                props.placeholder = _t("All Projects");
+            }
             props.cssClass += " private_placeholder";
         }
         return props;
+    }
+
+    get labelRegularTask() {
+        return _t("🔒 Private");
+    }
+
+    get labelTemplateTask() {
+        return _t("All Projects");
     }
 }
 

@@ -2,6 +2,7 @@ import {
     registerWebsitePreviewTour,
     insertSnippet,
     changeOption,
+    clickOnElement,
     changeOptionInPopover,
     clickOnSnippet,
 } from "@website/js/tours/tour_utils";
@@ -23,7 +24,8 @@ registerWebsitePreviewTour(
             trigger: ":iframe div.alert",
         },
         ...clickOnSnippet(".s_store_locator"),
-        ...changeOptionInPopover("Store Locator", "Store Locations", "[data-choice-index='0']"),
+        changeOption("Store Locator", ".o_select_menu .dropdown-toggle"),
+        clickOnElement(`the partner entry`, "[data-choice-index='0']"),
         {
             content: "Check that the map is now rendered",
             trigger: ":iframe section.o_location_selector_view",

@@ -180,7 +180,7 @@ class TestSnippetsExternal(HttpCase):
     def test_store_locator_snippet(self):
         self.env['res.partner'].create({
             'name': 'AAAAA',
-            'commercial_company_name': "AAAAA",
+            'display_name': "AAAAA",
             'is_company': True,
             'street': 'Rue des Bourlottes 9',
             'city': 'Ramillies',
@@ -190,6 +190,8 @@ class TestSnippetsExternal(HttpCase):
             'phone': '+32123123123',
             'email': 'email@example.com',
             'type': 'contact',
-            'country_id': self.env.ref('base.be').id
+            'country_id': self.env.ref('base.be').id,
+            'vat': "US1234567",
+            'vat_label': "TIN",
         })
         self.start_tour(self.env['website'].get_client_action_url('/'), 'snippet_store_locator', login='admin')

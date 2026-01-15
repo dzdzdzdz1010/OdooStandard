@@ -929,3 +929,26 @@ class TestInvoiceTaxes(AccountTestInvoicingCommon):
         )
         self.assertEqual(results['value']['tax_totals']['base_amount'], 2000.0)
         self.assertEqual(results['value']['tax_totals']['total_amount'], 2600.0)
+
+    def test_tax_mapping_with_tax_fiscal_position_set_to_all(self):
+        """
+        A tax without any fiscal positions assigned should be applicable to
+        any fiscal position.
+        This test ensures that when a single fiscal position exists and a tax
+        has no fiscal position restriction, the tax is correctly applied to
+        invoice lines.
+        """
+        self.env['account.fiscal.position'].search([]).action_archive()
+        default_tax = self.company_data['default_tax_sale']
+        self.env['account.fiscal.position'].create({
+            'name': 'FP',
+            'auto_apply': True,
+            'country_id': self.env.company.country_id.id,
+            'tax_ids': default_tax.ids,
+        })
+        self.assertEqual(self.product.taxes_id, default_tax)
+        default_tax.write({'fiscal_position_ids': self.env['account.fiscal.position']})
+        self.partner_a.write({'country_id': self.env.company.country_id.id})
+        move = self.init_invoice('out_invoice', self.partner_a, post=True, products=[self.product])
+        line = move.invoice_line_ids
+        self.assertEqual(line.tax_ids, default_tax)

@@ -43,12 +43,13 @@ patch(AttendeeCalendarModel.prototype, {
         return new Promise(() => {});
     },
 
-    async syncMicrosoftCalendar(silent = false) {
+    async syncMicrosoftCalendar(silent = false, force_auth = false) {
         this.microsoftPendingSync = true;
         const result = await rpc(
             "/microsoft_calendar/sync_data",
             {
                 model: this.resModel,
+                force_auth: force_auth,
                 fromurl: window.location.href
             },
             {
@@ -60,7 +61,7 @@ patch(AttendeeCalendarModel.prototype, {
         } else if (result.status === "no_new_event_from_microsoft" || result.status === "need_refresh") {
             this.state.microsoftIsSync = true;
         }
-        this.state.microsoftIsPaused = result.status == "sync_paused";
+        this.state.microsoftIsPaused = result.status === "sync_paused";
         this.microsoftPendingSync = false;
         return result;
     },

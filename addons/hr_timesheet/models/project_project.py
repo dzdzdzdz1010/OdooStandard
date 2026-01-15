@@ -33,6 +33,9 @@ class ProjectProject(models.Model):
     is_project_overtime = fields.Boolean('Project in Overtime', compute='_compute_remaining_hours', search='_search_is_project_overtime', compute_sudo=True, export_string_translation=False)
     allocated_hours = fields.Float(string='Allocated Time', tracking=True)
     effective_hours = fields.Float(string='Time Spent', compute='_compute_remaining_hours', compute_sudo=True)
+    stat_timesheet_value = fields.Char(compute='_compute_timesheet_stat_values', export_string_translation=False)
+    stat_extra_time_value = fields.Char(compute='_compute_timesheet_stat_values', export_string_translation=False)
+    stat_success_rate = fields.Float(compute='_compute_timesheet_stat_values', export_string_translation=False)
 
     def _compute_encode_uom_in_days(self):
         self.encode_uom_in_days = self.env.company.timesheet_encode_uom_id == self.env.ref('uom.product_uom_day')
@@ -77,6 +80,59 @@ class ProjectProject(models.Model):
             project.effective_hours = round(timesheet_time_dict.get(project.id, 0.0), 2)
             project.remaining_hours = project.allocated_hours - project.effective_hours
             project.is_project_overtime = project.remaining_hours < 0
+
+    @api.depends('allow_timesheets', 'total_timesheet_time', 'allocated_hours')
+    def _compute_timesheet_stat_values(self):
+        self.ensure_one()
+        if not self.allow_timesheets or not self.env.user.has_group("hr_timesheet.group_hr_timesheet_user"):
+            self.stat_timesheet_value = False
+            self.stat_extra_time_value = False
+            self.stat_success_rate = False
+            return
+
+        encode_uom = self.env.company.timesheet_encode_uom_id
+        uom_ratio = self.env.ref('uom.product_uom_hour').factor / encode_uom.factor
+
+        allocated = self.allocated_hours * uom_ratio
+        effective = self.total_timesheet_time
+
+        stat_timesheet_value = False
+        stat_extra_time_value = False
+        success_rate = False
+        if allocated:
+            stat_timesheet_value = f"{round(effective)} / {round(allocated)} {encode_uom.name}"
+            success_rate = round(100 * effective / allocated)
+            if success_rate > 100:
+                stat_timesheet_value = self.env._(
+                    "%(effective)s / %(allocated)s %(uom_name)s",
+                    effective=round(effective),
+                    allocated=round(allocated),
+                    uom_name=encode_uom.name,
+                )
+                stat_extra_time_value = self.env._(
+                    "%(exceeding_hours)s %(uom_name)s (+%(exceeding_rate)s%%)",
+                    exceeding_hours=round(effective - allocated),
+                    uom_name=encode_uom.name,
+                    exceeding_rate=round(100 * (effective - allocated) / allocated),
+                )
+            else:
+                stat_timesheet_value = self.env._(
+                    "%(effective)s / %(allocated)s %(uom_name)s (%(success_rate)s%%)",
+                    effective=round(effective),
+                    allocated=round(allocated),
+                    uom_name=encode_uom.name,
+                    success_rate=success_rate,
+                )
+        else:
+            stat_timesheet_value = self.env._(
+                "%(effective)s %(uom_name)s",
+                effective=round(effective),
+                uom_name=encode_uom.name,
+            )
+
+        self.stat_timesheet_value = stat_timesheet_value
+        self.stat_extra_time_value = stat_extra_time_value
+        self.stat_success_rate = success_rate
 
     @api.model
     def _search_is_project_overtime(self, operator, value):

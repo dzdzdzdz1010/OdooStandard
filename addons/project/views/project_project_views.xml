@@ -64,6 +64,19 @@
                                 <span class="o_stat_value">Progress:  <field name="last_update_progress_percentage" widget="percentage" options="{'digits': [1, 0]}"/> <t invisible="not last_update_progress_date">(<field name="last_update_progress_date" widget="date"/>)</t></span>
                             </div>
                         </button>
+                        <button name="action_view_all_rating" type="object" class="oe_stat_button" icon="" invisible="rating_count == 0">
+                            <i class="fa fa-fw o_button_icon fa-smile-o text-success" invisible="rating_avg &lt; 3.66" title="Happy"/>
+                            <i class="fa fa-fw o_button_icon fa-meh-o text-warning" invisible="rating_avg &lt; 2.33 or rating_avg &gt;= 3.66" title="Neutral"/>
+                            <i class="fa fa-fw o_button_icon fa-frown-o text-danger" invisible="rating_avg &gt;= 2.33" title="Unhappy"/>
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_value">
+                                    <field name="rating_avg" nolabel="1" widget="float" digits="[1, 1]"/> / 5
+                                </span>
+                                <span class="o_stat_text">Average Rating</span>
+                            </div>
+                        </button>
+                        <button class="oe_stat_button" type="object" name="action_project_task_burndown_chart_report"
+                            icon="fa-area-chart" string="Burndown Chart" groups="project.group_project_user"/>
                     </div>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
                     <widget name="web_ribbon" title="Template" bg_color="text-bg-info" invisible="not (is_template and active)"/>

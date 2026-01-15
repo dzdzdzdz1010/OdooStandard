@@ -18,10 +18,10 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
         })
         cls.departure_date = date.today()
         departure_reason = cls.env['hr.departure.reason'].create({'name': "Fired"})
-        cls.departure_wizard = cls.env['hr.departure.wizard'].create({
+        cls.departure = cls.env['hr.employee.departure'].create({
             'departure_reason_id': departure_reason.id,
             'departure_date': cls.departure_date,
-            'employee_ids': [Command.link(cls.employee.id)],
+            'employee_id': cls.employee.id,
         })
         cls.leave_type = cls.env['hr.leave.type'].create({
             'name': 'Paid Time Off',
@@ -122,7 +122,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
         self.assertTrue(allocation_msg in allocation.message_ids.mapped('body'))
 
     def _check_action_departure(self):
-        self.departure_wizard.action_register_departure()
+        self.departure.action_register()
         self._check_employee_allocation()
         self._check_employee_leave()
 

@@ -497,7 +497,7 @@
         <field name="name">Meetings</field>
         <field name="path">calendar</field>
         <field name="res_model">calendar.event</field>
-        <field name="view_mode">calendar,list,form</field>
+        <field name="view_mode">calendar,list,form,activity</field>
         <field name="view_id" ref="view_calendar_event_calendar"/>
         <field name="search_view_id" ref="view_calendar_event_search"/>
         <field name="help" type="html">

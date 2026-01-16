@@ -199,5 +199,5 @@ class TestProjectSharingChatterAccess(TestProjectSharingCommon, HttpCase):
         self.assertTrue(
             self.env['mail.message'].sudo().search([
                 ('author_id', '=', self.user_portal.partner_id.id),
-            ]) is not None
+            ])
             )

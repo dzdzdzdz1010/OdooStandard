@@ -19,7 +19,7 @@ class ProductTemplateAttributeLine(models.Model):
         on the order of the attribute lines.
         """
         single_value_lines = self.filtered(
-            lambda ptal: len(ptal.value_ids) == 1 and ptal.attribute_id.display_type != 'multi'
+            lambda ptal: len(ptal.value_ids) == 1 and not ptal.value_ids.is_custom
         )
         single_value_attributes = OrderedDict([(pa, self.env['product.template.attribute.line']) for pa in single_value_lines.attribute_id])
         for ptal in single_value_lines:

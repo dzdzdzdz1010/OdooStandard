@@ -533,9 +533,13 @@ export class MailMessage extends models.ServerModel {
             search_term = search_term.replace(" ", "%");
             const subtypeIds = MailMessageSubtype.search([["description", "ilike", search_term]]);
             const irAttachmentIds = IrAttachment.search([["name", "ilike", search_term]]);
+            const authorIds = this.env["res.partner"].search([
+                ["display_name", "ilike", search_term],
+            ]);
             let message_domain = Domain.or([
                 [["body", "ilike", search_term]],
                 [["attachment_ids", "in", irAttachmentIds]],
+                [["author_id", "in", authorIds]],
                 [["subject", "ilike", search_term]],
                 [["subtype_ids", "in", subtypeIds]],
             ]);

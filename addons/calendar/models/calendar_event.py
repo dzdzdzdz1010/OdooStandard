@@ -96,6 +96,8 @@ class CalendarEvent(models.Model):
             )
 
         defaults = super(CalendarEvent, self.with_context(context)).default_get(fields)
+        if 'alarm_ids' in fields:
+            defaults['alarm_ids'] = [Command.set(self.env.ref('calendar.alarm_notif_1', raise_if_not_found=False).ids)]
 
         # support active_model / active_id as replacement of default_* if not already given
         if 'res_model_id' not in defaults and 'res_model_id' in fields and \
@@ -262,6 +264,7 @@ class CalendarEvent(models.Model):
     weekday = fields.Selection(WEEKDAY_SELECTION, compute='_compute_recurrence', readonly=False)
     byday = fields.Selection(BYDAY_SELECTION, string="By day", compute='_compute_recurrence', readonly=False)
     until = fields.Date(compute='_compute_recurrence', readonly=False)
+    until_placeholder = fields.Char(compute='_compute_until_placeholder')
     # UI Fields.
     display_description = fields.Boolean(compute='_compute_display_description')
     attendees_count = fields.Integer(compute='_compute_attendees_count')
@@ -402,6 +405,10 @@ class CalendarEvent(models.Model):
             event.stop = event.start and event.start + timedelta(minutes=round((event.duration or 1.0) * 60))
             if event.allday:
                 event.stop -= timedelta(seconds=1)
+
+    def _compute_until_placeholder(self):
+        for event in self:
+            event.until_placeholder = _('e.g. %s', fields.Date.today())
 
     @api.onchange('start_date', 'stop_date')
     def _onchange_date(self):

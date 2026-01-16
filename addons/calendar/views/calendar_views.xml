@@ -107,8 +107,8 @@
                     <button name="action_open_composer" class="btn btn-primary" type="object" string="Send email" invisible="not user_can_edit"/>
                 </header>
                 <div invisible="not recurrence_id" class="alert alert-info oe_edit_only" role="status">
-                    <p>Edit recurring event</p>
-                    <field name="recurrence_update" widget="radio"/>
+                    <label for="recurrence_update" class="me-2">Edit recurring event</label>
+                    <field name="recurrence_update" widget="radio" options="{'horizontal': True}"/>
                 </div>
                 <sheet>
                     <div class="oe_button_box" name="button_box">
@@ -183,7 +183,7 @@
                             <label for="privacy" string="Status"/>
                             <div class="d-flex">
                                 <field name="show_as" class="oe_inline me-2" readonly="not user_can_edit" nolabel="1"/>
-                                <field name="privacy" class="oe_inline me-2" readonly="not user_can_edit" nolabel="1" placeholder="User default"
+                                <field name="privacy" class="oe_inline me-2" readonly="not user_can_edit" nolabel="1" placeholder="Visibility"
                                     help="Set whether you're available for other simultaneous events and the privacy of this event to others. Manage your default privacy in your user preferences."/>
                             </div>
                             <field name="should_show_status" invisible="1"/>
@@ -244,7 +244,7 @@
                                     />
                                 </group>
                                 <group>
-                                    <field name="alarm_ids" widget="many2many_tags" options="{'no_quick_create': True}" readonly="not user_can_edit"/>
+                                    <field name="alarm_ids" widget="many2many_tags" options="{'no_quick_create': True, 'on_tag_click': 'open_form'}" readonly="not user_can_edit"/>
                                     <field name="recurrence_id" invisible="1" />
                                     <field name="rrule_type" invisible="1" />
                                     <label for="recurrency" string="Recurrent"/>
@@ -282,9 +282,10 @@
                                     <div class="d-flex gap-2" invisible="not recurrency">
                                         <field name="end_type" class="oe_inline w-auto" nolabel="1" required="recurrency" readonly="not user_can_edit"/>
                                         <field name="count" class="oe_inline w-auto" nolabel="1" invisible="end_type != 'count'" required="recurrency" readonly="not user_can_edit"/>
+                                        <field name="until_placeholder" invisible="1"/> <!-- Used to generate the until field's placeholder. -->
                                         <field name="until" class="oe_inline w-auto" nolabel="1" invisible="end_type != 'end_date'" readonly="not user_can_edit"
                                             required="recurrency and end_type == 'end_date'"
-                                            placeholder="e.g: 12/31/2023"
+                                            options="{'placeholder_field': 'until_placeholder'}"
                                         />
                                     </div>
                                     <field name="event_tz" invisible="not recurrency" readonly="not user_can_edit"/>
@@ -333,9 +334,9 @@
         <field name="priority" eval="2"/>
         <field name="arch" type="xml">
             <form string="Meetings" class="o_calendar_event_form_quick_create" js_class="calendar_quick_create_form_view">
-                <div class="o_unavailable_attendees_alert alert alert-warning border-0 d-flex flex-wrap m-0 mb-3" role="alert"
+                <div class="o_unavailability_alert alert alert-warning border-0 d-flex flex-wrap m-0 mb-3" role="alert"
                     invisible="not unavailable_partner_ids or allday">
-                    <span class="me-1">Those attendees are not available at the selected time:</span>
+                    <span class="me-1">Not available at the selected time:</span>
                     <field name="unavailable_partner_ids" widget="many2many_tags"/>
                 </div>
                 <field name="invalid_email_partner_ids" invisible="1"/> <!--used in many2many_attendees widget-->

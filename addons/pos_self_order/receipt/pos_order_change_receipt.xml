@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <data>
+        <template id="pos_self_order.pos_order_change_receipt" inherit_id="point_of_sale.pos_order_change_receipt">
+            <div name="receipt-header" position="inside">
+                <div t-if="order.get('tracking_number')" class="pos-receipt-title" style="font-size: 85%;">
+                    <span>Tracker number: <t t-esc="order['tracking_number']"/></span>
+                </div>
+                <div t-if="extra_data.get('name')" class="pos-receipt-order-data">
+                    <t t-esc="extra_data['name']"/>
+                </div>
+            </div>
+        </template>
+    </data>
+</odoo>

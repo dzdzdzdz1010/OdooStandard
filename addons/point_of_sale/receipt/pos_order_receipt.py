@@ -1,11 +1,10 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 import base64
+import qrcode
 from io import BytesIO
 from odoo import models, api, _
 from odoo.tools import DEFAULT_SERVER_DATETIME_FORMAT
 from odoo.tools.misc import format_datetime
-
-import qrcode
 
 
 class PosOrderReceipt(models.AbstractModel):
@@ -21,6 +20,12 @@ class PosOrderReceipt(models.AbstractModel):
             'point_of_sale.pos_orderline_receipt',
             'point_of_sale.pos_order_receipt_footer',
             'point_of_sale.pos_order_receipt',
+            'point_of_sale.pos_order_change_receipt',
+            'point_of_sale.pos_order_change_receipt_line',
+            'point_of_sale.pos_cash_move_receipt',
+            'point_of_sale.pos_tip_receipt',
+            'point_of_sale.pos_sale_details_receipt',
+            'point_of_sale.pos_sale_details_receipt_product_line',
         ]
         return [[name, self.env['ir.qweb']._get_template(name)[1]] for name in names]
 

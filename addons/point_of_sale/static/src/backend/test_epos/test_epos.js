@@ -50,7 +50,7 @@ export class TestEPos extends Component {
             const response = await this.orm.read(
                 "pos.printer",
                 [printer_id],
-                ["epson_printer_ip", "name", "printer_type"]
+                ["printer_ip", "name", "printer_type"]
             );
             return response[0];
         } else {
@@ -58,7 +58,7 @@ export class TestEPos extends Component {
             return {
                 id: this.props.record.resId || null,
                 name: data.name,
-                epson_printer_ip: data.epson_printer_ip,
+                printer_ip: data.printer_ip,
                 printer_type: data.printer_type,
             };
         }
@@ -107,7 +107,7 @@ export class TestEPos extends Component {
         const printer = await this.getPrinterDataEPos(printer_id);
         if (printer.printer_type === "epson_epos") {
             try {
-                const url = window.location.protocol + "//" + printer.epson_printer_ip;
+                const url = window.location.protocol + "//" + printer.printer_ip;
                 const address = url + "/cgi-bin/epos/service.cgi?devid=local_printer";
 
                 const result = await fetch(address, {
@@ -127,7 +127,7 @@ export class TestEPos extends Component {
                         EPSON_ERRORS[errorCode] ||
                         _t("Failed to print a test receipt. Check your printer.");
                     this.notification.add(
-                        `${printer.name} (${printer.epson_printer_ip}): ${errorMessage}`,
+                        `${printer.name} (${printer.printer_ip}): ${errorMessage}`,
                         {
                             type: "warning",
                         }
@@ -135,9 +135,7 @@ export class TestEPos extends Component {
                 }
             } catch {
                 this.notification.add(
-                    `${printer.name} (${printer.epson_printer_ip}): ${_t(
-                        "Cannot reach the printer."
-                    )}`,
+                    `${printer.name} (${printer.printer_ip}): ${_t("Cannot reach the printer.")}`,
                     { type: "danger" }
                 );
             }

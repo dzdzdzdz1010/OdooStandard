@@ -436,7 +436,10 @@ export class GloryService extends PaymentInterface {
             }
             case "CHANGE_SHORTAGE":
                 this.setPaymentInfo(paymentResponse, false);
-                await this.pos.printReceipt({ printBillActionTriggered: true });
+                await this.pos.ticketPrinter.printOrderReceipt({
+                    printBillActionTriggered: true,
+                    order: this.pos.getOrder(),
+                });
                 this.showError(_t("There is insufficient cash in the machine to give change."));
                 return false;
             case "OCCUPIED_BY_OTHER":

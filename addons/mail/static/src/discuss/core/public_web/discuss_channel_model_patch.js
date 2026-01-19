@@ -68,6 +68,9 @@ const discussChannelPatch = {
         }
     },
     _computeIsDisplayInSidebar() {
+        if (this.parent_channel_id) {
+            return this.discussAppAsThread || this.self_member_id?.is_pinned;
+        }
         return (
             this.discussAppAsThread ||
             this.self_member_id?.is_pinned ||

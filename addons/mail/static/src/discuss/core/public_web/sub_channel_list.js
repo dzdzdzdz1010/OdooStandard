@@ -4,7 +4,6 @@ import { SubChannelPreview } from "@mail/discuss/core/public_web/sub_channel_pre
 import { useSequential, useVisible } from "@mail/utils/common/hooks";
 import { Component, useEffect, useRef, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
-import { rpc } from "@web/core/network/rpc";
 import { useAutofocus, useService } from "@web/core/utils/hooks";
 import { fuzzyLookup } from "@web/core/utils/search";
 
@@ -57,9 +56,6 @@ export class SubChannelList extends Component {
      * @param {import("models").DiscussChannel} subChannel
      */
     async onClickSubChannel(subChannel) {
-        if (!subChannel.self_member_id) {
-            await rpc("/discuss/channel/join", { channel_id: subChannel.id });
-        }
         subChannel.open({ focus: true });
         if (this.env.inChatWindow) {
             this.props.close?.();

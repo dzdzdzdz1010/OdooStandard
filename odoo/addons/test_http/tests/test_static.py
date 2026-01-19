@@ -11,7 +11,6 @@ from urllib.parse import urlsplit
 from freezegun import freeze_time
 
 from odoo import api
-from odoo.http.router import root
 from odoo.tests import RecordCapturer, new_test_user, tagged
 from odoo.tools import config, file_open
 from odoo.tools.image import image_process
@@ -430,10 +429,9 @@ class TestHttpStatic(TestHttpStaticCommon):
             self.assertEqual(res.headers['Content-Security-Policy'], "default-src 'none'")
 
     def test_static23_remove_cache_control_wkhmtltopdf(self):
-        session = self.authenticate(None, None)
+        self.authenticate(None, None)
         for debug in ('', 'assets'):
-            session.debug = debug
-            root.session_store.save(self.session)
+            self.update_session(debug=debug)
             with self.subTest(debug=debug):
                 res = self.db_url_open('/test_http/static/src/img/gizeh.png', headers={
                     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) '

@@ -13,7 +13,7 @@ from http import HTTPStatus
 from zlib import adler32
 
 from odoo.api import Environment
-from odoo.tools import consteq, get_lang
+from odoo.tools import config, consteq, get_lang, lazy
 
 _logger = logging.getLogger('odoo.http')
 
@@ -315,7 +315,7 @@ class Session(MutableMapping):
         return device
 
     def _delete_old_sessions(self):
-        root.session_store.delete_old_sessions(self)
+        session_store.delete_old_sessions(self)
 
     def _update_session_token(self, env: Environment):
         """
@@ -571,7 +571,12 @@ class SessionStore:
                 self.save(session)
 
 
+@lazy
+def session_store():
+    _logger.debug('HTTP sessions stored in: %s', config.session_dir)
+    return SessionStore(path=config.session_dir)
+
+
 # ruff: noqa: E402
 from .geoip import GeoIP
 from .requestlib import request
-from .router import root

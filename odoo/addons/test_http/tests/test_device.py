@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 from freezegun import freeze_time
 
+import odoo.http.session
 from odoo import Command
-from odoo.http.router import root
 from odoo.tests import tagged
 from odoo.tools import config
 
@@ -301,9 +301,11 @@ class TestDevice(TestHttpBase):
         self.assertCountEqual(device_firefox.mapped('ip_address'), ['191.0.1.41'])
 
     def test_detection_no_trace_mechanism(self):
-        session = self.authenticate(self.user_admin.login, self.user_admin.login)
-        session['_trace_disable'] = True
-        root.session_store.save(session)
+        session = self.authenticate(
+            self.user_admin.login,
+            self.user_admin.login,
+            session_extra={'_trace_disable': True},
+        )
         res = self.hit('2024-01-01 08:00:00', '/test_http/greeting-public?readonly=0')
         self.assertEqual(res.status_code, 200)
 
@@ -389,7 +391,7 @@ class TestDevice(TestHttpBase):
     def _create_device_log_for_user(self, session, count):
         for _ in range(count):
             self.DeviceLog.create({
-                'session_identifier': root.session_store.generate_key(),
+                'session_identifier': self._session_store.generate_key(),
                 'user_id': session.uid,
                 'revoked': False,
                 'ip_address': TEST_IP,
@@ -410,7 +412,7 @@ class TestDevice(TestHttpBase):
         self.assertEqual(len(self.user_admin.session_ids), 10)
         self.assertEqual(len(self.user_internal.session_ids), 10)
 
-        root.session_store.store.clear()
+        self._session_store.store.clear()
 
         # Update all device logs
         with freeze_time('2025-02-01 08:00:00'), patch.object(self.cr, 'commit', lambda: ...):

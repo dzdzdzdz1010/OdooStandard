@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_invoice_form_inherit_l10n_vn_edi_pos" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.l10n_vn_edi_pos</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <header position="after">
+                <div class="alert alert-warning w-100 d-flex align-items-center gap-1" invisible="l10n_vn_edi_invoice_state != 'sent' or l10n_vn_edi_sinvoice_pdf_file_id" role="alert">
+                    <span>The invoice was sent to SInvoice, but the files isn't available yet. 
+                        <a type="object"
+                            class="oe_link fw-bold"
+                            name="l10n_vn_edi_fetch_invoice_files"
+                            confirm="Do you want to fetch the missing files from SInvoice?">
+                            Click here to fetch it.
+                        </a>
+                    </span>
+                </div>
+            </header>
+        </field>
+    </record>
+</odoo>

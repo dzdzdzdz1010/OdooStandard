@@ -11,6 +11,7 @@ class ReportProjectTaskUser(models.Model):
     _description = "Tasks Analysis"
     _order = 'name desc, project_id'
     _auto = False
+    _priority_field = 'priority'
 
     name = fields.Char(string='Task Title', readonly=True)
     user_ids = fields.Many2many('res.users', relation='project_task_user_rel', column1='task_id', column2='user_id',

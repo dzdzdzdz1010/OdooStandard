@@ -20,6 +20,7 @@ class StockMove(models.Model):
     _description = "Stock Move"
     _order = 'sequence, id'
     _rec_name = 'reference'
+    _priority_field = 'priority'
 
     sequence = fields.Integer('Sequence', default=10)
     priority = fields.Selection(

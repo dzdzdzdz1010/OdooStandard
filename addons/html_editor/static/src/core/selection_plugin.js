@@ -303,6 +303,7 @@ export class SelectionPlugin extends Plugin {
                 return;
             }
         }
+        this.dispatchTo("selectionchange_read_handlers", selectionData);
         this.dispatchTo("selectionchange_handlers", selectionData);
     }
 

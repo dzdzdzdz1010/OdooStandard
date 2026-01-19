@@ -183,7 +183,7 @@ export class ImagePlugin extends Plugin {
         ],
 
         /** Handlers */
-        selectionchange_handlers: this.updateImageParams.bind(this),
+        selectionchange_read_handlers: this.updateImageParams.bind(this),
         post_undo_handlers: this.updateImageParams.bind(this),
         post_redo_handlers: this.updateImageParams.bind(this),
 

@@ -101,7 +101,7 @@ class TestResourceCalendar(TransactionCase):
             'date_from': datetime(2019, 6, 27, 0, 0, 0),
             'date_to': datetime(2019, 6, 27, 23, 0, 0),
             'resource_id': False,
-            'time_type': "leave",
+            'count_as': "absence",
         }, {
             'name': "Public Holiday without company",
             'calendar_id': False,
@@ -109,7 +109,7 @@ class TestResourceCalendar(TransactionCase):
             'date_from': datetime(2019, 6, 29, 0, 0, 0),
             'date_to': datetime(2019, 6, 29, 23, 59, 59),
             'resource_id': False,
-            'time_type': "leave",
+            'count_as': "absence",
         }])
         duration_company_0 = company_0.resource_calendar_ids.with_company(company_0).get_work_duration_data(
             datetime(2019, 6, 27, 0, 0, 0),

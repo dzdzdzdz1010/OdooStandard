@@ -43,7 +43,7 @@ class TestSandwichLeave(TransactionCase):
             'user_id': self.demo_user.id,
         })
 
-        self.leave_type_day, self.leave_type_half_day, self.leave_type_hours = self.env['hr.leave.type'].create([{
+        self.work_entry_type_day, self.work_entry_type_half_day, self.work_entry_type_hours = self.env['hr.work.entry.type'].create([{
             'name': 'Test Leave Type',
             'request_unit': 'day',
             'unit_of_measure': 'day',
@@ -82,13 +82,13 @@ class TestSandwichLeave(TransactionCase):
         approved_leave = self.env['hr.leave'].create({
             'name': 'Approved Sandwich Leave',
             'employee_id': self.demo_employee.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': '2025-08-14',
             'request_date_to': '2025-08-18',
             'state': 'confirm',
         })
         approved_leave.action_approve()
-        self.assertIsNotNone(approved_leave.with_user(self.demo_user).leave_type_increases_duration)
+        self.assertIsNotNone(approved_leave.with_user(self.demo_user).work_entry_type_increases_duration)
 
     def test_long_sandwich_leave(self):
         self.env['resource.calendar.leaves'].create({
@@ -101,7 +101,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': "Test Leave",
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-08-13",
             'request_date_to': "2025-08-17",
         })
@@ -111,7 +111,7 @@ class TestSandwichLeave(TransactionCase):
         half_leave = self.env['hr.leave'].create({
             'name': "Half Day Leave",
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_half_day.id,
+            'work_entry_type_id': self.work_entry_type_half_day.id,
             'request_date_from': "2025-08-29",
             'request_date_to': "2025-08-29",
             'request_date_from_period': 'am',
@@ -126,7 +126,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-17",
             'request_date_to': "2025-01-20",
         })
@@ -138,7 +138,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-18",
             'request_date_to': "2025-01-20",
         })
@@ -150,7 +150,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-17",
             'request_date_to': "2025-01-19",
         })
@@ -162,7 +162,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-18",
             'request_date_to': "2025-01-19",
         })
@@ -174,7 +174,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-18",
             'request_date_to': "2025-01-18",
         })
@@ -186,7 +186,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-19",
             'request_date_to': "2025-01-19",
         })
@@ -198,7 +198,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-28",
             'request_date_to': "2025-01-30",
         })
@@ -210,7 +210,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-28",
             'request_date_to': "2025-01-29",
         })
@@ -222,7 +222,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-29",
             'request_date_to': "2025-01-30",
         })
@@ -234,7 +234,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-29",
             'request_date_to': "2025-01-29",
         })
@@ -246,7 +246,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-18",
             'request_date_to': "2025-02-01",
         })
@@ -262,14 +262,14 @@ class TestSandwichLeave(TransactionCase):
         before_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-28",
             'request_date_to': "2025-01-28",
         })
         after_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-30",
             'request_date_to': "2025-01-30",
         })
@@ -288,14 +288,14 @@ class TestSandwichLeave(TransactionCase):
         before_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-28",
             'request_date_to': "2025-01-28",
         })
         after_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-30",
             'request_date_to': "2025-01-30",
         })
@@ -309,14 +309,14 @@ class TestSandwichLeave(TransactionCase):
         before_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-18",
             'request_date_to': "2025-01-24",
         })
         after_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-27",
             'request_date_to': "2025-02-01",
         })
@@ -326,7 +326,7 @@ class TestSandwichLeave(TransactionCase):
         self.assertEqual(after_holiday_leave.number_of_days, 7)
 
     @freeze_time('2025-01-15')
-    def test_sandwich_for_leave_type_hours(self):
+    def test_sandwich_for_work_entry_type_hours(self):
         """
             --working days: 24th and 27th January
             --non-working days: 25th, 26th January
@@ -334,14 +334,14 @@ class TestSandwichLeave(TransactionCase):
         before_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_hours.id,
+            'work_entry_type_id': self.work_entry_type_hours.id,
             'request_date_from': "2025-01-24",
             'request_date_to': "2025-01-24",
         })
         after_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_hours.id,
+            'work_entry_type_id': self.work_entry_type_hours.id,
             'request_date_from': "2025-01-27",
             'request_date_to': "2025-01-27",
         })
@@ -359,7 +359,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_half_day.id,
+            'work_entry_type_id': self.work_entry_type_half_day.id,
             'request_date_from': "2025-12-12",
             'request_date_to': "2025-12-15",
             'request_date_from_period': 'pm',
@@ -377,7 +377,7 @@ class TestSandwichLeave(TransactionCase):
         holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_half_day.id,
+            'work_entry_type_id': self.work_entry_type_half_day.id,
             'request_date_from': "2025-12-12",
             'request_date_to': "2025-12-15",
             'request_date_from_period': 'am',
@@ -395,7 +395,7 @@ class TestSandwichLeave(TransactionCase):
         before_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_half_day.id,
+            'work_entry_type_id': self.work_entry_type_half_day.id,
             'request_date_from': "2025-12-12",
             'request_date_to': "2025-12-12",
             'request_date_from_period': 'am',
@@ -404,7 +404,7 @@ class TestSandwichLeave(TransactionCase):
         after_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_half_day.id,
+            'work_entry_type_id': self.work_entry_type_half_day.id,
             'request_date_from': "2025-12-15",
             'request_date_to': "2025-12-15",
             'request_date_from_period': 'am',
@@ -422,14 +422,14 @@ class TestSandwichLeave(TransactionCase):
         self.assertFalse(after_holiday_leave.l10n_in_contains_sandwich_leaves)
 
     @freeze_time('2025-01-15')
-    def test_sandwich_for_two_different_leave_type(self):
+    def test_sandwich_for_two_different_work_entry_type(self):
         """
             This test ensure that if we have different leave type around the non-working days and one of them
             doesn't enabled sandwich leave then it's not calculated as sandwich leave
             --working days: 24th and 27th January
             --non-working days: 25th, 26th January
         """
-        other_leave_type = self.env['hr.leave.type'].create({
+        other_work_entry_type = self.env['hr.work.entry.type'].create({
             'name': 'Test Leave Type',
             'request_unit': 'day',
             'unit_of_measure': 'day',
@@ -438,14 +438,14 @@ class TestSandwichLeave(TransactionCase):
         before_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': other_leave_type.id,
+            'work_entry_type_id': other_work_entry_type.id,
             'request_date_from': "2025-01-24",
             'request_date_to': "2025-01-24",
         })
         after_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-01-27",
             'request_date_to': "2025-01-27",
         })
@@ -455,7 +455,7 @@ class TestSandwichLeave(TransactionCase):
         self.assertEqual(after_holiday_leave.number_of_days, 1)
 
         # checking for different leave type with sandwich set as True
-        other_leave_type.l10n_in_is_sandwich_leave = True
+        other_work_entry_type.l10n_in_is_sandwich_leave = True
         leave_duration_dict = after_holiday_leave._get_durations()
         self.assertEqual(leave_duration_dict[after_holiday_leave.id][0], 3)
 
@@ -469,7 +469,7 @@ class TestSandwichLeave(TransactionCase):
         partial_leave = self.env['hr.leave'].create({
             'name': 'Partial Friday Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_hours.id,
+            'work_entry_type_id': self.work_entry_type_hours.id,
             'request_date_from': "2025-01-24",
             'request_date_to': "2025-01-24",
             'request_hour_from': 8,
@@ -478,7 +478,7 @@ class TestSandwichLeave(TransactionCase):
         full_leave = self.env['hr.leave'].create({
             'name': 'Full Monday Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_hours.id,
+            'work_entry_type_id': self.work_entry_type_hours.id,
             'request_date_from': "2025-01-27",
             'request_date_to': "2025-01-27",
         })
@@ -490,14 +490,14 @@ class TestSandwichLeave(TransactionCase):
         partial_leave = self.env['hr.leave'].create({
             'name': 'Partial Friday Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_hours.id,
+            'work_entry_type_id': self.work_entry_type_hours.id,
             'request_date_from': "2025-01-17",
             'request_date_to': "2025-01-17",
         })
         full_leave = self.env['hr.leave'].create({
             'name': 'Full Monday Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_hours.id,
+            'work_entry_type_id': self.work_entry_type_hours.id,
             'request_date_from': "2025-01-20",
             'request_date_to': "2025-01-20",
         })
@@ -523,7 +523,7 @@ class TestSandwichLeave(TransactionCase):
         before_leave = self.env['hr.leave'].create({
             'name': 'Test Leave Before',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-07-03",
             'request_date_to': "2025-07-04",
         })
@@ -532,7 +532,7 @@ class TestSandwichLeave(TransactionCase):
         after_leave = self.env['hr.leave'].create({
             'name': 'Test Leave After',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-07-10",
             'request_date_to': "2025-07-11",
         })
@@ -541,7 +541,7 @@ class TestSandwichLeave(TransactionCase):
         middle_sandwich_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-07-07",
             'request_date_to': "2025-07-08",
         })
@@ -553,7 +553,7 @@ class TestSandwichLeave(TransactionCase):
         before_leave = self.env['hr.leave'].create({
             'name': 'Monday Leave',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-07-11",
             'request_date_to': "2025-07-11",
         })
@@ -562,7 +562,7 @@ class TestSandwichLeave(TransactionCase):
         after_leave = self.env['hr.leave'].create({
             'name': 'Friday',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-07-14",
             'request_date_to': "2025-07-14",
         })
@@ -577,7 +577,7 @@ class TestSandwichLeave(TransactionCase):
         before_leave = self.env['hr.leave'].create({
             'name': 'Mon',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-07-11",
             'request_date_to': "2025-07-11",
         })
@@ -586,7 +586,7 @@ class TestSandwichLeave(TransactionCase):
         after_leave = self.env['hr.leave'].create({
             'name': 'Fri',
             'employee_id': self.rahul_emp.id,
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'request_date_from': "2025-07-14",
             'request_date_to': "2025-07-14",
         })

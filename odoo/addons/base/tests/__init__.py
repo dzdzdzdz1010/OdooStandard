@@ -7,7 +7,6 @@ from . import test_base
 from . import test_basecase
 from . import test_cache
 from . import test_intervals
-from . import test_date_utils
 from . import test_deprecation
 from . import test_db_cursor
 from . import test_display_name

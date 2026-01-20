@@ -375,7 +375,7 @@
                     invisible="state != 'sent'"/>
                 <button
                     string="Print"
-                    name="sale.action_report_saleorder"
+                    name="sale_pdf_quote_builder.action_report_saleorder_no_sig"
                     type="action"
                     data-hotkey="i"
                     invisible="state == 'sale'"/>

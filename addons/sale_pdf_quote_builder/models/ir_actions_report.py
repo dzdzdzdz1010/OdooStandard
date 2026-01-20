@@ -4,7 +4,7 @@ import base64
 import io
 import json
 
-from odoo import _, api, models
+from odoo import _, api, fields, models
 from odoo.tools import format_amount, format_date, format_datetime, pdf
 from odoo.tools.pdf import (
     NameObject,
@@ -17,6 +17,8 @@ from odoo.tools.pdf import (
 
 class IrActionsReport(models.Model):
     _inherit = 'ir.actions.report'
+
+    hide_signature = fields.Boolean(default=False)
 
     def _render_qweb_pdf_prepare_streams(self, report_ref, data, res_ids=None):
         """Override to add and fill headers, footers and product documents to the sale quotation."""

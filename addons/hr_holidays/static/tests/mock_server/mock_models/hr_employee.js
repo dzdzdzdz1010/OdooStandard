@@ -6,6 +6,13 @@ export class HrEmployee extends hrModels.HrEmployee {
 
     name = fields.Char();
     leave_date_to = fields.Date();
+    leave_date_from = fields.Datetime();
+    request_date_from_period = fields.Selection({
+        selection: [
+            ["am", "Morning"],
+            ["pm", "Afternoon"],
+        ],
+    });
     user_id = fields.Many2one({ relation: "res.users" });
 
     _records = [

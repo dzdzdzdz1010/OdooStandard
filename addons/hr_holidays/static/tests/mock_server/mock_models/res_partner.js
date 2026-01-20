@@ -1,9 +1,10 @@
 import { hrModels } from "@hr/../tests/hr_test_helpers";
-import { fields } from "@web/../tests/web_test_helpers";
+import { fields, makeKwArgs } from "@web/../tests/web_test_helpers";
 import { mailDataHelpers } from "@mail/../tests/mock_server/mail_mock_server";
 
 export class ResPartner extends hrModels.ResPartner {
     leave_date_to = fields.Date({ related: false });
+    leave_date_from = fields.Date({ related: false });
 
     compute_im_status(partner) {
         /** @type {import("mock_models").ResUsers} */
@@ -26,7 +27,12 @@ export class ResPartner extends hrModels.ResPartner {
             ...super._to_store_defaults,
             mailDataHelpers.Store.one(
                 "main_user_id",
-                mailDataHelpers.Store.many("employee_ids", "leave_date_to")
+                mailDataHelpers.Store.many(
+                    "employee_ids",
+                    makeKwArgs({
+                        fields: ["leave_date_to", "leave_date_from", "request_date_from_period"],
+                    })
+                )
             ),
         ];
     }

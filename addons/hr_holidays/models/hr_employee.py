@@ -32,8 +32,14 @@ class HrEmployee(models.Model):
             ('validate', 'Approved'),
             ('cancel', 'Cancelled'),
         ], groups="hr.group_hr_user")
-    leave_date_from = fields.Date('From Date', compute='_compute_leave_status', groups="hr.group_hr_user")
+    leave_date_from = fields.Datetime('From Date', compute='_compute_leave_status', groups="hr.group_hr_user")
     leave_date_to = fields.Date('To Date', compute='_compute_leave_status')
+    request_date_from_period = fields.Selection(
+        [('am', 'Morning'), ('pm', 'Afternoon')],
+        string="Date Period Start",
+        default='am',
+        compute="_compute_leave_status"
+    )
     allocation_count = fields.Float('Total number of days allocated.', compute='_compute_allocation_count',
                                     groups="hr.group_hr_user")
     allocations_count = fields.Integer('Total number of allocations', compute="_compute_allocation_count",
@@ -146,7 +152,7 @@ class HrEmployee(models.Model):
         # Used SUPERUSER_ID to forcefully get status of other user's leave, to bypass record rule
         holidays = self.env['hr.leave'].sudo().search([
             ('employee_id', 'in', self.ids),
-            ('date_from', '<=', fields.Datetime.now()),
+            ('date_from', '<=', fields.Datetime.now() + timedelta(days=1.0)),
             ('date_to', '>=', fields.Datetime.now()),
             ('holiday_status_id.time_type', '=', 'leave'),
             ('state', '=', 'validate'),
@@ -154,13 +160,15 @@ class HrEmployee(models.Model):
         leave_data = {}
         for holiday in holidays:
             leave_data[holiday.employee_id.id] = {}
-            leave_data[holiday.employee_id.id]['leave_date_from'] = holiday.date_from.date()
+            leave_data[holiday.employee_id.id]['leave_date_from'] = holiday.date_from
+            leave_data[holiday.employee_id.id]['request_date_from_period'] = holiday.request_date_from_period
             back_on = holiday.employee_id._get_first_working_interval(holiday.date_to)
             leave_data[holiday.employee_id.id]['leave_date_to'] = back_on.date() if back_on else None
             leave_data[holiday.employee_id.id]['current_leave_state'] = holiday.state
 
         for employee in self:
             employee.leave_date_from = leave_data.get(employee.id, {}).get('leave_date_from')
+            employee.request_date_from_period = leave_data.get(employee.id, {}).get('request_date_from_period')
             employee.leave_date_to = leave_data.get(employee.id, {}).get('leave_date_to')
             employee.current_leave_state = leave_data.get(employee.id, {}).get('current_leave_state')
             employee.is_absent = leave_data.get(employee.id) and leave_data.get(employee.id).get('current_leave_state') == 'validate'
@@ -643,6 +651,8 @@ class HrEmployee(models.Model):
     def _store_avatar_card_fields(self, res: Store.FieldList):
         super()._store_avatar_card_fields(res)
         res.attr("leave_date_to")
+        res.attr("leave_date_from")
+        res.attr("request_date_from_period")
 
     def _get_hours_for_date(self, target_date, day_period=None):
         """

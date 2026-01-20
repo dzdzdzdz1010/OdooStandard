@@ -8,3 +8,4 @@ from . import test_i18n
 from . import test_image
 from . import test_mail
 from . import test_mimetypes
+from . import test_profiler

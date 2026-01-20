@@ -7,6 +7,7 @@ import re
 
 from odoo.addons.base.models.ir_mail_server import extract_rfc2822_addresses
 from odoo.addons.base.models.ir_qweb_fields import nl2br_enclose
+from odoo.addons.base.tests import mail_examples
 from odoo.tests import tagged
 from odoo.tests.common import BaseCase
 from odoo.tools import misc
@@ -19,8 +20,6 @@ from odoo.tools.mail import (
     email_anonymize,
     prepend_html_content,
 )
-
-from . import mail_examples
 
 
 @tagged('mail_sanitize')

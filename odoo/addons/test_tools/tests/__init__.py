@@ -6,3 +6,4 @@ from . import test_float_utils
 from . import test_func
 from . import test_i18n
 from . import test_image
+from . import test_mail

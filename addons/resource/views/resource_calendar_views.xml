@@ -51,6 +51,9 @@
                     </div>
                     <group name="resource_details" col="2">
                         <group>
+                            <group name="resource_type">
+                                <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
+                            </group>
                             <group name="resource_company" colspan="2">
                                 <field name="company_id" placeholder="Visible to all"/>
                             </group>

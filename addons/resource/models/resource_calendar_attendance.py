@@ -15,7 +15,8 @@ class ResourceCalendarAttendance(models.Model):
         ('4', 'Friday'),
         ('5', 'Saturday'),
         ('6', 'Sunday')
-        ], 'Day of Week', required=True, index=True, default='0')
+        ], 'Day of Week', required=True, index=True, default='0',
+        compute="_compute_dayofweek", store=True, readonly=False)
     hour_from = fields.Float(string='Work from', default=0, required=True, index=True,
         help="Start and End time of working.\n"
              "A specific value of 24:00 is interpreted as 23:59:59.999999.")
@@ -34,6 +35,9 @@ class ResourceCalendarAttendance(models.Model):
         ('line_section', "Section")], default=False, help="Technical field for UX purpose.")
     sequence = fields.Integer(default=10,
         help="Gives the sequence of this line when displaying the resource calendar.")
+
+    # Variable
+    date = fields.Date()
 
     @api.onchange('hour_from')
     def _onchange_hour_from(self):
@@ -81,6 +85,11 @@ class ResourceCalendarAttendance(models.Model):
             else:
                 attendance.day_period = 'morning'
 
+    @api.depends('date')
+    def _compute_dayofweek(self):
+        for attendance in self.filtered('date'):
+            attendance.dayofweek = str(attendance.date.weekday())
+
     @api.depends('hour_from', 'hour_to')
     def _compute_duration_hours(self):
         for attendance in self.filtered(lambda att: att.hour_from or att.hour_to):
@@ -96,6 +105,7 @@ class ResourceCalendarAttendance(models.Model):
     def _copy_attendance_vals(self):
         self.ensure_one()
         return {
+            'date': self.date,
             'dayofweek': self.dayofweek,
             'duration_hours': self.duration_hours,
             'hour_from': self.hour_from,

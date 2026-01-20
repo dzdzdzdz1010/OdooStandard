@@ -166,12 +166,27 @@ export class FormFieldOption extends BaseOptionComponent {
      */
     get isTextConditionForRequirementOptionVisible() {
         const el = this.env.getEditingElement();
-        const currentFieldInputEl = getCurrentFieldInputEl(el);
+        return (
+            el.dataset.requirementComparator &&
+            !this.domStateCurrentFieldInput.hasDateTimePicker &&
+            this.domStateCurrentFieldInput.type === "number"
+        );
+    }
+    /**
+     * Determines the visibility of the builder list input field used for
+     * validation.
+     *
+     * @returns {boolean} Whether the builder list input should be visible.
+     */
+    get isMultipleTextConditionForRequirementOptionVisible() {
+        const el = this.env.getEditingElement();
         return (
             el.dataset.requirementComparator &&
             !this.domStateCurrentFieldInput.hasDateTimePicker &&
             (this.domStateCurrentFieldInput.isTextArea ||
-                this.canHaveTextValidationCondition.includes(currentFieldInputEl.type))
+                ["text", "email", "tel", "url", "search", "password"].includes(
+                    this.domStateCurrentFieldInput.type
+                ))
         );
     }
     get isTextConditionOperatorVisible() {

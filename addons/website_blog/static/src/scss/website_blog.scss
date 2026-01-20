@@ -61,6 +61,15 @@
         .o_wblog_unpublished {
             @include o-position-absolute(0, 0, auto, auto);
         }
+
+        .o_wblog_split_grid_view_container {
+            &:not(:first-child) {
+                margin-top: 0;
+            }
+            &:nth-child(even) article {
+                flex-direction: row-reverse;
+            }
+        }
     }
 
     // Blog Post Pages

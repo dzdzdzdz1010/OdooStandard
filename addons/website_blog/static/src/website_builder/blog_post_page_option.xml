@@ -41,6 +41,7 @@
         <BuilderRow label.translate="Style">
             <BuilderSelect>
                 <BuilderSelectItem id="'blog_posts_grid_opt'" actionParam="{views: []}">Grid</BuilderSelectItem>
+                <BuilderSelectItem id="'blog_posts_split_grid_opt'" actionParam="{views: ['website_blog.opt_blog_split_grid_view']}">Split Grid</BuilderSelectItem>
                 <BuilderSelectItem id="'blog_posts_simple_list_opt'" actionParam="{views: ['website_blog.opt_blog_simple_list_view']}">Simple List</BuilderSelectItem>
                 <BuilderSelectItem id="'blog_posts_compact_list_opt'" actionParam="{views: ['website_blog.opt_blog_compact_list_view']}">Compact List</BuilderSelectItem>
                 <BuilderSelectItem id="'blog_posts_list_opt'" actionParam="{views: ['website_blog.opt_blog_list_view']}">List</BuilderSelectItem>
@@ -49,7 +50,7 @@
         </BuilderRow>
 
         <!-- Promote latest Post -->
-        <t t-if="this.isActiveItem('blog_posts_grid_opt')">
+        <t t-if="this.isActiveItem('blog_posts_grid_opt') and !this.isActiveItem('blog_posts_split_grid_opt')">
             <BuilderRow
                 label.translate="Promote last"
                 tooltip.translate="Emphasize the most recent post in the blog posts list"
@@ -59,7 +60,7 @@
             </BuilderRow>
         </t>
 
-        <t t-if="this.isActiveItem('blog_posts_grid_opt')">
+        <t t-if="this.isActiveItem('blog_posts_grid_opt') or this.isActiveItem('blog_posts_split_grid_opt')">
             <BuilderRow label.translate="Cards Design" level="1">
                 <BuilderCheckbox actionParam="{views: ['website_blog.opt_blog_cards_design']}"/>
             </BuilderRow>

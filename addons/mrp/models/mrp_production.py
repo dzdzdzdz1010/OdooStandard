@@ -486,11 +486,11 @@ class MrpProduction(models.Model):
         for production in self:
             production.duration = sum(production.workorder_ids.mapped('duration'))
 
-    @api.depends("workorder_ids.date_start", "workorder_ids.date_finished", "date_start")
+    @api.depends("workorder_ids.state")
     def _compute_is_planned(self):
         for production in self:
-            if production.workorder_ids:
-                production.is_planned = any(wo.date_start and wo.date_finished for wo in production.workorder_ids)
+            if all(wo.state in ('planned', 'progress', 'done') for wo in production.workorder_ids):
+                production.is_planned = True
             else:
                 production.is_planned = False
 

@@ -66,6 +66,7 @@ class MrpWorkorder(models.Model):
     state = fields.Selection([
         ('blocked', 'Blocked'),
         ('ready', 'To Do'),
+        ('planned', 'Planned'),
         ('progress', 'In Progress'),
         ('done', 'Finished'),
         ('cancel', 'Cancelled')], string='Status',
@@ -137,7 +138,6 @@ class MrpWorkorder(models.Model):
     consumption = fields.Selection(related='production_id.consumption')
     qty_reported_from_previous_wo = fields.Float('Carried Quantity', digits='Product Unit', copy=False,
         help="The quantity already produced awaiting allocation in the backorders chain.")
-    is_planned = fields.Boolean(related='production_id.is_planned')
     allow_workorder_dependencies = fields.Boolean(related='production_id.allow_workorder_dependencies')
     blocked_by_workorder_ids = fields.Many2many('mrp.workorder', relation="mrp_workorder_dependencies_rel",
                                      column1="workorder_id", column2="blocked_by_id", string="Blocked By",

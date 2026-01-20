@@ -27,7 +27,6 @@ def get_based_on_date_range(based_on):
             limit_date = start_date + relativedelta(months=1)
 
     return {
-        "suggest_based_on": based_on,  # also returning this key to simplify tests setups
         "monthly_demand_start": start_date,
         "monthly_demand_limit": limit_date,
     }

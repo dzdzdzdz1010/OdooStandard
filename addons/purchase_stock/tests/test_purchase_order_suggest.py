@@ -37,6 +37,7 @@ class TestPurchaseOrderSuggest(PurchaseTestCommon, HttpCase):
         monthly_date_range = get_based_on_date_range(based_on)
         suggest_context = {
             **monthly_date_range,
+            "suggest_based_on": based_on,
             "order_id": po.id,
             "partner_id": po.partner_id.id,
             "warehouse_id": warehouse_id,
@@ -54,6 +55,7 @@ class TestPurchaseOrderSuggest(PurchaseTestCommon, HttpCase):
         monthly_date_range = get_based_on_date_range(based_on)
         suggest_context = {
             **monthly_date_range,
+            "suggest_based_on": based_on,
             "warehouse_id": warehouse_id,
             "suggest_percent": factor,
             "suggest_days": days,

@@ -71,7 +71,7 @@ class ProductProduct(models.Model):
         return [('id', 'in', ids)]
 
     @api.depends("suggested_qty")
-    @api.depends_context("suggest_based_on", "suggest_days", "suggest_percent", "warehouse_id")
+    @api.depends_context("suggest_days", "suggest_percent", "warehouse_id")
     def _compute_suggest_estimated_price(self):
         seller_args = {
             "partner_id": self.env['res.partner'].browse(self.env.context.get("partner_id")),

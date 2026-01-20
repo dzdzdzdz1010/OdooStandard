@@ -101,3 +101,12 @@ class TestResCurrency(TransactionCase):
         self.assertEqual(self.env["res.currency"].search_count([["rate_ids", "=", "0.69"]]), 1)
         # should not try to match any of 'name' and 'rate'
         self.assertEqual(self.env["res.currency"].search_count([["rate_ids", "=", "irrelevant"]]), 0)
+
+    def test_amount_to_text_10(self):
+        """ verify that amount_to_text works as expected """
+        currency = self.env.ref('base.EUR')
+
+        amount_target = currency.amount_to_text(0.29)
+        amount_test = currency.amount_to_text(0.28)
+        self.assertNotEqual(amount_test, amount_target,
+                            "Amount in text should not depend on float representation")

@@ -12,3 +12,4 @@ from . import test_mimetypes
 from . import test_misc
 from . import test_pdf
 from . import test_profiler
+from . import test_sql

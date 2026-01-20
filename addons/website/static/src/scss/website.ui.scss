@@ -108,8 +108,11 @@ body {
         display: none;
     }
 }
-[data-publish='off'] > *:not(.css_options) {
-    opacity: 0.5;
+[data-publish='off'] {
+    &:where(:not(:hover)) > *:not(.o_unpublished_badge, .o_unpublished_style_unset),
+    &:where(:hover) .o_unpublished_badge {
+        opacity: 0.5;
+    }
 }
 
 .js_publish_management > .js_publish_btn.btn-success {

@@ -1,4 +1,5 @@
 from odoo import models
+from odoo.exceptions import AccessError
 
 
 class ProductTemplate(models.Model):
@@ -25,18 +26,22 @@ class ProductTemplate(models.Model):
         data['pos.session'][0]['_pos_special_products_ids'] += product_ids_to_hide.product_variant_id.ids
 
         # Identify special loyalty products (e.g., gift cards, e-wallets) to be displayed in the POS
-        loyality_products = config_id.get_record_by_ref([
-            'loyalty.gift_card_product_50',
-            'loyalty.ewallet_product_50',
-        ])
-        special_display_products = self.env['product.product'].browse(loyality_products)
+        try:
+            loyality_products = config_id.get_record_by_ref([
+                'loyalty.gift_card_product_50',
+                'loyalty.ewallet_product_50',
+            ])
+            loyalty_tmpl_ids = self.env['product.product'].browse(loyality_products).mapped('product_tmpl_id.id')
+        except AccessError:
+            # Reference products exist but are not accessible in the current company context
+            loyalty_tmpl_ids = []
         # Include trigger products from loyalty programs of type 'gift_card' or 'ewallet'
-        special_display_products += self.env['loyalty.program'].search([
+        special_display_products_ids = self.env['loyalty.program'].search([
             ('program_type', 'in', ['gift_card', 'ewallet']),
             ('pos_config_ids', 'in', [False, config_id.id]),
-        ]).trigger_product_ids
+        ]).mapped('trigger_product_ids.product_tmpl_id.id')
 
-        data['pos.session'][0]['_pos_special_display_products_ids'] = special_display_products.product_tmpl_id.ids
+        data['pos.session'][0]['_pos_special_display_products_ids'] = special_display_products_ids + loyalty_tmpl_ids
         res.extend(missing_product_templates)
 
         return res

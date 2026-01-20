@@ -160,7 +160,6 @@ class AccountAnalyticLine(models.Model):
 
     name = fields.Char(
         'Description',
-        required=True,
     )
     date = fields.Date(
         'Date',

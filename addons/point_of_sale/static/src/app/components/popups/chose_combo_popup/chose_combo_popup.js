@@ -28,6 +28,9 @@ export class ChoseComboPopup extends Component {
                 0
             );
             for (const line of Object.values(comboChoice)) {
+                if (typeof line === "number") {
+                    continue;
+                }
                 if (line === true) {
                     // Upsell option
                     if (totalChosenQty < maxQty) {

@@ -38,6 +38,7 @@ import { formatDate, deserializeDateTime } from "@web/core/l10n/dates";
 import { ProductInfoPopup } from "@point_of_sale/app/components/popups/product_info_popup/product_info_popup";
 import { RetryPrintPopup } from "@point_of_sale/app/components/popups/retry_print_popup/retry_print_popup";
 import { PresetSlotsPopup } from "@point_of_sale/app/components/popups/preset_slots_popup/preset_slots_popup";
+import { SelectDefaultPrinterPopup } from "@point_of_sale/app/components/popups/select_default_printer_popup/select_default_printer_popup";
 import { DebugWidget } from "../utils/debug/debug_widget";
 import { EpsonPrinter } from "@point_of_sale/app/utils/printer/epson_printer";
 import OrderPaymentValidation from "../utils/order_payment_validation";
@@ -47,6 +48,7 @@ import { uuid } from "@web/core/utils/strings";
 import { GeneratePrinterData } from "../utils/generate_printer_data";
 
 const { DateTime } = luxon;
+const DEFAULT_PRINTER_STORAGE_KEY = "pos.default_printer_id";
 export const CONSOLE_COLOR = "#F5B427";
 
 export class PosStore extends WithLazyGetterTrap {
@@ -167,6 +169,21 @@ export class PosStore extends WithLazyGetterTrap {
         });
 
         this.handleQRPaymentLines();
+        // If a default printer is set.
+        const storedPrinterId = Number(
+            localStorage.getItem(DEFAULT_PRINTER_STORAGE_KEY + this.config.id)
+        );
+        if (storedPrinterId) {
+            const relPrinter = Array.from(this.printer.devices).find(
+                (d) => d.id === storedPrinterId
+            );
+            if (relPrinter) {
+                this.printer.setPrinter(relPrinter);
+                return;
+            }
+        } else if (["ProductScreen", "FloorScreen"].includes(this.router.state.current)) {
+            this.selectPrinter();
+        }
     }
 
     handleQRPaymentLines() {
@@ -418,6 +435,7 @@ export class PosStore extends WithLazyGetterTrap {
                 }
             }
             this.session.state = "closed";
+            this.removeDefaultPrinter();
         }
 
         setTimeout(() => {
@@ -432,7 +450,9 @@ export class PosStore extends WithLazyGetterTrap {
     get company() {
         return this.config.company_id;
     }
-
+    removeDefaultPrinter() {
+        localStorage.removeItem(DEFAULT_PRINTER_STORAGE_KEY + this.config.id);
+    }
     async processServerData() {
         // Used to identify the device when several devices are connected to the same POS
         this.device = this.data.device;
@@ -522,8 +542,35 @@ export class PosStore extends WithLazyGetterTrap {
         this.openCashbox(_t("Cash in / out"));
         return makeAwaitable(this.dialog, CashMovePopup);
     }
+    async selectPrinter({ force = false } = {}) {
+        if (!force && (this.printer.device || !this.printer.devices.size)) {
+            return;
+        }
+        if (this.printer.devices.size == 1) {
+            const relPrinter = Array.from(this.printer.devices)[0];
+            this.printer.setPrinter(relPrinter);
+            return;
+        }
+        const defaultPrinter = await makeAwaitable(this.dialog, SelectDefaultPrinterPopup, {
+            receipt_printers: Array.from(this.printer.devices),
+            selectedId: this.printer.device?.id,
+            title: _t("Several receipt printers are available"),
+            header: _t("Which one would you like to use as default for this device?"),
+            note: _t("You can change your choice from the menu, under printer item"),
+        });
+        if (defaultPrinter) {
+            const relPrinter = Array.from(this.printer.devices).find(
+                (d) => d.id === parseInt(defaultPrinter)
+            );
+            this.printer.setPrinter(relPrinter);
+            localStorage.setItem(
+                DEFAULT_PRINTER_STORAGE_KEY + this.config.id,
+                String(relPrinter.id)
+            );
+        }
+    }
     async openCashbox(action = undefined) {
-        if (this.config.iface_cashdrawer && this.printer.device) {
+        if (this.config.receipt_printer_ids.length && this.printer.device?.iface_cashdrawer) {
             this.printer.device.openCashbox();
             if (action) {
                 await this.logEmployeeMessage(action, "CASH_DRAWER_ACTION");

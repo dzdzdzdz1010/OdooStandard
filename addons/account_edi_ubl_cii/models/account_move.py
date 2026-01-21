@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+import re
+
+from odoo import _, api, fields, models, Command
+from odoo.exceptions import UserError
 
 
 class AccountMove(models.Model):
@@ -16,6 +19,99 @@ class AccountMove(models.Model):
         string="UBL/CII File",
         copy=False,
     )
+
+    # -------------------------------------------------------------------------
+    # ACTIONS
+    # -------------------------------------------------------------------------
+    def action_group_ungroup_lines_by_tax(self):
+        """
+        This action allows the user to reload an imported move, grouping or not lines by tax
+        """
+        self.ensure_one()
+        self._check_move_for_group_ungroup_lines_by_tax()
+
+        # Check if lines look like they're grouped
+        lines_grouped = any(
+            re.match(re.escape(self.partner_id.name or _("Unknown partner")) + r' - \d{4}-\d{2}-\d{2} - .*', line.name)
+            for line in self.line_ids.filtered(lambda x: x.display_type == 'product')
+        )
+
+        if lines_grouped:
+            attachments = self.env['ir.attachment'].search([
+                ('res_model', '=', 'account.move'),
+                ('res_id', '=', self.id),
+                ('company_id', '=', self.company_id.id),
+            ], order='create_date')
+            if not attachments:
+                raise UserError(_("Cannot find the origin file, try by importing it again"))
+
+            success = False
+            for file_data in attachments._unwrap_edi_attachments():
+                if file_data.get('xml_tree') is None:
+                    continue
+                ubl_cii_xml_builder = self._get_ubl_cii_builder_from_xml_tree(file_data['xml_tree'])
+                if ubl_cii_xml_builder is None:
+                    continue
+                self.invoice_line_ids = [Command.clear()]
+                res = ubl_cii_xml_builder._import_invoice_ubl_cii(self.with_context(group_invoice_lines=not lines_grouped), file_data)
+                if res:
+                    success = True
+                    self._message_log(body=_("Ungrouped lines from %s", file_data['attachment'].name))
+                    break
+            if not success:
+                raise UserError(_("Cannot find the origin file, try by importing it again"))
+        else:
+            line_vals = self._get_line_vals_group_by_tax(self.partner_id, fields.Date.to_string(self.date), self.currency_id)
+            self.invoice_line_ids = [Command.clear()]
+            self.invoice_line_ids = line_vals
+            self._message_log(body=_("Grouped lines by tax"))
+
+    def _get_line_vals_group_by_tax(self, partner, date, currency):
+        base_lines = [
+            line._convert_to_tax_base_line_dict()
+            for line in self.line_ids.filtered(lambda x: x.display_type == 'product')
+        ]
+
+        to_process = []
+        for base_line in base_lines:
+            to_update_vals, tax_values_list = self.env['account.tax']._compute_taxes_for_single_line(base_line)
+            to_process.append((base_line, to_update_vals, tax_values_list))
+
+        deferred = 'deferred_start_date' in self.env['account.move.line']._fields  # enterprise field
+
+        def grouping_key_generator(base_line, tax_values):
+            dates = (False, False)
+            if deferred:
+                dates = (base_line['record'].deferred_start_date, base_line['record'].deferred_end_date)
+            return {'tax': (self.env['account.tax'].browse(tax_values['id']), dates)}
+
+        aggregated_lines = self.env['account.tax'].with_company(self.company_id)._aggregate_taxes(to_process, grouping_key_generator=grouping_key_generator)
+
+        to_create = []
+        for tax_detail in aggregated_lines['tax_details'].values():
+            tax, (deferred_start_date, deferred_end_date) = tax_detail['tax']
+            vals = {
+                'quantity': 1,
+                'price_unit': tax_detail['base_amount'],
+                'tax_ids': [Command.link(tax.id)]
+            }
+            date_val = [fields.Date.to_string(deferred_start_date), fields.Date.to_string(deferred_end_date)] if deferred_start_date else [date]
+            vals['name'] = " - ".join([partner.name or _("Unknown partner")] + date_val + [tax.name or _("Untaxed")])
+            if deferred:
+                vals.update({'deferred_start_date': deferred_start_date, 'deferred_end_date': deferred_end_date})
+            to_create.append(Command.create(vals))
+
+        return to_create
+
+    def _check_move_for_group_ungroup_lines_by_tax(self):
+        if not self.is_purchase_document(include_receipts=True):
+            raise UserError(_("You can only (un)group lines of a incoming invoice (vendor bill)"))
+        if self.state != 'draft':
+            raise UserError(_("You can only (un)group lines of a draft invoice"))
+        # TO REMOVE IN 18.0+ as purchase_edi_ubl_bis module is created
+        if 'purchase_order_id' in self.env['account.move.line']._fields:  # purchase field
+            if any(line.purchase_order_id for line in self.line_ids):
+                raise UserError(_("You can only (un)group lines of an invoice not linked to a purchase order"))
 
     # -------------------------------------------------------------------------
     # EDI

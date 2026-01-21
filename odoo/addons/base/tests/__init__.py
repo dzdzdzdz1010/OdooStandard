@@ -7,7 +7,6 @@ from . import test_deprecation
 from . import test_db_cursor
 from . import test_display_name
 from . import test_expression
-from . import test_groups
 from . import test_http_case
 from . import test_install
 from . import test_avatar_mixin

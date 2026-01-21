@@ -67,3 +67,4 @@ from . import test_configmanager
 from . import test_num2words_ar
 from . import test_signature
 from . import test_import_files
+from . import test_res_groups

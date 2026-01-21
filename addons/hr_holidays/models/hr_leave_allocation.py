@@ -9,7 +9,7 @@ from odoo import api, fields, models, _
 from odoo.tools import format_date
 
 from odoo.addons.hr_holidays.models.hr_leave import get_employee_from_context
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import RedirectWarning, UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools.float_utils import float_round
 from odoo.tools.date_utils import get_timedelta
@@ -776,7 +776,9 @@ class HrLeaveAllocation(models.Model):
 
         self.add_follower(employee_id)
 
-        if 'number_of_days_display' not in values and 'number_of_hours_display' not in values and 'state' not in values:
+        tracked_fields = {'number_of_days_display', 'number_of_hours_display', 'state', 'date_to'}
+
+        if not tracked_fields.intersection(vals):
             res = super().write(values)
             if 'allocation_type' in values:
                 self._add_lastcalls()
@@ -795,12 +797,53 @@ class HrLeaveAllocation(models.Model):
                 .get(allocation.holiday_status_id, {}).get('excess_days', {})
             total_current_excess = sum(leave_date['amount'] for leave_date in current_excess.values() if not leave_date['is_virtual'])
             total_previous_excess = sum(leave_date['amount'] for leave_date in previous_excess.values() if not leave_date['is_virtual'])
+            excess_leave_ids = [leave_date['leave_id'] for leave_date in current_excess.values() if not leave_date['is_virtual']]
 
-            if total_current_excess <= total_previous_excess:
-                continue
-            lt = allocation.holiday_status_id
-            if lt.allows_negative and total_current_excess <= lt.max_allowed_negative:
-                continue
+            is_refusing = values.get('state') == 'refuse'
+            leave_type = allocation.holiday_status_id
+            conflicting_leaves = []
+            msg = False
+
+            if 'date_to' in values:
+                new_date_to = values.get('date_to')
+                conflicting = self.env['hr.leave'].search([
+                    ('employee_id', '=', allocation.employee_id.id),
+                    ('holiday_status_id', '=', leave_type.id),
+                    ('state', '=', 'validate'),
+                    ('date_to', '>', new_date_to),
+                ])
+                if conflicting:
+                    conflicting_leaves = conflicting.ids
+                    msg = self.env._("You cannot set the end date of this accrual earlier than existing "
+                        "validated time off requests that consume it.\n\n"
+                        "Please review or adjust the affected requests.")
+
+            if not conflicting_leaves:
+                if total_current_excess <= total_previous_excess:
+                    continue
+                if leave_type.allows_negative and total_current_excess <= leave_type.max_allowed_negative:
+                    continue
+                if is_refusing:
+                    msg = self.env._("You cannot refuse an allocation already used in approved time off requests. Cancel all related requests first.")
+                    conflicting_leaves = excess_leave_ids
+
+            if conflicting_leaves:
+                action = {
+                    'type': 'ir.actions.act_window',
+                    'name': self.env._('Conflicting Time Off Requests'),
+                    'res_model': 'hr.leave',
+                    'view_mode': 'list',
+                    'views': [(False, 'list')],
+                    'domain': [
+                        ('id', 'in', conflicting_leaves),
+                    ],
+                    'target': 'current',
+                }
+                raise RedirectWarning(
+                    msg,
+                    action,
+                    self.env._('View Time Off Requests'),
+                )
             raise ValidationError(
                 _('You cannot reduce the duration below the duration of leaves already taken by the employee.'))
 

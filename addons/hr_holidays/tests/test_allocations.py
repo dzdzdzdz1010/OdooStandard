@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from freezegun import freeze_time
 
-from odoo.exceptions import ValidationError
+from odoo.exceptions import RedirectWarning, ValidationError
 from odoo.fields import Date, Datetime
 from odoo.tests import Form, tagged, users
 from odoo.tools import format_date
@@ -592,7 +592,7 @@ class TestAllocations(TestHrHolidaysCommon):
         self.assertEqual(allocation_3_days.state, 'validate')
 
         # Can't Refuse 5 days allocation
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(RedirectWarning):
             allocation_5_days.action_refuse()
         self.assertEqual(allocation_5_days.state, 'validate')
 
@@ -611,7 +611,7 @@ class TestAllocations(TestHrHolidaysCommon):
         allocation_5_days.action_refuse()
         self.assertEqual(allocation_5_days.state, 'refuse')
 
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(RedirectWarning):
             allocation_3_days.action_refuse()
         self.assertEqual(allocation_3_days.state, 'validate')
 
@@ -620,3 +620,32 @@ class TestAllocations(TestHrHolidaysCommon):
         self.assertEqual(allocation_5_days.state, 'validate')
         allocation_3_days.action_refuse()
         self.assertEqual(allocation_3_days.state, 'refuse')
+
+    def test_change_date_to_when_leave_is_validated(self):
+        """
+        Setting date_to before validated leave must raise RedirectWarning.
+        But setting date_to after validated leave date_to is valid.
+        """
+        allocation = self.env['hr.leave.allocation'].create({
+            'name': 'Initial Allocation',
+            'holiday_status_id': self.leave_type_paid.id,
+            'number_of_days': 20,
+            'employee_id': self.employee.id,
+            'date_from': date(2024, 1, 1),
+            'date_to': date(2024, 1, 30),
+        })
+        allocation.action_approve()
+
+        leave_request = self.env['hr.leave'].create({
+            'name': 'Leave Request',
+            'holiday_status_id': self.leave_type_paid.id,
+            'request_date_from': date(2024, 1, 5),
+            'request_date_to': date(2024, 1, 10),
+            'employee_id': self.employee.id,
+        })
+        leave_request.action_approve()
+        allocation.write({'date_to': date(2024, 1, 11)})
+        self.assertEqual(allocation.date_to, date(2024, 1, 11))
+
+        with self.assertRaises(RedirectWarning):
+            allocation.write({'date_to': date(2024, 1, 9)})

@@ -16,11 +16,18 @@
             <div class="opening-cash-section mb-3" t-if="this.cashMethodCount">
                 <label class="form-label">Opening cash</label>
                 <div t-att-class="{ 'w-50': !ui.isSmall }" class="cash-input-sub-section d-flex gap-1">
-                    <Input tModel="[state, 'openingCash']"
-                        isValid.bind="env.utils.isValidFloat"
-                        callback.bind="handleInputChange"
-                        autofocus="true"
-                        placeholder.translate="Opening Balance Eg: 123"/>
+                    <div class="form-control form-control-lg input-container d-flex align-items-center bg-view flex-grow-1"
+                        t-att-class="{'is-invalid': !env.utils.isValidFloat(state.openingCash)}">
+                        <input class="o_input border-0 mx-2 text-body w-100" 
+                            type="text"
+                            t-att-value="state.openingCash"
+                            t-on-input="(ev) => state.openingCash = ev.target.value"
+                            t-on-blur="handleInputBlur"
+                            t-on-focus="(ev) => ev.target.select()"
+                            t-ref="openingCashInput"
+                            autofocus="true"
+                            placeholder="Opening Balance Eg: 123"/>
+                    </div>
                     <div class="button icon btn btn-secondary btn-lg lh-lg" t-on-click="openDetailsPopup">
                         <i class="fa fa-money" role="img" title="Open the money details popup"/>
                     </div>

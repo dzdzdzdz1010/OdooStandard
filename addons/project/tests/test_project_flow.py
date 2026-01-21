@@ -547,3 +547,16 @@ class TestProjectFlow(TestProjectCommon, MailCommon):
         # Tag name_search should not raise Error if project_id is False
         task.tag_ids.with_context(project_id=task.project_id.id).name_search(
             args=["!", ["id", "in", []]])
+
+    def test_customer_can_access_public_project(self):
+        """Test that a customer is automatically subscribed when the project is public."""
+        project = self.env['project.project'].create({
+            'name': 'Public Project',
+            'privacy_visibility': 'portal',
+            'partner_id': self.partner_1.id,
+        })
+
+        self.assertIn(
+            self.partner_1, project.message_partner_ids,
+            "Customer should be automatically subscribed to the project when visibility is set to 'public'."
+        )

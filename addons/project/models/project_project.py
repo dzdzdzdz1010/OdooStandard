@@ -511,6 +511,9 @@ class Project(models.Model):
                     vals['stage_id'] = stage.id
 
         projects = super().create(vals_list)
+        for project in projects:
+            if project.privacy_visibility == 'portal':
+                project.message_subscribe(partner_ids=[project.partner_id.id])
         return projects
 
     def write(self, vals):

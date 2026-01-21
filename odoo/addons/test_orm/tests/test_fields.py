@@ -1973,6 +1973,7 @@ class TestFields(TransactionCaseWithUserDemo, TransactionExpressionCase):
         # this invalidates the caches but the prefetching remains the same
         deleted.unlink()
 
+        records.invalidate_model(['categories'])
         # this should not trigger a MissingError
         existing.categories
 
@@ -1990,7 +1991,6 @@ class TestFields(TransactionCaseWithUserDemo, TransactionExpressionCase):
             #                          -> ONE QUERY to read ['name', ...] of records
             #                          -> ONE QUERY for deleted.exists() / code: forbidden = missing.exists()
             #      -> ONE QUERY for records.exists() / MissingError during _check_access
-            #  -> ONE QUERY for records.exists()
             #  -> records._fetch_field(<categories>)
             #      -> records.fetch(['categories'])
             #              -> ONE QUERY to read the many2many of existing

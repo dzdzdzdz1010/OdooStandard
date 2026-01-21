@@ -1612,7 +1612,7 @@ class AccountMoveLine(models.Model):
             lines = self.env.cache.get_records(self, field)
             move_ids = {id_ for id_ in self.env.cache.get_values(lines, field) if id_}
             if move_ids:
-                self.env['account.move'].browse(move_ids).invalidate_recordset()
+                self.env['account.move'].browse(move_ids).invalidate_recordset(flush=flush)
         return super().invalidate_model(fnames, flush)
 
     def invalidate_recordset(self, fnames=None, flush=True):
@@ -1621,7 +1621,7 @@ class AccountMoveLine(models.Model):
             field = self._fields['move_id']
             move_ids = {id_ for id_ in self.env.cache.get_values(self, field) if id_}
             if move_ids:
-                self.env['account.move'].browse(move_ids).invalidate_recordset()
+                self.env['account.move'].browse(move_ids).invalidate_recordset(flush=flush)
         return super().invalidate_recordset(fnames, flush)
 
     @api.model
@@ -1996,6 +1996,7 @@ class AccountMoveLine(models.Model):
         move_container = {'records': self.move_id}
         with self.move_id._check_balanced(move_container),\
              self.move_id._sync_dynamic_lines(move_container):
+            self.env.flush_all()  # Mimic the old behavior
             res = super().unlink()
 
         return res

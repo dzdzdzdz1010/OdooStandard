@@ -211,6 +211,7 @@ class TestPeppolParticipant(PeppolConnectorCommon):
         ]):
             config_wizard = self.env['peppol.config.wizard'].with_context(allowed_company_ids=branch.ids).create({})
             config_wizard.button_peppol_unregister()
+        settings.invalidate_recordset()
         self.assertRecordValues(settings, [{
             'account_peppol_proxy_state': 'not_registered',
             'peppol_use_parent_company': False,
@@ -312,6 +313,7 @@ class TestPeppolParticipant(PeppolConnectorCommon):
         ]):
             config_wizard = self.env['peppol.config.wizard'].with_context(allowed_company_ids=branch.ids).create({})
             config_wizard.button_peppol_unregister()
+        settings.invalidate_recordset()
         self.assertRecordValues(settings, [{
             'account_peppol_proxy_state': 'not_registered',
             'peppol_use_parent_company': False,

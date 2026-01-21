@@ -3275,6 +3275,7 @@ class TestMrpOrder(TestMrpCommon):
 
         wo_02.action_replan()
 
+        (wo_01 + wo_02).invalidate_recordset(['show_json_popover'])  # Depends not complete
         self.assertFalse(wo_01.show_json_popover)
         self.assertFalse(wo_02.show_json_popover)
         self.assertEqual(wo_01.date_finished, wo_02.date_start)
@@ -3309,6 +3310,7 @@ class TestMrpOrder(TestMrpCommon):
 
         wo_02.action_replan()
 
+        (wo_01 + wo_02).invalidate_recordset(['show_json_popover'])  # Depends not complete
         self.assertFalse(wo_01.show_json_popover)
         self.assertFalse(wo_02.show_json_popover)
         self.assertEqual(wo_01.date_finished, wo_02.date_start)

@@ -1,5 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import unittest
+
 from contextlib import contextmanager
 from unittest.mock import patch
 
@@ -8,9 +10,10 @@ from odoo.addons.base.models.ir_mail_server import extract_rfc2822_addresses
 from odoo.addons.base.models.res_partner import ResPartner
 from odoo.addons.base.tests.common import TransactionCaseWithUserDemo
 from odoo.exceptions import AccessError, RedirectWarning, UserError, ValidationError
-from odoo.tests import Form
+from odoo.tests import Form, can_import, loaded_demo_data
 from odoo.tests.common import new_test_user, tagged, TransactionCase, users
 from odoo.addons.base.tests.test_views import ViewCase
+from odoo.tools.misc import file_open
 
 # samples use effective TLDs from the Mozilla public suffix
 # list at http://publicsuffix.org
@@ -1244,3 +1247,60 @@ class TestPartnerFormatAddress(FormatAddressCase):
         self.assertIn('123 Main Street', display_name)
         self.assertIn('Paris', display_name)
         self.assertNotIn('\n\n', display_name)
+
+
+@tagged("post_install", "-at_install")
+class TestImportFiles(TransactionCase):
+
+    @unittest.skipUnless(
+        can_import("xlrd.xlsx") or can_import("openpyxl"), "XLRD/XLSX not available",
+    )
+    def test_import_contacts_template_xls(self):
+        if not loaded_demo_data(self.env):
+            self.skipTest('Needs demo data to be able to import those files')
+        model = "res.partner"
+        filename = "contacts_import_template.xlsx"
+
+        file_content = file_open(f"base/static/xls/{filename}", "rb").read()
+        import_wizard = self.env["base_import.import"].create(
+            {
+                "res_model": model,
+                "file": file_content,
+                "file_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            },
+        )
+
+        result = import_wizard.parse_preview(
+            {
+                "has_headers": True,
+            },
+        )
+        self.assertIsNone(result.get("error"))
+        field_names = ['/'.join(v) for v in result["matches"].values()]
+        results = import_wizard.execute_import(
+            field_names,
+            [r.lower() for r in result["headers"]],
+            {
+                "import_skip_records": [],
+                "import_set_empty_fields": [],
+                "fallback_values": {},
+                "name_create_enabled_fields": {},
+                "encoding": "",
+                "separator": "",
+                "quoting": '"',
+                "date_format": "",
+                "datetime_format": "",
+                "float_thousand_separator": ",",
+                "float_decimal_separator": ".",
+                "advanced": True,
+                "has_headers": True,
+                "keep_matches": False,
+                "limit": 2000,
+                "skip": 0,
+                "tracking_disable": True,
+            },
+        )
+        self.assertFalse(
+            results["messages"],
+            "results should be empty on successful import of ",
+        )

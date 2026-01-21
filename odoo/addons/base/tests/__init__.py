@@ -55,6 +55,5 @@ from . import test_test_suite
 from . import test_tests_tags
 from . import test_transactions
 from . import test_form_create
-from . import test_ir_module_category
 from . import test_signature
 from . import test_res_groups

@@ -1,6 +1,9 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import hmac
 from hashlib import sha1
+
+from werkzeug.exceptions import Forbidden
 
 from odoo import fields
 from odoo.http import request
@@ -8,6 +11,10 @@ from odoo.tools import consteq, float_round
 from odoo.tools.misc import hmac as hmac_tool
 
 from odoo.addons.payment.const import CURRENCY_MINOR_UNITS
+from odoo.addons.payment.logging import get_payment_logger
+
+
+_logger = get_payment_logger(__name__)
 
 
 # Access token management
@@ -196,6 +203,29 @@ def split_partner_name(partner_name):
         return parts[0], ""
 
     return " ".join(parts[:-1]), parts[-1]
+
+
+# Transaction signature verification
+
+def verify_signature(received_signature, expected_signature):
+    """Check that the received signature matches the expected one.
+
+    :param str|bytes received_signature: The received signature
+    :param str|bytes expected_signature: The expected signature
+    :return: None
+    :raise Forbidden: If the signatures don't match.
+    """
+    if not received_signature:
+        _logger.warning("Received payment data with missing signature.")
+        raise Forbidden()
+
+    # Compare the received signature with the expected signature computed from the payload.
+    if (
+            expected_signature is None
+            or not hmac.compare_digest(received_signature, expected_signature)
+    ):
+        _logger.warning("Received payment data with invalid signature.")
+        raise Forbidden()
 
 
 # Security

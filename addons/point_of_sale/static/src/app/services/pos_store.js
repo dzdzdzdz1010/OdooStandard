@@ -283,6 +283,9 @@ export class PosStore extends WithLazyGetterTrap {
                 this.setCashier(this.user);
             }
         } else {
+            if (this.config.module_pos_hr) {
+                return this.defaultPage; // temp solution to be removed
+            }
             this.resetCashier();
         }
 

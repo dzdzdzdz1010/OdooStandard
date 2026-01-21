@@ -1,0 +1,12 @@
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
+from . import test_anglo_saxon
+from . import test_continental
+from . import test_frontend
+from . import test_point_of_sale_flow
+from . import test_point_of_sale
+from . import test_pos_basic_config
+from . import test_pos_margin
+from . import test_pos_other_currency_config
+from . import test_pos_products_with_tax
+from . import test_pos_setup
+from . import test_pos_stock_account

@@ -1,7 +1,7 @@
 import { Transition } from "@web/core/transition";
 import { MainComponentsContainer } from "@web/core/main_components_container";
 import { Navbar } from "@point_of_sale/app/components/navbar/navbar";
-import { usePos } from "@point_of_sale/app/hooks/pos_hook";
+import { usePos, usePosRouter } from "@point_of_sale/app/hooks/pos_hook";
 import { reactive, Component, onMounted, onWillStart } from "@odoo/owl";
 import { useOwnDebugContext } from "@web/core/debug/debug_context";
 import { CustomerDisplayPosAdapter } from "@point_of_sale/app/customer_display/customer_display_adapter";
@@ -20,6 +20,7 @@ export class Chrome extends Component {
     static props = { disableLoader: Function };
     setup() {
         this.pos = usePos();
+        this.router = usePosRouter();
         useIdleTimer(this.pos.idleTimeout, (ev) => {
             const stopEventPropagation = ["mousedown", "click", "keypress"];
             if (stopEventPropagation.includes(ev.type)) {
@@ -51,22 +52,32 @@ export class Chrome extends Component {
         onWillStart(this.pos._loadFonts);
         onMounted(this.props.disableLoader);
         effect(
-            batched((pos) => {
-                this.onPosChanges(pos);
+            batched((pos, router) => {
+                this.onPosChanges(pos, router);
             }),
-            [this.pos]
+            [this.pos, this.router]
         );
     }
 
-    onPosChanges({ selectedOrder }) {
-        if (selectedOrder) {
-            this.sendOrderToCustomerDisplay(selectedOrder);
-        }
+    prepareScaleData(scale) {
+        return null;
     }
 
-    sendOrderToCustomerDisplay(selectedOrder) {
+    onPosChanges({ selectedOrder }, { state }) {
+        this.sendOrderToCustomerDisplay(selectedOrder, state);
+    }
+
+    sendOrderToCustomerDisplay(selectedOrder, state) {
         const adapter = new CustomerDisplayPosAdapter();
-        adapter.formatOrderData(selectedOrder);
+        if (selectedOrder) {
+            adapter.formatOrderData(selectedOrder);
+        }
+        adapter.data = {
+            ...adapter.data,
+            currentScreen: state.current,
+            companyID: this.pos.company.id,
+            scaleData: this.prepareScaleData(this.pos.scale),
+        };
         adapter.dispatch(this.pos);
     }
 

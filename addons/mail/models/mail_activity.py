@@ -679,7 +679,7 @@ class MailActivity(models.Model):
     def action_reschedule_nextweek(self):
         self.filtered('active').date_deadline = date.today() + relativedelta(weeks=1, weekday=MO(-1))
 
-    def action_cancel(self):
+    def action_delete(self):
         for activity in self:
             if activity.active:
                 activity.unlink()

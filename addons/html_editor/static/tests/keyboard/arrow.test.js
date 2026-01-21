@@ -833,4 +833,56 @@ describe("Around contenteditable false elements containing contenteditable true 
             `),
         });
     });
+    test("should select first contenteditable false element (ArrowUp)", async () => {
+        await testEditor({
+            contentBefore: unformat(`
+                <div contenteditable="false">
+                    <div contenteditable="true">
+                        <p>abc</p>
+                    </div>
+                </div>
+                <p>[]def</p>
+            `),
+            stepFunction: () => press(["shift", "arrowup"]),
+            contentAfter: unformat(`
+                <div contenteditable="false">
+                    ]<div contenteditable="true">
+                        <p>abc</p>
+                    </div>
+                </div>
+                <p>[def</p>
+            `),
+        });
+    });
+    test("selection should end at the end of the non-editable element (ArrowUp)", async () => {
+        await testEditor({
+            contentBefore: unformat(`
+                <div contenteditable="false">
+                    <div contenteditable="true">
+                        <p>abc</p>
+                    </div>
+                </div>
+                <div contenteditable="false">
+                    <div contenteditable="true">
+                        <p>def</p>
+                    </div>
+                </div>
+                <p>[]ghi</p>
+            `),
+            stepFunction: () => press(["shift", "arrowup"]),
+            contentAfter: unformat(`
+                <div contenteditable="false">
+                    <div contenteditable="true">
+                        <p>abc</p>
+                    </div>]
+                </div>
+                <div contenteditable="false">
+                    <div contenteditable="true">
+                        <p>def</p>
+                    </div>
+                </div>
+                <p>[ghi</p>
+            `),
+        });
+    });
 });

@@ -114,18 +114,6 @@
         </field>
     </record>
 
-    <record id="view_hr_timesheet_line_graph_invoice_employee" model="ir.ui.view">
-        <field name="name">account.analytic.line.graph.invoice.employee</field>
-        <field name="model">account.analytic.line</field>
-        <field name="mode">primary</field>
-        <field name="inherit_id" ref="view_hr_timesheet_line_graph_employee_per_date"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='date']" position="replace">
-                <field name="timesheet_invoice_id"/>
-            </xpath>
-        </field>
-    </record>
-
     <record id="view_hr_timesheet_line_pivot_inherited" model="ir.ui.view">
         <field name="name">account.analytic.line.pivot</field>
         <field name="model">account.analytic.line</field>

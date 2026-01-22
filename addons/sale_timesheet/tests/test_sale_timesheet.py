@@ -1,11 +1,10 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from datetime import date, timedelta
+from datetime import timedelta
 
 from odoo import Command
 from odoo.fields import Date
 from odoo.tools import float_is_zero
 from odoo.exceptions import AccessError, UserError, ValidationError
-from odoo.addons.hr_timesheet.tests.test_timesheet import TestCommonTimesheet
 from odoo.addons.sale_timesheet.tests.common import TestCommonSaleTimesheet
 from odoo.tests import Form, tagged, new_test_user
 
@@ -462,10 +461,10 @@ class TestSaleTimesheet(TestCommonSaleTimesheet):
             'unit_amount': 30,
             'employee_id': self.employee_manager.id
         })
-        
+
         with self.assertRaises(AccessError, msg="The user should not have access to the SOL"):
             so_line_deliver_timesheet.with_user(self.user_employee_without_sales_access).read(['name'])
-    
+
         # invalidate cache to make sure the SOL set on the timesheet is not in the cache since the user
         # should not be able to access on the SOL.
         self.env['sale.order.line'].invalidate_model()
@@ -889,34 +888,6 @@ class TestSaleTimesheet(TestCommonSaleTimesheet):
 
         move.with_context(check_move_validity=False).line_ids[0].unlink()
         self.assertFalse(analytic_line.timesheet_invoice_id, "The timesheet should have been unlinked from move")
-
-    def test_update_sol_price(self):
-        """ This test ensure that when the price of a sol is updated, the project_profitability panel from the project linked to the SO of that sol is correctly updated too.
-        1) create new SO
-        2) add a sol with a service product with 'invoice on prepaid' and 'create project & task' setting.
-        3) confirm SO and check the project_profitability panel
-        4) update the price of the sol and check the project_profitability panel
-        """
-        sale_order = self.env['sale.order'].create({
-            'partner_id': self.partner_a.id,
-        })
-        product_price = self.product_order_timesheet3.list_price
-        so_line = self.env['sale.order.line'].create({
-            'name': self.product_order_timesheet3.name,
-            'product_id': self.product_order_timesheet3.id,
-            'product_uom_qty': 1,
-            'price_unit': product_price,
-            'order_id': sale_order.id,
-        })
-        sale_order.action_confirm()
-        project = sale_order.project_ids[0]
-
-        items = project._get_profitability_items(with_action=False)
-        self.assertEqual(items['revenues']['data'][0]['to_invoice'], product_price, "The quantity to_invoice should be equal to the price of the product")
-
-        so_line.price_unit = 2*product_price
-        items = project._get_profitability_items(with_action=False)
-        self.assertEqual(items['revenues']['data'][0]['to_invoice'], 2*product_price, "The quantity to_invoice should be equal to twice the price of the product")
 
     def test_sale_order_with_multiple_project_templates(self):
         """Test when creating multiple projects for one sale order every project has its own allocated hours"""

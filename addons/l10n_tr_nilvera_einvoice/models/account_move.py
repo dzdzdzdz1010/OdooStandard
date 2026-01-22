@@ -72,6 +72,8 @@ class AccountMove(models.Model):
             ('TEVKIFAT', "Withholding"),
             ('IHRACKAYITLI', "Registered for Export"),
             ('ISTISNA', "Tax Exempt"),
+            ("IADE", "Return"),
+            ("TEVKIFATIADE", "Withholding Return"),
         ],
         help="The type of invoice to be sent to GİB.",
     )
@@ -104,6 +106,7 @@ class AccountMove(models.Model):
         string="Partner Nilvera Status",
         related='partner_id.l10n_tr_nilvera_customer_status',
     )
+    l10n_tr_original_invoice_date = fields.Date(string="Original Invoice Date")
 
     @api.depends("l10n_tr_gib_invoice_scenario", "l10n_tr_gib_invoice_type", "l10n_tr_is_export_invoice")
     def _compute_l10n_tr_exemption_code_domain_list(self):
@@ -167,6 +170,25 @@ class AccountMove(models.Model):
             elif move.l10n_tr_nilvera_send_status != 'not_sent':
                 raise UserError(_("You cannot reset to draft an entry that has been sent to Nilvera."))
         super().button_draft()
+
+    def _l10n_tr_nilvera_einvoice_check_invalid_invoice_reference(self):
+        invalid_moves = self.env["account.move"]
+        for record in self:
+            _, parts = record._get_sequence_format_param(record.ref or "")
+            if (
+                record.move_type == "out_refund"
+                and not record.reversed_entry_id
+                and not (parts["prefix1"][:3] and parts["year"] and parts["seq"])
+            ):
+                invalid_moves |= record
+        return invalid_moves
+
+    def _l10n_tr_nilvera_check_invalid_type(self):
+        invalid_invoices = self.env["account.move"]
+        for record in self:
+            if record.l10n_tr_gib_invoice_type in {"IADE", "TEVKIFATIADE"} ^ record.move_type == "out_refund":
+                invalid_invoices |= record
+        return invalid_invoices
 
     def _post(self, soft=True):
         for move in self:
@@ -549,3 +571,23 @@ class AccountMove(models.Model):
                         document_category="Sale",
                         invoice_channel=invoice.l10n_tr_nilvera_customer_status,
                     )
+
+    def _get_starting_sequence(self):
+        """
+        Generate a valid name for credit notes.
+
+        Nilvera requires invoice names in the format:
+        <3 alphanumeric characters>/<year>/<sequence number>.
+
+        When creating a credit note, an R is added by standard, so
+        we remvoe the first letter of the journal prefix to make sure it
+        remains 3 characters (e.g., RINV → RNV).
+        """
+        starting_sequence = super()._get_starting_sequence()
+        if (
+            self.company_id.country_id.code == "TR"
+            and self.journal_id.refund_sequence
+            and self.move_type in {"out_refund", "in_refund"}
+        ):
+            starting_sequence = starting_sequence[0] + starting_sequence[2:]
+        return starting_sequence

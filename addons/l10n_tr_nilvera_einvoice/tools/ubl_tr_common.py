@@ -85,10 +85,6 @@ Address = {
     'cac:Country': Country,
 }
 
-BillingReference = {
-    'cac:InvoiceDocumentReference': DocumentReference,
-}
-
 IssuerParty = {
     'cbc:EndpointID': {},
     'cac:PartyIdentification': {
@@ -97,7 +93,7 @@ IssuerParty = {
     'cac:PostalAddress': Address,
 }
 
-DocumentReference = {
+InvoiceDocumentReference = {
     'cbc:ID': {},
     'cbc:UUID': {},
     'cbc:IssueDate': {},
@@ -108,6 +104,10 @@ DocumentReference = {
     'cbc:DocumentDescription': {},
     'cac:Attachment': Attachment,
     'cac:IssuerParty': IssuerParty,
+}
+
+BillingReference = {
+    'cac:InvoiceDocumentReference': InvoiceDocumentReference,
 }
 
 Signature = {

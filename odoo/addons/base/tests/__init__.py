@@ -30,7 +30,7 @@ from . import test_ir_qweb
 from . import test_res_config
 from . import test_res_lang
 from . import test_search
-from . import test_split_table
+from . import test_ir_actions_report
 from . import test_translate
 from . import test_tz
 # from . import test_uninstall  # loop

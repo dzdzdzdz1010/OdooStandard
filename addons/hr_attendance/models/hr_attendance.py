@@ -266,8 +266,8 @@ class HrAttendance(models.Model):
             return Domain.FALSE
         domain_list = [Domain.AND([
             Domain('employee_id', '=', employee.id),
-            Domain('date', '<=', max(attendances.mapped('check_out')).date() + relativedelta(SU)),
-            Domain('date', '>=', min(attendances.mapped('check_in')).date() + relativedelta(MO(-1))),
+            Domain('date', '<=', max(attendances.mapped('check_out')).date() + relativedelta(weekday=SU(1))),
+            Domain('date', '>=', min(attendances.mapped('check_in')).date() + relativedelta(weekday=MO(-1))),
         ]) for employee, attendances in self.filtered(lambda att: att.check_out).grouped('employee_id').items()]
         if not domain_list:
             return Domain.FALSE
@@ -276,7 +276,7 @@ class HrAttendance(models.Model):
     def _update_overtime(self, attendance_domain=None):
         if not attendance_domain:
             attendance_domain = self._get_overtimes_to_update_domain()
-        self.env['hr.attendance.overtime.line'].search(attendance_domain).unlink()
+        self.env['hr.attendance.overtime.line'].search(attendance_domain).filtered(lambda l: l.duration == l.manual_duration).unlink()
         all_attendances = (self | self.env['hr.attendance'].search(attendance_domain)).filtered_domain([('check_out', '!=', False)])
         if not all_attendances:
             return
@@ -292,7 +292,7 @@ class HrAttendance(models.Model):
             emp: [
                 (
                     datetime.combine(p_start, time.min).replace(tzinfo=UTC),
-                    datetime.combine(p_stop, time.min).replace(tzinfo=UTC),
+                    datetime.combine(p_stop, time.max).replace(tzinfo=UTC),
                     v)
                 for p_start, p_stop, v in periods
             ]

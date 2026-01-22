@@ -15,6 +15,9 @@ export class KanbanMany2OneAvatarField extends Component {
     get m2oProps() {
         return computeM2OProps(this.props);
     }
+    get isMuted() {
+        return this.m2oProps.linkCssClass === "text-muted";
+    }
 }
 
 registry.category("fields").add("kanban.many2one_avatar", {

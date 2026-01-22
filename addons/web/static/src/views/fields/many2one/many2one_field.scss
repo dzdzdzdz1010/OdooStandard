@@ -11,3 +11,9 @@
         }
     }
 }
+
+/* Where should i put this ? */
+/* Would it be better to set at style in xml ? */
+.o_image_bw {
+    filter: grayscale(1);
+}

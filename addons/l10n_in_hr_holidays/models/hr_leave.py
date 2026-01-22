@@ -79,6 +79,10 @@ class HrLeave(models.Model):
             )
 
     def _l10n_in_is_working(self, on_date, public_holiday_dates, resource_calendar):
+        if self.holiday_status_id.l10n_in_sandwich_policy == "public_holiday":
+            return on_date not in public_holiday_dates
+        elif self.holiday_status_id.l10n_in_sandwich_policy == "weekend":
+            return resource_calendar._works_on_date(on_date)
         return on_date not in public_holiday_dates and resource_calendar._works_on_date(on_date)
 
     def _l10n_in_count_adjacent_non_working(self, start_date, public_holiday_dates, resource_calendar, reverse=False, include_start=False):
@@ -188,7 +192,22 @@ class HrLeave(models.Model):
         ):
             return 0
 
-        total_leaves = (date_to - date_from).days + 1
+        total_leaves = 0
+        policy = self.holiday_status_id.l10n_in_sandwich_policy
+        current_date = date_from
+        while current_date <= date_to:
+            is_weekend = not self.resource_calendar_id._works_on_date(current_date)
+            is_public_holiday = current_date in public_holiday_dates
+
+            if (
+                policy == "full"
+                or (not is_weekend and not is_public_holiday)
+                or (policy == "weekend" and is_weekend)
+                or (policy == "public_holiday" and is_public_holiday)
+            ):
+                total_leaves += 1
+            current_date += timedelta(days=1)
+
         linked_before, linked_after = self._l10n_in_get_linked_leaves(leaves_dates_by_employee, public_holidays_date_by_company)
         linked_before_leave = linked_before[:1]
         linked_after_leave = linked_after[:1]

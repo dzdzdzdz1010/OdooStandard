@@ -43,12 +43,13 @@ class TestSandwichLeave(TransactionCase):
             'user_id': self.demo_user.id,
         })
 
-        self.leave_type_day, self.leave_type_half_day, self.leave_type_hours = self.env['hr.leave.type'].create([{
+        self.leave_type_day, self.leave_type_half_day, self.leave_type_hours, self.leave_type_weekend, self.leave_type_public_holiday = self.env['hr.leave.type'].create([{
             'name': 'Test Leave Type',
             'request_unit': 'day',
             'unit_of_measure': 'day',
             'requires_allocation': False,
             'l10n_in_is_sandwich_leave': True,
+            'l10n_in_sandwich_policy': 'full',
             'company_id': self.indian_company.id,
         }, {
             'name': 'Test Leave Type 2',
@@ -63,6 +64,22 @@ class TestSandwichLeave(TransactionCase):
             'unit_of_measure': 'hour',
             'requires_allocation': False,
             'l10n_in_is_sandwich_leave': True,
+            'company_id': self.indian_company.id,
+        }, {
+            'name': 'Test Leave Type 4',
+            'request_unit': 'day',
+            'unit_of_measure': 'day',
+            'requires_allocation': False,
+            'l10n_in_is_sandwich_leave': True,
+            'l10n_in_sandwich_policy': 'weekend',
+            'company_id': self.indian_company.id,
+        }, {
+            'name': 'Test Leave Type 5',
+            'request_unit': 'day',
+            'unit_of_measure': 'day',
+            'requires_allocation': False,
+            'l10n_in_is_sandwich_leave': True,
+            'l10n_in_sandwich_policy': 'public_holiday',
             'company_id': self.indian_company.id,
         }])
         self.rahul_emp = self.env['hr.employee'].create({
@@ -596,3 +613,59 @@ class TestSandwichLeave(TransactionCase):
         # Refuse the linked Monday leave -> Friday should drop back to 1 day
         before_leave.action_refuse()
         self.assertEqual(after_leave.number_of_days, 1)
+
+    def test_sandwich_leave_weekend_only_policy(self):
+        weekend_sandwich_leave = self.env['hr.leave'].create({
+            'name': 'Test Leave',
+            'employee_id': self.rahul_emp.id,
+            'holiday_status_id': self.leave_type_weekend.id,
+            'request_date_from': "2025-01-17",
+            'request_date_to': "2025-01-20",
+        })
+        self.assertTrue(weekend_sandwich_leave.l10n_in_contains_sandwich_leaves)
+        self.assertEqual(weekend_sandwich_leave.number_of_days, 4)
+
+        self.env['resource.calendar.leaves'].create({
+            'name': 'test public holiday',
+            'date_from': '2026-01-27 00:00:00',
+            'date_to': '2026-01-27 23:59:59',
+            'resource_id': False,
+        })
+
+        leave_between_public_holidays = self.env['hr.leave'].create({
+            'name': 'Test Leave',
+            'employee_id': self.rahul_emp.id,
+            'holiday_status_id': self.leave_type_weekend.id,
+            'request_date_from': "2026-01-26",
+            'request_date_to': "2026-01-28",
+        })
+        self.assertFalse(leave_between_public_holidays.l10n_in_contains_sandwich_leaves)
+        self.assertEqual(leave_between_public_holidays.number_of_days, 2)
+
+    def test_sandwich_leave_public_holiday_only_policy(self):
+        self.env['resource.calendar.leaves'].create({
+            'name': 'test public holiday',
+            'date_from': '2026-01-27 00:00:00',
+            'date_to': '2026-01-27 23:59:59',
+            'resource_id': False,
+        })
+
+        public_holiday_sandwich_leave = self.env['hr.leave'].create({
+            'name': 'Test Leave',
+            'employee_id': self.rahul_emp.id,
+            'holiday_status_id': self.leave_type_public_holiday.id,
+            'request_date_from': "2026-01-26",
+            'request_date_to': "2026-01-28",
+        })
+        self.assertTrue(public_holiday_sandwich_leave.l10n_in_contains_sandwich_leaves)
+        self.assertEqual(public_holiday_sandwich_leave.number_of_days, 3)
+
+        leave_with_weekend = self.env['hr.leave'].create({
+            'name': 'Test Leave',
+            'employee_id': self.rahul_emp.id,
+            'holiday_status_id': self.leave_type_public_holiday.id,
+            'request_date_from': "2025-01-17",
+            'request_date_to': "2025-01-20",
+        })
+        self.assertFalse(leave_with_weekend.l10n_in_contains_sandwich_leaves)
+        self.assertEqual(leave_with_weekend.number_of_days, 2)

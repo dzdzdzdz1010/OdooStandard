@@ -23,7 +23,7 @@ from . import test_ir_module
 from . import test_ir_sequence
 from . import test_ir_embedded_actions
 from . import test_ir_default
-from . import test_menu
+from . import test_ir_ui_menu
 from . import test_module
 from . import test_module_graph
 from . import test_query

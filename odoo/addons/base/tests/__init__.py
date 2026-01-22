@@ -25,7 +25,7 @@ from . import test_ir_embedded_actions
 from . import test_ir_default
 from . import test_ir_ui_menu
 from . import test_module
-from . import test_qweb_field
+from . import test_ir_qweb_fields
 from . import test_ir_qweb
 from . import test_res_config
 from . import test_res_lang

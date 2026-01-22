@@ -26,7 +26,7 @@ from . import test_ir_default
 from . import test_ir_ui_menu
 from . import test_module
 from . import test_qweb_field
-from . import test_qweb
+from . import test_ir_qweb
 from . import test_res_config
 from . import test_res_lang
 from . import test_search

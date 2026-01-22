@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class LoyaltyHistory(models.Model):
@@ -10,6 +11,7 @@ class LoyaltyHistory(models.Model):
     _description = "History for Loyalty cards and Ewallets"
     _order = 'id desc'
 
+    active = fields.Boolean(default=True)
     card_id = fields.Many2one(
         comodel_name='loyalty.card',
         ondelete='cascade',
@@ -29,11 +31,21 @@ class LoyaltyHistory(models.Model):
              " not necessarily deducted from the points issued on the same line.",
         readonly=True,
     )
-    active = fields.Boolean(default=True)
     expiration_date = fields.Date(string='Expiration')
 
     order_model = fields.Char(readonly=True)
     order_id = fields.Many2oneReference(model_field='order_model', readonly=True)
+
+    @api.constrains('expiration_date')
+    def _check_line_expiration_date(self):
+        for history_line in self:
+            if (
+                history_line.expiration_date
+                and history_line.expiration_date < fields.Date.context_today(history_line)
+            ):
+                raise ValidationError(self.env._(
+                    "The expiry date cannot be in the past. Please select a valid date."
+                ))
 
     def _get_sorted_history_lines(self, lines):
         """
@@ -73,111 +85,103 @@ class LoyaltyHistory(models.Model):
                 vals['expiration_date'] = today + timedelta(days=expire_after)
         return super().create(vals_list)
 
-    def write(self, vals):
-        result = super().write(vals)
-        today = fields.Date.today()
-        if 'expiration_date' in vals:
-            for line in self:
-                if line.expiration_date < today:
-                    line.card_id.points -= line.available_issued_points
-                    line.available_issued_points = 0
-                    line.active = False
-        return result
-
-    def compensate_existing_debts(self, compensation_records):
+    def compensate_existing_debts(self):
         """
-        When new points are issued,
-        settle any existing negative (debt) mappings for same card.
+        Settle outstanding debt records when new points are issued to a card.
         """
-        history_lines_mapping = self.env['loyalty.history.link'].sudo()
+        history_lines_mapping = self.env['loyalty.point.track'].sudo()
 
-        for coupon in compensation_records:
-            card_id = coupon.get('card_id')
-            new_issuer_line_id = coupon.get('redeemer_history_line_id')
-
-            new_issuer_line = self.browse(new_issuer_line_id)
-
+        for issuer_line in self:
             # Debt history lines that have negative points which needs to be compensated.
             debts = history_lines_mapping.search([
                 ('issuer_line_id', '=', False),
                 ('points', '<', 0),
-                ('redeemer_line_id.card_id', '=', card_id),
+                ('redeemer_line_id.card_id', '=', issuer_line.card_id.id),
             ])
 
             for debt in debts:
                 debt_points = abs(debt.points)
-                compensate = min(debt_points, new_issuer_line.available_issued_points)
+                points_to_compensate = min(debt_points, issuer_line.available_issued_points)
 
                 history_lines_mapping.create({
-                    'issuer_line_id': new_issuer_line.id,
+                    'issuer_line_id': issuer_line.id,
                     'redeemer_line_id': debt.redeemer_line_id.id,
-                    'points': compensate,
+                    'points': points_to_compensate,
                 })
 
-                debt.points += compensate
+                debt.points += points_to_compensate
                 if debt.points == 0:
                     debt.unlink()
 
-                new_issuer_line.available_issued_points -= compensate
-                if new_issuer_line.available_issued_points <= 0:
-                    new_issuer_line.active = False
+                issuer_line.available_issued_points -= points_to_compensate
+                if issuer_line.available_issued_points == 0:
+                    issuer_line.active = False
                     break
 
-    def redeem_loyalty_points(self, redemption_records):
+    def redeem_loyalty_points(self, reward_values):
         """
-        Attempts to allocate available issuer history lines to fulfill the redeemer's request.
-        If available points are insufficient, a debt entry is created with no issuer line linked
-        """
-        history_lines_mapping = self.env['loyalty.history.link'].sudo()
+        Allocate available issued loyalty points to cover point redemption.
+        If available points are insufficient, a debt record is created with no issuer line linked.
 
-        for coupon in redemption_records:
-            card_id = coupon.get('card_id')
-            points_to_redeem = coupon.get('points_to_redeem')
-            redeemer_line_id = coupon.get('redeemer_history_line_id')
-            exclude_issuer_ids = coupon.get('exclude_issuer_ids') or []
+        :param list(dict) reward_values: Redemption instructions in the following format:
+            {
+                'card_id': int,
+                'points_to_redeem': float,
+                'redeemer_history_line_id': int,
+                'exclude_issuer_ids': list(int),  # optional
+            }
+        """
+        history_lines_mapping = self.env['loyalty.point.track'].sudo()
+
+        for reward_data in reward_values:
+            card_id = reward_data.get('card_id')
+            points_to_redeem = reward_data.get('points_to_redeem')
+            redeemer_line_id = reward_data.get('redeemer_history_line_id')
+            exclude_issuer_ids = reward_data.get('exclude_issuer_ids', [])
 
             # find redeemable issuer lines and sort them to use them in order
-            redeemable_history_lines = self.search([('card_id', '=', card_id)])
-            sorted_lines = self._get_sorted_history_lines(redeemable_history_lines)
+            redeemable_lines = self.search([
+                ('card_id', '=', card_id),
+                ('id', 'not in', exclude_issuer_ids),
+            ])
 
-            for issuer_line in sorted_lines:
-                if issuer_line.id in exclude_issuer_ids:
-                    continue
-
+            mapping_vals_list = []
+            for issuer_line in self._get_sorted_history_lines(redeemable_lines):
                 redeemable_points = min(issuer_line.available_issued_points, points_to_redeem)
+
+                # Create mapping of issuer -> redeemer for tracking allocation
+                mapping_vals_list.append({
+                    'issuer_line_id': issuer_line.id,
+                    'redeemer_line_id': redeemer_line_id,
+                    'points': redeemable_points,
+                })
+
                 issuer_line.available_issued_points -= redeemable_points
                 if issuer_line.available_issued_points == 0:
                     issuer_line.active = False
 
-                # create mapping of issuer -> redeemer further reference
-                mapping_vals = {
-                    'issuer_line_id': issuer_line.id,
-                    'redeemer_line_id': redeemer_line_id,
-                    'points': redeemable_points,
-                }
-                history_lines_mapping.create(mapping_vals)
-
                 points_to_redeem -= redeemable_points
-                if points_to_redeem <= 0:
+                if not points_to_redeem:
                     break
 
             # If not fully covered, create debt mapping only for an active redeemer
-            if points_to_redeem > 0 and redeemer_line_id:
-                history_lines_mapping.create({
+            if points_to_redeem > 0:
+                mapping_vals_list.append({
                     'issuer_line_id': False,
                     'redeemer_line_id': redeemer_line_id,
                     'points': -points_to_redeem,
                 })
 
+            if mapping_vals_list:
+                history_lines_mapping.create(mapping_vals_list)
+
     @api.model
     def _cron_expire_loyalty_points(self):
         """
-        Expire and archive history lines and recompute total card balance.
+        Scheduled job to expire loyalty points based on expiration_date and recompute card balance.
         """
         today = fields.Date.today()
-        expired_lines = self.with_context(active_test=False).search([
-            ('expiration_date', '<', today),
-        ])
+        expired_lines = self.search([('expiration_date', '<', today)])
 
         if not expired_lines:
             return

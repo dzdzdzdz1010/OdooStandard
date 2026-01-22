@@ -56,9 +56,9 @@ class PosOrder(models.Model):
 
     def add_loyalty_history_lines(self, coupon_data, coupon_updates):
         id_mapping = {item['old_id']: int(item['id']) for item in coupon_updates}
-        compensation_records = []
         history_lines_create_vals = []
-        reward_records = []
+        cards_with_pending_redemptions = {}
+        cards_requiring_debt_compensation = set()
         for coupon in coupon_data:
             card_id = id_mapping.get(int(coupon['card_id']), False) or int(coupon['card_id'])
             loyalty_card = self.env['loyalty.card'].browse(card_id)
@@ -79,31 +79,35 @@ class PosOrder(models.Model):
                     'available_issued_points': available,
                 })
                 if points_to_redeem:
-                    # for redemption of loyalty points used as reward
-                    reward_records.append({
-                        'card_id': card_id,
-                        'points_to_redeem': points_to_redeem,
-                    })
+                    cards_with_pending_redemptions[card_id] = points_to_redeem
+
                 old_card_points = loyalty_card.points - issued + cost
                 if available and old_card_points < 0:
-                    # for compensating the negative card balance to cover debt
-                    compensation_records.append({
-                        'card_id': card_id,
-                        'points_to_redeem': abs(old_card_points),
-                    })
+                    cards_requiring_debt_compensation.add(card_id)
 
         loyalty_history = self.env['loyalty.history']
         created_lines = loyalty_history.create(history_lines_create_vals)
 
-        for history_line in created_lines:
-            for record in reward_records + compensation_records:
-                if record['card_id'] == history_line.card_id.id:
-                    record['redeemer_history_line_id'] = history_line.id
+        reward_values = []
+        issuer_lines = loyalty_history
 
-        if reward_records:
-            loyalty_history.redeem_loyalty_points(reward_records)
-        if compensation_records:
-            loyalty_history.compensate_existing_debts(compensation_records)
+        for history_line in created_lines:
+            card_id = history_line.card_id.id
+
+            if card_id in cards_with_pending_redemptions:
+                reward_values.append({
+                    'card_id': card_id,
+                    'redeemer_history_line_id': history_line.id,
+                    'points_to_redeem': cards_with_pending_redemptions[card_id],
+                })
+
+            if card_id in cards_requiring_debt_compensation:
+                issuer_lines |= history_line
+
+        if reward_values:
+            loyalty_history.redeem_loyalty_points(reward_values)
+        if issuer_lines:
+            issuer_lines.compensate_existing_debts()
 
     def confirm_coupon_programs(self, coupon_data):
         """

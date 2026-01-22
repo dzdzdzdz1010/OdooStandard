@@ -3,9 +3,9 @@
 from odoo import fields, models
 
 
-class LoyaltyHistoryLink(models.Model):
-    _name = 'loyalty.history.link'
-    _description = 'Mapping between issuer and redeemer loyalty history lines'
+class LoyaltyPointTrack(models.Model):
+    _name = 'loyalty.point.track'
+    _description = 'Tracks allocation of loyalty points from issuers to redeemers'
 
     issuer_line_id = fields.Many2one(
         string='Issuer History Line',

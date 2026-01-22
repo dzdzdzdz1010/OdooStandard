@@ -72,6 +72,8 @@ class AccountMoveLine(models.Model):
             return self.product_id._run_fifo(self.quantity)
 
         price_unit = moves._get_price_unit()
+        if self.product_uom_id.is_zero(self.quantity):
+            return price_unit
         valuation_account = self.product_id.product_tmpl_id.get_product_accounts(fiscal_pos=self.move_id.fiscal_position_id)['stock_valuation']
         posted_cogs_value = - sum(self.sale_line_ids.order_id.invoice_ids.line_ids.filtered(
             lambda line: line.product_id == self.product_id and line.display_type == 'cogs' and line.account_id == valuation_account

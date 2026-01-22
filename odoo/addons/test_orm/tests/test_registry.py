@@ -86,6 +86,7 @@ class TestOrmCache(TransactionCase):
         sync_reset = Barrier(nb_treads, timeout=5)
 
         operations = []
+
         def run(cache):
             self.assertEqual(self.env.registry.cache_invalidated, set())
 
@@ -179,7 +180,8 @@ class TestOrmCache(TransactionCase):
 
         for key, value in old_sequences.items():
             if key in ('assets', 'default'):
-                self.assertEqual(value + 1, registry.cache_sequences[key], "Assets and default cache sequence should have changed")
+                self.assertEqual(value + 1, registry.cache_sequences[key],
+                                 "Assets and default cache sequence should have changed")
             else:
                 self.assertEqual(value, registry.cache_sequences[key], "other registry sequence shouldn't have changed")
 
@@ -206,11 +208,11 @@ class TestOrmCache(TransactionCase):
             cr.execute("SELECT count(*), max(id) FROM orm_signaling_registry")
             count, max_id = cr.fetchone()
             self.assertEqual(expected_count, count, message)
-            self.assertEqual(expected_max_id, max_id-sequence_start, message)     
+            self.assertEqual(expected_max_id, max_id - sequence_start, message)
 
         cr.execute('DELETE FROM orm_signaling_registry')
-    
-        for _ in range (7):
+
+        for _ in range(7):
             cr.execute("INSERT INTO orm_signaling_registry (date) VALUES (NOW() - interval '2 hours')")
 
         cr.execute("INSERT INTO orm_signaling_registry DEFAULT VALUES")
@@ -219,14 +221,14 @@ class TestOrmCache(TransactionCase):
         self.env['ir.autovacuum']._gc_orm_signaling()
         assertSignalCount(8, 8, "less than 10 signals, no deletion")
 
-        for _ in range (5):
+        for _ in range(5):
             cr.execute("INSERT INTO orm_signaling_registry DEFAULT VALUES")
 
         assertSignalCount(13, 13, "5 more signals were inserted")
         self.env['ir.autovacuum']._gc_orm_signaling()
         assertSignalCount(10, 13, "more than 10 signals, some should have been deleted")
 
-        for _ in range (7):
+        for _ in range(7):
             cr.execute("INSERT INTO orm_signaling_registry DEFAULT VALUES")
 
         assertSignalCount(17, 20, "7 more signals were inserted")

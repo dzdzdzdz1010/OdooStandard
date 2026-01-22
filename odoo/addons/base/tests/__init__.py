@@ -26,7 +26,6 @@ from . import test_ir_default
 from . import test_menu
 from . import test_module
 from . import test_module_graph
-from . import test_ormcache
 from . import test_overrides
 from . import test_query
 from . import test_qweb_field

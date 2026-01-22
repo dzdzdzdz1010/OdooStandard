@@ -52,5 +52,35 @@
             <field name="perm_write" eval="False"/>
             <field name="perm_unlink" eval="False"/>
         </record>
+
+        <record id="ir_rule_discuss_channel_internal_ended_livechat" model="ir.rule">
+            <field name="name"> discuss.channel: internal users can read ended livechat channels</field>
+            <field name="model_id" ref="mail.model_discuss_channel"/>
+            <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+            <field name="domain_force">[('livechat_end_dt', '!=', False)]</field>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="ir_rule_discuss_channel_member_internal_ended_livechat" model="ir.rule">
+            <field name="name">discuss.channel.member: internal users can read members of ended livechat channels</field>
+            <field name="model_id" ref="mail.model_discuss_channel_member"/>
+            <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+            <field name="domain_force">[('channel_id.livechat_end_dt', '!=', False)]</field>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <record id="ir_rule_discuss_call_history_internal_ended_livechat" model="ir.rule">
+            <field name="name">discuss_call_history: internal users can read call history of ended livechat channels</field>
+            <field name="model_id" ref="mail.model_discuss_call_history"/>
+            <field name="groups" eval="[Command.link(ref('base.group_user'))]"/>
+            <field name="domain_force">[('channel_id.livechat_end_dt', '!=', False)]</field>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
     </data>
 </odoo>

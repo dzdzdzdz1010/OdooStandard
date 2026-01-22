@@ -397,7 +397,7 @@
                                     <label for="pos_customer_display_bg_img" />
                                     <field name="pos_customer_display_bg_img" class="w-100" filename="pos_customer_display_bg_img_name"/>
                                 </setting>
-                                <setting string="Receipt Printers" help="Connect device to your PoS" id="pos_other_devices">
+                                <setting string="Receipt Printers" help="Connect printers to your PoS" id="pos_other_devices">
                                     <field name="pos_other_devices"/>
                                     <div class="content-group" invisible="not pos_other_devices">
                                         <div class="mt16 mb-1">

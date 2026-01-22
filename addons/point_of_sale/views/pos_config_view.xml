@@ -49,7 +49,7 @@
                                 </div>
                             </div>
                         </setting>
-                        <setting id="other_devices" string="Receipt Printers" help="Connect device to your PoS">
+                        <setting id="other_devices" string="Receipt Printers" help="Connect printers to your PoS">
                             <field name="other_devices" />
                             <div class="content-group" invisible="not other_devices">
                                 <div class="row mb-2">

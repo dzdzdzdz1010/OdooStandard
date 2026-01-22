@@ -1,4 +1,5 @@
 "id","sequence","name","auto_apply","country_id","state_ids"
+"account_fiscal_position_uae","5","United Arab Emirates","1","base.ae",""
 "account_fiscal_position_dubai","10","Dubai","1","base.ae","base.state_ae_du"
 "account_fiscal_position_abu_dhabi","20","Abu Dhabi","1","base.ae","base.state_ae_az"
 "account_fiscal_position_sharjah","30","Sharjah","1","base.ae","base.state_ae_sh"

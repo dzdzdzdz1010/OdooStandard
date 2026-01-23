@@ -3,7 +3,6 @@
 from . import common
 from . import test_acl
 from . import test_deprecation
-from . import test_db_cursor
 from . import test_display_name
 from . import test_expression
 from . import test_install

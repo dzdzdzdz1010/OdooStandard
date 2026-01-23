@@ -11,6 +11,7 @@ from . import (
     test_create,
     test_convert_env,
     test_domain,
+    test_environments,
     test_fields,
     test_html_converter,
     test_indexed_translation,

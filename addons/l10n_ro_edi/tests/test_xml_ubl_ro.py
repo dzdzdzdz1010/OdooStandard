@@ -208,12 +208,12 @@ class TestUBLRO(TestUBLROCommon):
         self.test_export_no_vat_and_no_company_registry_raises_error()
 
     def test_export_constraints(self):
-        self.company_data['company'].company_registry = False
         for required_field in ('city', 'street', 'state_id', 'vat'):
             prev_val = self.company_data["company"][required_field]
             self.company_data["company"][required_field] = False
             invoice = self.create_move("out_invoice", send=False)
             with self.assertRaisesRegex(UserError, "required"):
+                self.company_data['company'].company_registry = False
                 invoice._generate_and_send(allow_fallback_pdf=False, mail_template_id=self.move_template.id)
             self.company_data["company"][required_field] = prev_val
 

@@ -94,34 +94,43 @@ class AccountEdiXmlUBLBIS3(models.AbstractModel):
                 'cbc:ID': {'_text': invoice.purchase_order_reference}
             }
 
-    def _get_party_node(self, vals):
-        # * Pagero doc states that the siret of the final customer (that has the Chorus peppol ID) should be located in
-        # the PartyIdentification node.
-        # * Chorus Pro doc states that french suppliers should mention their siret, and european non-french suppliers
-        # should put their VAT
-        party_node = super()._get_party_node(vals)
-        customer = vals['customer'].commercial_partner_id
-        if not self._is_customer_behind_chorus_pro(customer):
-            return party_node
+    def _ubl_add_party_identification_nodes(self, vals):
+        # EXTENDS account.edi.ubl_bis3
+        super()._ubl_add_party_identification_nodes(vals)
+        partner = vals['party_vals']['partner']
+        commercial_partner = partner.commercial_partner_id
 
-        partner = vals['partner'].commercial_partner_id
+        if not self._is_customer_behind_chorus_pro(vals['customer'].commercial_partner_id):
+            return
 
-        party_node['cac:PartyIdentification'] = {
-            'cbc:ID': {
-                '_text': (
-                    partner.siret
-                    if 'siret' in partner._fields and partner.siret and partner.country_code == 'FR'
-                    else partner.vat
-                ),
-                'schemeID': (
-                    '0009' if 'siret' in partner._fields and partner.siret and partner.country_code == 'FR' else None
-                ),
-            },
-        }
-        if 'siret' in partner._fields and partner.siret:
-            party_node['cac:PartyLegalEntity']['cbc:CompanyID'] = {
-                '_text': partner.siret,
-                'schemeID': '0009',
-            }
+        if (
+            commercial_partner.country_code == 'FR'
+            and self.module_installed('l10n_fr')
+            and commercial_partner.siret
+        ):
+            vals['party_node']['cac:PartyIdentification'] = [{
+                'cbc:ID': {
+                    '_text': commercial_partner.siret,
+                    'schemeID': '0009',
+                },
+            }]
 
-        return party_node
+    def _ubl_add_party_legal_entity_nodes(self, vals):
+        # EXTENDS account.edi.ubl_bis3
+        super()._ubl_add_party_legal_entity_nodes(vals)
+        partner = vals['party_vals']['partner']
+        commercial_partner = partner.commercial_partner_id
+
+        if (
+            commercial_partner.country_code == 'FR'
+            and self.module_installed('l10n_fr')
+            and commercial_partner.siret
+            and self._is_customer_behind_chorus_pro(commercial_partner)
+        ):
+            vals['party_node']['cac:PartyLegalEntity'] = [{
+                'cbc:RegistrationName': {'_text': commercial_partner.name},
+                'cbc:CompanyID': {
+                    '_text': commercial_partner.siret,
+                    'schemeID': '0009',
+                },
+            }]

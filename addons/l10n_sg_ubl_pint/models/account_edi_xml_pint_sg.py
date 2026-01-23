@@ -164,10 +164,26 @@ class AccountEdiXmlUBLPINTSG(models.AbstractModel):
                 for code, amount in amounts_in_accounting_currency
             ]
 
-    def _get_party_node(self, vals):
-        party_node = super()._get_party_node(vals)
-        party_node['cac:PartyTaxScheme'][0]['cac:TaxScheme']['cbc:ID']['_text'] = 'GST'
-        return party_node
+    def _ubl_add_party_tax_scheme_nodes(self, vals):
+        # EXTENDS
+        super()._ubl_add_party_tax_scheme_nodes(vals)
+        partner = vals['party_vals']['partner']
+        commercial_partner = partner.commercial_partner_id
+
+        if (
+            commercial_partner.country_code == 'SG'
+            and commercial_partner.vat
+            and commercial_partner.vat != '/'
+        ):
+            vals['party_node']['cac:PartyTaxScheme'] = [{
+                'cbc:CompanyID': {
+                    '_text': commercial_partner.vat,
+                    'schemeID': None,
+                },
+                'cac:TaxScheme': {
+                    'cbc:ID': {'_text': 'GST'},
+                },
+            }]
 
     def _export_invoice_constraints_new(self, invoice, vals):
         # EXTENDS account_edi_ubl_cii

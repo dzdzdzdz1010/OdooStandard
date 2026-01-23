@@ -223,18 +223,47 @@ class AccountEdiXmlUBLPINTANZ(models.AbstractModel):
         document_node['cbc:CustomizationID'] = {'_text': self._get_customization_ids()['pint_anz']}
         document_node['cbc:ProfileID'] = {'_text': 'urn:peppol:bis:billing'}
 
-    def _get_party_node(self, vals):
-        # EXTENDS account.edi.xml.ubl_bis3
-        party_node = super()._get_party_node(vals)
-        commercial_partner = vals['partner'].commercial_partner_id
+    def _ubl_add_party_tax_scheme_nodes(self, vals):
+        # EXTENDS
+        super()._ubl_add_party_tax_scheme_nodes(vals)
+        partner = vals['party_vals']['partner']
+        commercial_partner = partner.commercial_partner_id
 
-        party_node['cac:PartyTaxScheme'][0]['cac:TaxScheme']['cbc:ID']['_text'] = 'GST'
+        if (
+            commercial_partner.country_code in ('AU', 'NZ')
+            and commercial_partner.vat
+            and commercial_partner.vat != '/'
+        ):
+            vals['party_node']['cac:PartyTaxScheme'] = [{
+                'cbc:CompanyID': {'_text': commercial_partner.vat},
+                'cac:TaxScheme': {
+                    'cbc:ID': {'_text': 'GST'},
+                },
+            }]
 
-        # In both cases the scheme must be set to a value that comes from the eas.
+    def _ubl_add_party_legal_entity_nodes(self, vals):
+        # EXTENDS
+        super()._ubl_add_party_legal_entity_nodes(vals)
+        partner = vals['party_vals']['partner']
+        commercial_partner = partner.commercial_partner_id
+
         if commercial_partner.country_code in ('AU', 'NZ'):
-            party_node['cac:PartyLegalEntity']['cbc:CompanyID']['schemeID'] = commercial_partner.peppol_eas
-
-        return party_node
+            if commercial_partner.vat and commercial_partner.vat != '/':
+                vals['party_node']['cac:PartyLegalEntity'] = [{
+                    'cbc:RegistrationName': {'_text': commercial_partner.name},
+                    'cbc:CompanyID': {
+                        '_text': commercial_partner.vat,
+                        'schemeID': '0151' if commercial_partner.country_code == 'AU' else '0088',
+                    },
+                }]
+            elif commercial_partner.peppol_eas and commercial_partner.peppol_endpoint:
+                vals['party_node']['cac:PartyLegalEntity'] = [{
+                    'cbc:RegistrationName': {'_text': commercial_partner.name},
+                    'cbc:CompanyID': {
+                        '_text': commercial_partner.peppol_endpoint,
+                        'schemeID': commercial_partner.peppol_eas,
+                    },
+                }]
 
     def _export_invoice_constraints_new(self, invoice, vals):
         # EXTENDS account_edi_ubl_cii

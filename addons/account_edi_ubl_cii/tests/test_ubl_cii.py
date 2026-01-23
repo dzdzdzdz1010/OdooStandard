@@ -192,7 +192,7 @@ class TestAccountEdiUblCii(TestUblCiiCommon):
             })
 
         # Import the document for the first time
-        bill = self._import_as_attachment_on(attachment=xml_attachment)
+        bill = self._import_as_attachment_on(attachment=xml_attachment, mock_import_attachment=True)
 
         # Ensure the first tax is retrieved as there isn't any prediction that could be leverage
         self.assertEqual(bill.invoice_line_ids.tax_ids, new_tax_1)
@@ -202,7 +202,7 @@ class TestAccountEdiUblCii(TestUblCiiCommon):
         bill.action_post()
 
         # Import the bill again and ensure the prediction did his work
-        bill = self._import_as_attachment_on(attachment=xml_attachment)
+        bill = self._import_as_attachment_on(attachment=xml_attachment, mock_import_attachment=True)
         self.assertEqual(bill.invoice_line_ids.tax_ids, new_tax_2)
 
     def test_peppol_eas_endpoint_compute(self):
@@ -278,7 +278,11 @@ class TestAccountEdiUblCii(TestUblCiiCommon):
             'vat': False,
         })
         # The partner should be retrieved based on the peppol fields
-        imported_invoice = self._import_as_attachment_on(attachment=xml_attachment, journal=self.company_data["default_journal_sale"])
+        imported_invoice = self._import_as_attachment_on(
+            attachment=xml_attachment,
+            journal=self.company_data["default_journal_sale"],
+            mock_import_attachment=True,
+        )
         self.assertEqual(imported_invoice.partner_id, self.partner_be)
 
     def test_actual_delivery_date_in_cii_xml(self):
@@ -406,7 +410,7 @@ class TestAccountEdiUblCii(TestUblCiiCommon):
                 'raw': file.read(),
             })
 
-        bill = self._import_as_attachment_on(attachment=xml_attachment)
+        bill = self._import_as_attachment_on(attachment=xml_attachment, mock_import_attachment=True)
 
         self.assertRecordValues(bill.partner_id, [{
             'name': "ALD Automotive LU",

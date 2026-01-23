@@ -1,5 +1,8 @@
 from odoo import Command
+from odoo.addons.account_edi_ubl_cii.models.account_edi_ubl import AccountEdiUBL
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+
+from unittest.mock import patch
 
 
 class TestUblCiiCommon(AccountTestInvoicingCommon):
@@ -127,12 +130,17 @@ class TestUblCiiCommon(AccountTestInvoicingCommon):
     # -------------------------------------------------------------------------
 
     @classmethod
-    def _import_as_attachment_on(cls, file_path=None, attachment=None, journal=None):
+    def _import_as_attachment_on(cls, file_path=None, attachment=None, journal=None, mock_import_attachment=False):
         assert file_path or attachment
         assert not file_path or not attachment
         journal = journal or cls.company_data["default_journal_purchase"]
         if file_path:
             attachment = cls._import_as_attachment(file_path)
+
+        if mock_import_attachment:
+            with patch.object(AccountEdiUBL, '_import_attachments', return_value=[]):
+                return journal._create_document_from_attachment(attachment.id)
+
         return journal._create_document_from_attachment(attachment.id)
 
 

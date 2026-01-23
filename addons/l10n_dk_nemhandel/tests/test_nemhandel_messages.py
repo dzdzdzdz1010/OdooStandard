@@ -10,6 +10,7 @@ from odoo.exceptions import UserError
 from odoo.tests.common import tagged, freeze_time
 from odoo.tools.misc import file_open
 
+from odoo.addons.account_edi_ubl_cii.models.account_edi_ubl import AccountEdiUBL
 from odoo.addons.account.tests.test_account_move_send import TestAccountMoveSendCommon
 
 
@@ -316,7 +317,7 @@ class TestNemhandelMessage(TestAccountMoveSendCommon):
 
     def test_receive_error_nemhandel(self):
         # an error nemhandel message should be created
-        with self._set_context({'error': True}):
+        with self._set_context({'error': True}), patch.object(AccountEdiUBL, '_import_attachments', return_value=[]):
             self.env['account_edi_proxy_client.user']._cron_nemhandel_get_new_documents()
 
             move = self.env['account.move'].search([('nemhandel_message_uuid', '=', FAKE_UUID[1])])
@@ -324,7 +325,8 @@ class TestNemhandelMessage(TestAccountMoveSendCommon):
 
     def test_receive_success_nemhandel(self):
         # a correct move should be created
-        self.env['account_edi_proxy_client.user']._cron_nemhandel_get_new_documents()
+        with patch.object(AccountEdiUBL, '_import_attachments', return_value=[]):
+            self.env['account_edi_proxy_client.user']._cron_nemhandel_get_new_documents()
 
         move = self.env['account.move'].search([('nemhandel_message_uuid', '=', FAKE_UUID[1])])
         self.assertRecordValues(move, [{'nemhandel_move_state': 'done', 'move_type': 'in_invoice'}])

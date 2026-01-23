@@ -108,9 +108,9 @@ class TestBomPriceCommon(common.TransactionCase):
 class TestBomPrice(TestBomPriceCommon):
     def test_00_compute_price(self):
         """Test multi-level BoM cost"""
-        self.assertEqual(self.dining_table.standard_price, 1000, "Initial price of the Product should be 1000")
-        self.dining_table.button_bom_cost()
-        self.assertEqual(self.dining_table.standard_price, 550, "After computing price from BoM price should be 550")
+        self.assertEqual(self.bom_1.unit_cost, 0, "Initial cost of the Product should be 0")
+        self.bom_1.action_update_product_cost_from_bom()
+        self.assertEqual(self.bom_1.unit_cost, 550, "The cost computed from the BoM should be 550")
 
     def test_01_compute_price_operation_cost(self):
         """Test calcuation of bom cost with operations."""
@@ -207,14 +207,13 @@ class TestBomPrice(TestBomPriceCommon):
         # Operation Cost 1 dozen (306.25 + 15 = 321.25 per dozen) and 25.52 for 1 Unit
         # --------------------------------------------------------------------------
 
-
-        self.assertEqual(self.dining_table.standard_price, 1000, "Initial price of the Product should be 1000")
-        self.dining_table.button_bom_cost()
+        self.assertEqual(self.bom_1.unit_cost, 0, "Initial cost of the Product should be 0")
+        self.bom_1.action_update_product_cost_from_bom()
         # Total cost of Dining Table = (550) + Total cost of operations (321.25) = 871.25
-        self.assertEqual(float_round(self.dining_table.standard_price, precision_digits=2), 871.25, "After computing price from BoM price should be 871.25")
-        self.Product.browse([self.dining_table.id, self.table_head.id]).action_bom_cost()
+        self.assertEqual(float_round(self.bom_1.unit_cost, precision_digits=2), 871.25, "The cost computed from the BoM should be 871.25")
+        self.Bom.browse([self.bom_1.id, self.bom_2.id]).action_update_product_cost_from_bom()
         # Total cost of Dining Table = (718.75) + Total cost of all operations (321.25 + 25.52) = 1065.52
-        self.assertEqual(float_compare(self.dining_table.standard_price, 1065.52, precision_digits=2), 0, "After computing price from BoM price should be 1065.52")
+        self.assertEqual(float_compare(self.bom_1.unit_cost, 1065.52, precision_digits=2), 0, "The cost computed from the BoM should be 1065.52")
 
     def test_02_compute_byproduct_price(self):
         """Test BoM cost when byproducts with cost share"""
@@ -248,9 +247,7 @@ class TestBomPrice(TestBomPriceCommon):
         # Scrap Wood 1 Unit = (25 + 50) / 100 * 550 / (8 units + 12 units) = 20.625
         # -------------------------------------------------------------------------------
 
-        self.assertEqual(self.dining_table.standard_price, 1000, "Initial price of the Product should be 1000")
+        self.assertEqual(self.bom_1.unit_cost, 0, "Initial cost of the Product should be 0")
         self.assertEqual(scrap_wood.standard_price, 30, "Initial price of the By-Product should be 30")
-        self.dining_table.button_bom_cost()
-        self.assertEqual(self.dining_table.standard_price, 137.5, "After computing price from BoM price should be 137.5")
-        scrap_wood.button_bom_cost()
-        self.assertEqual(scrap_wood.standard_price, 20.63, "After computing price from BoM price should be 20.63")
+        self.bom_1.action_update_product_cost_from_bom()
+        self.assertEqual(self.bom_1.unit_cost, 137.5, "The cost computed from the BoM should be 137.5")

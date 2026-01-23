@@ -567,9 +567,9 @@ class TestBomPriceSubcontracting(TestBomPriceCommon):
         #                   Subcontracting 1 Unit * 150 = 150
         # Total = 700 [878.75 if components of Table Head considered] (for 1 Unit)
         # -----------------------------------------------------------------
-        self.assertEqual(self.dining_table.standard_price, 1000, "Initial price of the Product should be 1000")
-        self.dining_table.button_bom_cost()
-        self.assertEqual(float_round(self.dining_table.standard_price, precision_digits=2), 700.0, "After computing price from BoM price should be 700")
+        self.assertEqual(self.bom_1.unit_cost, 0, "Initial cost of the Product should be 0")
+        self.bom_1.action_update_product_cost_from_bom()
+        self.assertEqual(float_round(self.bom_1.unit_cost, precision_digits=2), 700.0, "The cost computed from the BoM should be 700")
 
         # Cost of BoM (Table Head 1 Dozen)
         # -----------------------------------------------------------------
@@ -582,10 +582,10 @@ class TestBomPriceSubcontracting(TestBomPriceCommon):
         #                          1 Unit price (5745/12) =  478.75
         # -----------------------------------------------------------------
 
-        self.assertEqual(self.table_head.standard_price, 300, "Initial price of the Product should be 300")
-        self.Product.browse([self.dining_table.id, self.table_head.id]).action_bom_cost()
-        self.assertEqual(float_compare(self.table_head.standard_price, 478.75, precision_digits=2), 0, "After computing price from BoM price should be 878.75")
-        self.assertEqual(float_compare(self.dining_table.standard_price, 878.75, precision_digits=2), 0, "After computing price from BoM price should be 878.75")
+        self.assertEqual(self.bom_2.unit_cost, 0, "Initial cost of the Product should be 0")
+        self.Bom.browse([self.bom_1.id, self.bom_2.id]).action_update_product_cost_from_bom()
+        self.assertEqual(float_compare(self.bom_2.unit_cost, 478.75, precision_digits=2), 0, "The cost computed from the BoM should be 878.75")
+        self.assertEqual(float_compare(self.bom_1.unit_cost, 878.75, precision_digits=2), 0, "The cost computed from the BoM should be 878.75")
 
     def test_02_compute_price_subcontracting_cost(self):
         """Test calculation of bom cost with subcontracting and supplier in different currency."""
@@ -615,7 +615,7 @@ class TestBomPriceSubcontracting(TestBomPriceCommon):
                 'price': 120.0,
                 'currency_id': currency_a.id,
         }])
-        self.env['mrp.bom'].create({
+        bom = self.env['mrp.bom'].create({
             'product_tmpl_id': product.product_tmpl_id.id,
             'product_qty': 1,
             'type': 'subcontract',
@@ -626,8 +626,8 @@ class TestBomPriceSubcontracting(TestBomPriceCommon):
         })
         self.table_head.standard_price = 100
         self.assertEqual(supplier.is_subcontractor, True)
-        self.assertEqual(product.standard_price, 100, "Initial price of the Product should be 100")
-        product.button_bom_cost()
+        self.assertEqual(bom.unit_cost, 0.0, "Initial cost of the Product should be 0")
+        bom.action_update_product_cost_from_bom()
         # 120 Zen = 240 USD (120 * 2)
         # price = 240 + 100 (1 unit of component "table_head") = 340
-        self.assertEqual(product.standard_price, 340, "After computing price from BoM price should be 340")
+        self.assertEqual(bom.unit_cost, 340, "The cost computed from the BoM should be 340")

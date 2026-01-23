@@ -12,7 +12,7 @@ from odoo.addons.base.tests.common import TransactionCaseWithUserDemo
 from odoo.exceptions import AccessError, RedirectWarning, UserError, ValidationError
 from odoo.tests import Form, can_import, loaded_demo_data
 from odoo.tests.common import new_test_user, tagged, TransactionCase, users
-from odoo.addons.base.tests.test_views import ViewCase
+from odoo.addons.base.tests.test_ir_ui_view import ViewCase
 from odoo.tools.misc import file_open
 
 # samples use effective TLDs from the Mozilla public suffix

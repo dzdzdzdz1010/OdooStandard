@@ -288,6 +288,9 @@
                 <filter string="Finished" name="finish" domain="[('state', '=', 'done')]"/>
                 <filter string="Cancelled" name="cancel" domain="[('state', '=', 'cancel')]"/>
                 <separator/>
+                <filter string="Planned" name="filter_planned" domain="[('date_start', '!=', False), ('date_finished', '!=', False)]"/>
+                <filter string="To Plan" name="filter_to_plan" domain="['|', ('date_start', '=', False), ('date_finished', '=', False)]"/>
+                <separator/>
                 <filter string="Late" name="late" domain="['&amp;', ('date_start', '&lt;', 'now'), ('state', '=', 'ready')]"
                     help="Production started late"/>
                 <group>
@@ -338,44 +341,50 @@
             </pivot>
         </field>
     </record>
-
     <record model="ir.ui.view" id="workcenter_line_kanban">
         <field name="name">mrp.production.work.order.kanban</field>
         <field name="model">mrp.workorder</field>
         <field name="arch" type="xml">
-            <kanban class="o_mrp_workorder_kanban" create="0" sample="1">
+            <kanban class="o_mrp_workorder_kanban" js_class="mrp_workorder_kanban" can_open="1" create="0" sample="1" default_group_by="workcenter_id">
+                <header>
+                    <button name="action_select_wo_to_plan" type="object" string="Plan Orders" display="always"/>
+                    <button name="action_replan" type="object" string="Update Planning" display="always"/>
+                </header>
                 <field name="last_working_user_id"/>
                 <field name="workcenter_id" invisible="True"/>
                 <field name="product_uom_id" invisible="True" force_save="True"/>
                 <field name="working_user_ids"/>
                 <field name="working_state"/>
                 <field name="date_start"/>
+                <field name="date_finished"/>
                 <field name="production_date"/>
+                <field name="remaining_time"/>
                 <templates>
                     <t t-name="card">
                         <div class="d-flex o_kanban_record_top">
                             <div class="o_kanban_workorder_title h4">
-                                <field name="production_id"/> - <field name="name"/>
-                            </div>
-                            <div class="o_kanban_workorder_date h5">
-                                <field name="date_start"/>
-                                <field t-if="!record.date_start.raw_value" name="production_date"/>
-                            </div>
-                            <div class="h2 ms-2">
-                                <span t-attf-class="badge rounded-pill #{['progress'].indexOf(record.state.raw_value) > -1 ? 'text-bg-warning' : ['ready', 'blocked'].indexOf(record.state.raw_value) > -1 ? 'text-bg-primary' : ['done'].indexOf(record.state.raw_value) > -1 ? 'text-bg-success' : 'text-bg-danger'}">
-                                    <field name="state"/>
-                                </span>
+                                <field name="product_id"/>
+                                <div class="ms-auto">
+                                    <field name="qty_production" class="p-2"/>
+                                    <field name="product_uom_id"/>
+                                </div>
                             </div>
                         </div>
+                        <div class="o_kanban_workorder_production_name">
+                            <field name="priority" widget="priority" class="pe-2"/>
+                            <field name="production_id"/>
+                            <field name="name" class="ps-4"/>
+                        </div>
+                        <div class="o_kanban_workorder_date" invisible="not date_start" t-att-class="record.remaining_time.raw_value &lt; 0 ? 'o_wo_red' : ''">
+                            <field name="date_start" class="pe-2"/> - <field name="date_finished" class="ps-2"/>
+                        </div>
                         <footer>
-                            <h5>
-                                <field name="product_id"/>, <field name="qty_production" class="ms-1"/> <field name="product_uom_id" groups="uom.group_uom"/><t t-if="record.finished_lot_ids.value">, </t> <field t-if="record.finished_lot_ids.value" name="finished_lot_ids" class="ms-1"/>
-                            </h5>
-                            <div class="o_kanban_workorder_status d-flex ms-auto" t-if="record.state.raw_value == 'progress'">
-                                <span t-if="record.working_state.raw_value != 'blocked' and record.working_user_ids.raw_value.length > 0" class="fa fa-play fs-6" role="img" aria-label="Is running" title="Is running"/>
-                                <span t-if="record.working_state.raw_value != 'blocked' and record.working_user_ids.raw_value.length == 0 and record.last_working_user_id.raw_value" class="fa fa-pause" role="img" aria-label="Is paused" title="Is paused"/>
-                                <span t-if="record.working_state.raw_value == 'blocked' and (record.working_user_ids.raw_value.length == 0 or record.last_working_user_id.raw_value)" class="fa fa-stop" role="img" aria-label="Is stopped" title="Is stopped"/>
-                                <field t-if="record.last_working_user_id.raw_value" name="last_working_user_id" widget="image" options="{'preview_image': 'avatar_128'}" class="ms-1 o_avatar"/>
+                            <div class="o_kanban_workorder_remaining" t-att-class="record.remaining_time.raw_value &lt; 0 ? 'o_wo_red' : ''">
+                                <field name="remaining_time"/>
+                            </div>
+                            <div class="d-flex ms-auto">
+                                <field name="last_working_user_id" widget="many2one_avatar_user"/>
+                                <widget name="mo_view_list_dropdown"/>
                             </div>
                         </footer>
                     </t>
@@ -388,9 +397,9 @@
         <field name="name">Work Orders Planning</field>
         <field name="res_model">mrp.workorder</field>
         <field name="path">workcenter-planning</field>
-        <field name="view_mode">list,form,calendar,pivot,graph</field>
+        <field name="view_mode">list,kanban,form,calendar,pivot,graph</field>
         <field name="search_view_id" ref="view_mrp_production_workorder_form_view_filter"/>
-        <field name="context">{'search_default_work_center': True, 'search_default_ready': True, 'search_default_blocked': True, 'search_default_progress': True, 'show_workcenter_status': True}</field>
+        <field name="context">{'search_default_work_center': True, 'search_default_ready': True, 'search_default_filter_planned': True, 'search_default_progress': True, 'show_workcenter_status': True}</field>
         <field name="help" type="html">
           <p class="o_view_nocontent_smiling_face">
             No work orders to do!

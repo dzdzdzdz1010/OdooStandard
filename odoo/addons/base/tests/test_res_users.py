@@ -1068,3 +1068,12 @@ class TestHasGroup(TransactionCase):
         user2 = self.env['res.users'].new({'partner_id': self.test_user.partner_id.id}, origin=self.test_user)
         self.assertEqual(user2.has_group(self.group0), True)
         self.assertEqual(user2.has_group(self.group1), False)
+
+
+@tagged('-at_install', 'post_install')
+class TestFormCreate(TransactionCase):
+    def test_create_res_users(self):
+        user_form = Form(self.env['res.users'])
+        user_form.login = 'a user login'
+        user_form.name = 'a user name'
+        user_form.save()

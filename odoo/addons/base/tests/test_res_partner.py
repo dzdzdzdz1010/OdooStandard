@@ -1304,3 +1304,35 @@ class TestImportFiles(TransactionCase):
             results["messages"],
             "results should be empty on successful import of ",
         )
+
+
+@tagged('-at_install', 'post_install')
+class TestFormCreate(TransactionCase):
+    def test_create_res_partner(self):
+        # YTI: Clean that brol
+        if hasattr(self.env['res.partner'], 'property_account_payable_id'):
+            # Required for `property_account_payable_id`, `property_account_receivable_id` to be visible in the view
+            # By default, it's the `group` `group_account_readonly` which is required to see it, in the `account` module
+            # But once `account_accountant` gets installed, it becomes `account.group_account_user`
+            # https://github.com/odoo/enterprise/commit/68f6c1f9fd3ff6762c98e1a405ade035129efce0
+            self.env.user.group_ids += self.env.ref('account.group_account_readonly')
+            self.env.user.group_ids += self.env.ref('account.group_account_user')
+        partner_form = Form(self.env['res.partner'])
+        partner_form.name = 'a partner'
+        # YTI: Clean that brol
+        if hasattr(self.env['res.partner'], 'property_account_payable_id'):
+            property_account_payable_id = self.env['account.account'].create({
+                'name': 'Test Account',
+                'account_type': 'liability_payable',
+                'code': 'TestAccountPayable',
+                'reconcile': True
+            })
+            property_account_receivable_id = self.env['account.account'].create({
+                'name': 'Test Account',
+                'account_type': 'asset_receivable',
+                'code': 'TestAccountReceivable',
+                'reconcile': True
+            })
+            partner_form.property_account_payable_id = property_account_payable_id
+            partner_form.property_account_receivable_id = property_account_receivable_id
+        partner_form.save()

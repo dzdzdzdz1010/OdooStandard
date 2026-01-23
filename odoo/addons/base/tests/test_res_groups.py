@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from odoo import Command
-from odoo.tests.common import tagged, TransactionCase
+from odoo.tests import tagged, TransactionCase, Form
 from odoo.exceptions import ValidationError
 
 
@@ -469,3 +469,11 @@ class TestGroupsOdoo(TransactionCase):
         #
         with self.assertRaises(ValidationError, msg=f"User 'A User' cannot be at the same time in exclusive groups {e.name!r}, {g.name!r}"):
             user.group_ids += c
+
+
+@tagged('-at_install', 'post_install')
+class TestFormCreate(TransactionCase):
+    def test_create_res_group(self):
+        group_form = Form(self.env['res.groups'])
+        group_form.name = 'a group'
+        group_form.save()

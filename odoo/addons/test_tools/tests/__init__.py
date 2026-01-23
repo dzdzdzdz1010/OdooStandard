@@ -16,3 +16,4 @@ from . import test_profiler
 from . import test_safe_eval
 from . import test_set_expression
 from . import test_sql
+from . import test_translate

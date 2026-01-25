@@ -11,7 +11,7 @@ from odoo import _, http
 from odoo.exceptions import AccessError, UserError
 from odoo.http import request
 from odoo.http.stream import content_disposition
-from odoo.tools.misc import file_open
+from odoo.tools import BinaryValue
 from odoo.tools.pdf import DependencyError, PdfReadError, extract_page
 
 from odoo.addons.mail.controllers.thread import ThreadController
@@ -145,9 +145,10 @@ class AttachmentController(ThreadController):
         attachment_sudo = attachment.sudo()
         if attachment_sudo.mimetype != "application/pdf":
             raise UserError(request.env._("Only PDF files can have thumbnail."))
-        if not thumbnail:
-            with file_open("web/static/img/mimetypes/unknown.svg") as unknown_svg:
-                thumbnail = base64.b64encode(unknown_svg.read().encode())
+        if thumbnail:
+            thumbnail = BinaryValue.from_bytes(base64.b64decode(thumbnail))
+        else:
+            thumbnail = BinaryValue.from_file("web/static/img/mimetypes/unknown.svg")
         attachment_sudo.thumbnail = thumbnail
         Store(bus_channel=attachment_sudo).add(attachment_sudo, ["has_thumbnail"]).bus_send()
 

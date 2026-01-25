@@ -4,15 +4,18 @@ Tests for various autodetection magics for CSV imports
 import codecs
 
 from odoo.tests import tagged, common
+from odoo.tools import BinaryValue
 
 
 class ImportCase(common.TransactionCase):
     def _make_import(self, contents):
+        if isinstance(contents, str):
+            contents = contents.encode()
         return self.env['base_import.import'].create({
             'res_model': 'import.complex',
             'file_name': 'f',
             'file_type': 'text/csv',
-            'file': contents,
+            'file': BinaryValue.from_bytes(contents),
         })
 
 

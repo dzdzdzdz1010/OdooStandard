@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 import logging
 import time
 from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 from odoo import api, fields, models, Command
-from odoo.tools.misc import file_open, formatLang
+from odoo.tools.misc import formatLang
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import BinaryValue
 from odoo.addons.account.models.chart_template import template
 
 _logger = logging.getLogger(__name__)
@@ -472,9 +472,7 @@ class AccountChartTemplate(models.AbstractModel):
                 'res_model': 'account.move',
                 'res_id': 'demo_invoice_8',
                 'res_field': 'invoice_pdf_report_file',
-                'raw': file_open(
-                    'account/static/demo/in_invoice_yourcompany_demo_1.pdf', 'rb'
-                ).read()
+                'raw': BinaryValue.from_file('account/static/demo/in_invoice_yourcompany_demo_1.pdf'),
             },
             'ir_attachment_in_invoice_2': {
                 'type': 'binary',
@@ -482,27 +480,21 @@ class AccountChartTemplate(models.AbstractModel):
                 'res_model': 'account.move',
                 'res_id': 'demo_invoice_equipment_purchase',
                 'res_field': 'invoice_pdf_report_file',
-                'raw': file_open(
-                    'account/static/demo/in_invoice_yourcompany_demo_2.pdf', 'rb'
-                ).read()
+                'raw': BinaryValue.from_file('account/static/demo/in_invoice_yourcompany_demo_2.pdf'),
             },
             'ir_attachment_bank_statement_1': {
                 'type': 'binary',
                 'name': 'bank_opening_statement.pdf',
                 'res_model': 'account.bank.statement',
                 'res_id': 'demo_bank_statement_1',
-                'raw': file_open(
-                    'account/static/demo/bank_opening_statement.pdf', 'rb'
-                ).read()
+                'raw': BinaryValue.from_file('account/static/demo/bank_opening_statement.pdf'),
             },
             'ir_attachment_bank_statement_2': {
                 'type': 'binary',
                 'name': 'bank_statement_one_month_old.pdf',
                 'res_model': 'account.bank.statement',
                 'res_id': 'demo_bank_statement_2',
-                'raw': file_open(
-                    'account/static/demo/bank_statement_one_month_old.pdf', 'rb'
-                ).read()
+                'raw': BinaryValue.from_file('account/static/demo/bank_statement_one_month_old.pdf'),
             },
         }
 

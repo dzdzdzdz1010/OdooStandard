@@ -1,5 +1,4 @@
 import json
-from base64 import b64encode
 from contextlib import contextmanager
 from requests import PreparedRequest, Response, Session
 from unittest.mock import patch
@@ -7,7 +6,7 @@ from unittest.mock import patch
 from odoo import Command
 from odoo.exceptions import UserError
 from odoo.tests.common import tagged, freeze_time
-from odoo.tools.misc import file_open
+from odoo.tools import BinaryValue
 
 from odoo.addons.account.tests.test_account_move_send import TestAccountMoveSendCommon
 
@@ -39,7 +38,7 @@ class TestNemhandelMessage(TestAccountMoveSendCommon):
         edi_identification = cls.env['account_edi_proxy_client.user']._get_proxy_identification(cls.env.company, 'nemhandel')
         cls.private_key = cls.env['certificate.key'].create({
             'name': 'Test key Nemhandel',
-            'content': b64encode(file_open(f'{FILE_PATH}/private_key.pem', 'rb').read()),
+            'content': BinaryValue.from_file(f'{FILE_PATH}/private_key.pem'),
         })
         cls.proxy_user = cls.env['account_edi_proxy_client.user'].create({
             'id_client': ID_CLIENT,
@@ -105,8 +104,8 @@ class TestNemhandelMessage(TestAccountMoveSendCommon):
             FAKE_UUID[1]: {
                 'accounting_supplier_party': '0184:16356706',
                 'filename': 'test_incoming',
-                'enc_key': file_open(f'{FILE_PATH}/enc_key', mode='rb').read(),
-                'document': b64encode(file_open(f'{FILE_PATH}/document', mode='rb').read()),
+                'enc_key': BinaryValue.from_file(f'{FILE_PATH}/enc_key').decode(),  # base64 data
+                'document': BinaryValue.from_file(f'{FILE_PATH}/document'),
                 'state': 'done' if not error else 'error',
                 'direction': 'incoming',
                 'document_type': 'Invoice',

@@ -1,10 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from base64 import b64encode
 import uuid
 
-from odoo.tools import _
-from odoo.tools.misc import file_open
+from odoo.tools import _, BinaryValue
 
 DEMO_BILL_PATH = 'account_peppol/tools/demo_bill'
 DEMO_ENC_KEY = 'account_peppol/tools/enc_key'
@@ -14,6 +12,7 @@ DEMO_PRIVATE_KEY = 'account_peppol/tools/private_key.pem'
 # HELPERS
 # -------------------------------------------------------------------------
 
+
 def get_demo_vendor_bill(user):
     return {
         'direction': 'incoming',
@@ -22,8 +21,8 @@ def get_demo_vendor_bill(user):
         'accounting_supplier_party': '0208:2718281828',
         'state': 'done',
         'filename': f'{user.company_id.id}_demo_vendor_bill',
-        'enc_key': file_open(DEMO_ENC_KEY, mode='rb').read(),
-        'document': file_open(DEMO_BILL_PATH, mode='rb').read(),
+        'enc_key': BinaryValue.from_file(DEMO_ENC_KEY),
+        'document': BinaryValue.from_file(DEMO_BILL_PATH),
     }
 
 
@@ -119,15 +118,15 @@ def _mock_register_proxy_user(func, self, *args, **kwargs):
     if edi_user.proxy_type != 'peppol':
         return edi_user
 
-    content = b64encode(file_open(DEMO_PRIVATE_KEY, 'rb').read())
+    content = BinaryValue.from_file(DEMO_PRIVATE_KEY)
 
     attachments = self.env['ir.attachment'].search([
         ('res_model', '=', 'certificate.key'),
         ('res_field', '=', 'content'),
         ('company_id', '=', edi_user.company_id.id)
     ])
-    content_to_key_id = {attachment.datas: attachment.res_id for attachment in attachments}
-    pkey_id = content_to_key_id.get(content)
+    content_to_key_id = {bytes(attachment.raw): attachment.res_id for attachment in attachments}
+    pkey_id = content_to_key_id.get(bytes(content))
     if not pkey_id:
         pkey_id = self.env['certificate.key'].create({
             'content': content,

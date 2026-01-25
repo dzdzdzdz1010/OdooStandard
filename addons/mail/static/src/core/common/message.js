@@ -40,6 +40,7 @@ import { useForwardRefsToParent, useLongPress } from "@mail/utils/common/hooks";
 import { ActionList } from "@mail/core/common/action_list";
 import { loadCssFromBundle } from "@mail/utils/common/misc";
 import { MessageContextMenu } from "./message_context_menu";
+import { ForwardDialog } from "@mail/core/common/forward_dialog";
 
 /**
  * @typedef {Object} Props
@@ -541,6 +542,28 @@ export class Message extends Component {
             { message: this.props.message, initialReaction: reaction },
             { context: this }
         );
+    }
+
+    openForwardDialog() {
+        this.dialog.add(ForwardDialog, {
+            sourceMessage: this.props.message,
+        });
+    }
+
+    openForwardedConversation() {
+        const showAccessError = () =>
+            this.env.services.notification.add(_t("This conversation isn't available."), {
+                type: "danger",
+            });
+        const thread = this.message.forwarded_from_id.thread;
+        thread.checkReadAccess().then((hasAccess) => {
+            if (hasAccess) {
+                thread.highlightMessage = this.message.forwarded_from_id;
+                thread.open({ focus: true });
+            } else {
+                showAccessError();
+            }
+        });
     }
 }
 

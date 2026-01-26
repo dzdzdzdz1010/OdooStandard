@@ -589,7 +589,10 @@ class ResourceCalendar(models.Model):
         # If the employee didn't work a full day, it is still counted, i.e. 19h / week (M/T/W(half day)) -> 3 days
         self.ensure_one()
         attendances = self._get_global_attendances()
-        return len(set(attendances.mapped('dayofweek')))
+        weekdays = len(set(attendances.mapped('dayofweek')))
+        if self.resource_type == 'variable' and attendances:
+            weekdays /= len({(att.date.isocalendar().year, att.date.isocalendar().week) for att in attendances})
+        return weekdays
 
     def _get_hours_per_week(self):
         """ Calculate the average hours worked per week. """
@@ -803,27 +806,25 @@ class ResourceCalendar(models.Model):
         return revert(day_dt)
 
     def _works_on_date(self, date):
-        self.ensure_one()
-
-        working_days = self._get_working_hours()
-        dayofweek = str(date.weekday())
-        return working_days[dayofweek]
+        return bool(self._get_global_attendances()._get_attendances_on_date(date))
 
     def _is_duration_based_on_date(self, date):
         self.ensure_one()
-        return any(att.duration_based for att in self.attendance_ids.filtered(lambda a: int(a.dayofweek) == date.weekday()))
+        return any(att.duration_based for att in self._get_global_attendances()._get_attendances_on_date(date))
 
     def _get_duration_based_work_hours_on_date(self, date):
-        return sum(self.attendance_ids.filtered(lambda a: int(a.dayofweek) == date.weekday()).mapped('duration_hours'))
+        return sum(self._get_global_attendances()._get_attendances_on_date(date).mapped('duration_hours'))
 
     @ormcache('self.id')
-    def _get_working_hours(self):
+    def _get_working_hours(self, date_from, date_to):
         self.ensure_one()
 
-        working_days = defaultdict(lambda: False)
-        for attendance in self.attendance_ids:
-            working_days[attendance.dayofweek] = True
-        return working_days
+        attendances = self._get_global_attendances()
+        if self.resource_type == 'variable':
+            return attendances.filtered(lambda att: att.date and date_from <= att.date <= date_to).grouped('date').items()
+
+        grouped_attendances = attendances.grouped('dayofweek')
+        return {day: grouped_attendances[str(day.weekday())] for day in rrule(DAILY, date_from, until=date_to)}
 
     def copy_from(self, option, date_from, date_to, copy_type=False):
         self.ensure_one()

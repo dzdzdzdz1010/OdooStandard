@@ -116,3 +116,6 @@ class ResourceCalendarAttendance(models.Model):
 
     def _is_work_period(self):
         return not self.display_type
+
+    def _get_attendances_on_date(self, date):
+        return self.filtered(lambda a: (not a.date and a.dayofweek == str(date.weekday())) or (a.date == date))

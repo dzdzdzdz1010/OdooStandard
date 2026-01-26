@@ -14,6 +14,17 @@ class ResPartner(models.Model):
     employees_count = fields.Integer(compute='_compute_employees_count', groups="hr.group_hr_user")
     employee = fields.Boolean(help="Whether this contact is an Employee.", compute='_compute_employee', store=True, readonly=False, copy=False)
 
+    def _compute_im_status(self):
+        super()._compute_im_status()
+        for user in self.user_ids:
+            dayfield = self.env['hr.employee']._get_current_day_location_field()
+            location_type = user[dayfield].location_type
+            if not location_type:
+                continue
+            im_status = user.partner_id.im_status
+            if im_status in ["online", "away", "busy", "offline"]:
+                user.partner_id.im_status = location_type + "_" + im_status
+
     def _compute_employees_count(self):
         for partner in self:
             partner.employees_count = len(partner.sudo().employee_ids.filtered(lambda e: e.company_id in self.env.companies))

@@ -14,6 +14,7 @@ import { revertPreview } from "@html_builder/core/utils";
 import { websiteSnippetModelPatch } from "./snippet_model";
 import { rpc } from "@web/core/network/rpc";
 import { redirect } from "@web/core/utils/urls";
+import { useHotkey } from "@web/core/hotkeys/hotkey_hook";
 
 // Other Plugins depend on those 2 plugins, but they are not used in translation
 // mode.
@@ -45,6 +46,7 @@ export class WebsiteBuilder extends Component {
             beforeUnload: (ev) => this.onBeforeUnload(ev),
             beforeLeave: () => this.onBeforeLeave(),
         });
+        useHotkey("alt+s", () => this.save({ close: false }));
         onWillStart(async () => {
             this.translatedElements = this.props.translation
                 ? await rpc("/website/get_translated_elements")
@@ -54,7 +56,7 @@ export class WebsiteBuilder extends Component {
 
     async discard() {
         await revertPreview(this.editor);
-        if (this.editor.shared.history.canUndo()) {
+        if (this.editor.shared.savePlugin.hasUnsaveData()) {
             this.dialog.add(ConfirmationDialog, {
                 title: _t("Discard all changes?"),
                 body: _t(
@@ -75,7 +77,7 @@ export class WebsiteBuilder extends Component {
         if (!this.editor) {
             return;
         }
-        if (this.editor.shared.history.canUndo()) {
+        if (this.editor.shared.savePlugin.hasUnsaveData()) {
             event.preventDefault();
             event.returnValue = "Unsaved changes";
         }
@@ -85,7 +87,7 @@ export class WebsiteBuilder extends Component {
         if (!this.editor) {
             return true;
         }
-        if (this.editor.shared.history.canUndo()) {
+        if (this.editor.shared.savePlugin.hasUnsaveData()) {
             let continueProcess = true;
             await new Promise((resolve) => {
                 this.dialog.add(ConfirmationDialog, {
@@ -111,7 +113,7 @@ export class WebsiteBuilder extends Component {
         }
     }
 
-    async save() {
+    async save({ close = true } = {}) {
         if (this.editor.shared.operation.hasTimedOut()) {
             const shouldContinue = await new Promise((resolve) => {
                 this.dialog.add(ConfirmationDialog, {
@@ -129,13 +131,18 @@ export class WebsiteBuilder extends Component {
             if (!shouldContinue) {
                 return;
             }
+            close = true;
         }
 
         // TODO: handle the urgent save and the fail of the save operation
         await this.editor.shared.operation.next(
             async () => {
-                await this.editor.shared.savePlugin.save();
-                this.props.builderProps.closeEditor();
+                await this.editor.shared.savePlugin.save({
+                    shouldSkipAfterSaveHandlers: () => close,
+                });
+                if (close) {
+                    this.props.builderProps.closeEditor();
+                }
             },
             { withLoadingEffect: false, canTimeout: false }
         );

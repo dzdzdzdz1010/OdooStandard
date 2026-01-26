@@ -1184,11 +1184,15 @@ patch(PosOrder.prototype, {
                     special_mode: "total_included",
                 },
             });
-
+            // const hasPriceIncludedTax = discountProduct.taxes_id[0]?.price_include;
+            const config = this.models["pos.config"].getFirst();
+            // debugger;
+            const priceUnit = config.iface_tax_included === "total" ? price.total_included : price.total_excluded;
+            // const priceUnit = hasPriceIncludedTax ? price.total_included : price.total_excluded;
             return [
                 {
                     product_id: discountProduct,
-                    price_unit: price.total_excluded,
+                    price_unit: priceUnit,
                     qty: 1,
                     reward_id: reward,
                     is_reward_line: true,

@@ -163,6 +163,32 @@ test("setEditableSelection should not crash if getSelection returns null", async
     expect(selection.endOffset).toBe(2);
 });
 
+test("getSelectionData should validate the offsets of the document selection (specifically for safari)", async () => {
+    const { editor } = await setupEditor("[]");
+    let selection = editor.shared.selection.getEditableSelection();
+    expect(selection.startOffset).toBe(0);
+    expect(selection.endOffset).toBe(0);
+
+    // simulate the broken behavior of Safari where getSelection returns a selection
+    // with offsets outside of the actual node length.
+    patchWithCleanup(document, {
+        getSelection: () => {
+            return {
+                ...selection,
+                anchorOffset: 1,
+                focusOffset: 1,
+                rangeCount: 1,
+                getRangeAt: () => {
+                    return { commonAncestorContainer: selection.anchorNode };
+                },
+            };
+        },
+    });
+
+    selection = editor.shared.selection.getEditableSelection();
+    expect(selection.anchorOffset).toBe(0);
+});
+
 test("modifySelection should not crash if getSelection returns null", async () => {
     const { editor } = await setupEditor("<p>a[b]</p>");
     let selection = editor.shared.selection.getEditableSelection();

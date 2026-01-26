@@ -2,6 +2,7 @@ import io
 
 import odoo.tests
 from odoo.tools.translate import TranslationImporter
+from odoo.exceptions import ValidationError
 
 
 @odoo.tests.tagged('post_install', '-at_install')
@@ -347,3 +348,92 @@ class TestRelatedTranslation(odoo.tests.TransactionCase):
         # inconsistent behavior but usually users don't care or may even be happy about it
         self.assertEqual(record_en.html, '<p>Knife</p><p>Fork</p><p>Spoon</p>')
         self.assertEqual(record_fr.html, '<p>Couteau</p><p>Fourchette</p><p>Cuiller</p>')
+    
+    def test_write_translated_dict(self):
+        self.env['res.lang']._activate_lang('nl_NL')
+
+        test1_en = self.test1.with_context(lang='en_US')
+        test1_fr = self.test1.with_context(lang='fr_FR')
+        test1_nl = test1_fr.with_context(lang='nl_NL')
+        test1_en.name = {'fr_FR': 'Couteau 2'}
+        self.assertEqual(test1_en.name, 'Knife')
+        self.assertEqual(test1_fr.name, 'Couteau 2')
+        self.assertEqual(test1_nl.name, 'Knife')
+
+        test1_en.name = {'fr_FR': 'Couteau 3', 'nl_NL': 'Mes 3'}
+        self.assertEqual(test1_en.name, 'Knife')
+        self.assertEqual(test1_fr.name, 'Couteau 3')
+        self.assertEqual(test1_nl.name, 'Mes 3')
+
+        test1_en.name = {'en_US': 'Knife4', 'fr_FR': 'Nouveau couteau4'}
+        self.assertEqual(test1_en.name, 'Knife4')
+        self.assertEqual(test1_fr.name, 'Nouveau couteau4')
+        self.assertEqual(test1_nl.name, 'Mes 3')
+    
+    def test_write_translated_dict_html(self):
+        self.env['res.lang']._activate_lang('nl_NL')
+
+        test1_en = self.test1.with_context(lang='en_US')
+        test1_fr = self.test1.with_context(lang='fr_FR')
+        test1_nl = test1_fr.with_context(lang='nl_NL')
+        test1_en.html = {'fr_FR': '<p>Couteau 2</p><p>Fourchette</p><p>Cuiller</p>'}
+        self.assertEqual(test1_en.html, '<p>Couteau 2</p><p>Fork</p><p>Spoon</p>')
+        self.assertEqual(test1_fr.html, '<p>Couteau 2</p><p>Fourchette</p><p>Cuiller</p>')
+        self.assertEqual(test1_nl.html, '<p>Couteau 2</p><p>Fork</p><p>Spoon</p>')
+
+        test1_en.html = {'fr_FR': '<p>Couteau 3</p><p>Fourchette</p><p>Cuiller</p>', 'nl_NL': '<p>Mes 3</p><p>Vork 3</p><p>Lepel 3</p>'}
+        # since en_US (test1_env.env.lang) not in the dict, fr_FR as the first key will be the write language
+        self.assertEqual(test1_en.html, '<p>Couteau 3</p><p>Fork</p><p>Spoon</p>')
+        self.assertEqual(test1_fr.html, '<p>Couteau 3</p><p>Fourchette</p><p>Cuiller</p>')
+        self.assertEqual(test1_nl.html, '<p>Mes 3</p><p>Vork 3</p><p>Lepel 3</p>')
+
+        test1_en.html = {'fr_FR': '<p>Couteau 4</p><p>Fourchette</p><p>Cuiller</p>', 'en_US': '<p>Knife 4</p><p>Fork</p><p>Spoon</p>'}
+        # since en_US (test1_env.env.lang) is in the dict, it will be the write language
+        self.assertEqual(test1_en.html, '<p>Knife 4</p><p>Fork</p><p>Spoon</p>')
+        self.assertEqual(test1_fr.html, '<p>Couteau 4</p><p>Fourchette</p><p>Cuiller</p>')
+        self.assertEqual(test1_nl.html, '<p>Knife 4</p><p>Vork 3</p><p>Lepel 3</p>')
+
+        with self.assertRaises(ValidationError):
+            # <p> is not consistent with <a>
+            test1_en.html = {'en_US': '<p>Knife 5</p><p>Fork</p><p>Spoon</p>', 'fr_FR': '<a>Couteau 5</a><p>Fourchette</p><p>Cuiller</p>'}
+        
+        with self.assertRaises(ValidationError):
+            # inconsistent term numbers (2 vs 3)
+            test1_en.html = {'en_US': '<p>Knife 6</p><p>Fork</p><p>Spoon</p>', 'fr_FR': '<p></p><p>Fourchette</p><p>Cuiller</p>'}
+
+    def test_write_translated_dict_relation(self):
+        test1_en = self.test1.with_context(lang='en_US')
+        test1_fr = self.test1.with_context(lang='fr_FR')
+        test1_en.name = {'en_US': 'New knife', 'fr_FR': 'Nouveau couteau'}
+        test1_en.html = {'en_US': '<p>New knife</p><p>Fork</p><p>Spoon</p>', 'fr_FR': '<p>Nouveau couteau</p><p>Fourchette</p><p>Cuiller</p>'}
+        self.assertEqual(test1_en.name, 'New knife')
+        self.assertEqual(test1_fr.name, 'Nouveau couteau')
+        self.assertEqual(test1_en.html, '<p>New knife</p><p>Fork</p><p>Spoon</p>')
+        self.assertEqual(test1_fr.html, '<p>Nouveau couteau</p><p>Fourchette</p><p>Cuiller</p>')
+
+        test2_en = self.test2.with_context(lang='en_US')
+        test2_fr = self.test2.with_context(lang='fr_FR')
+        # non-store related fields
+        self.assertEqual(test2_en.name, 'New knife')
+        self.assertEqual(test2_fr.name, 'Nouveau couteau')
+        self.assertEqual(test2_en.html, '<p>New knife</p><p>Fork</p><p>Spoon</p>')
+        self.assertEqual(test2_fr.html, '<p>Nouveau couteau</p><p>Fourchette</p><p>Cuiller</p>')
+        # non stored context dependent computed fields
+        self.assertEqual(test2_en.computed_name, 'New knife')
+        self.assertEqual(test2_fr.computed_name, 'Nouveau couteau')
+        self.assertEqual(test2_en.computed_html, '<p>New knife</p><p>Fork</p><p>Spoon</p>')
+        self.assertEqual(test2_fr.computed_html, '<p>Nouveau couteau</p><p>Fourchette</p><p>Cuiller</p>')
+        # stored computed translated fields
+        self.assertEqual(test2_en.computed_translated_name, 'New knife')
+        self.assertEqual(test2_fr.computed_translated_name, 'Nouveau couteau')
+        self.assertEqual(test2_en.computed_translated_html, '<p>New knife</p><p>Fork</p><p>Spoon</p>')
+        self.assertEqual(test2_fr.computed_translated_html, '<p>Nouveau couteau</p><p>Fourchette</p><p>Cuiller</p>')
+
+    def test_constraints(self):
+        # Expected behavior: The check for non current language won't be triggered
+        self.test1.with_context(lang='en_US').name = {'en_US': 'New knife', 'fr_FR': 'x'}
+        with self.assertRaises(ValidationError):
+            self.test1.with_context(lang='en_US').name = {'en_US': 'x', 'fr_FR': 'Nouveau couteau'}
+
+        with self.assertRaises(ValidationError):
+            self.test1.with_context(lang='en_US').html = {'en_US': '<a>Knife</a>', 'fr_FR': '<a>x</a>'}

@@ -1549,6 +1549,7 @@ class SaleOrderLine(models.Model):
                     'price_total': sum(lines.mapped('price_total')),
                 }
                 for taxes, lines in section_lines.grouped('tax_ids').items()
+                if sum(lines.mapped('price_total')) != 0.0
             ]
         else:
             res = [{

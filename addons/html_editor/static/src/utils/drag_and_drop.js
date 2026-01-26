@@ -94,6 +94,7 @@ export function useNativeDraggable(hookParams, initialParams) {
 function updateElementPosition(el, { x, y }, styleFn, offset = { x: 0, y: 0 }) {
     return styleFn(el, { top: `${y - offset.y}px`, left: `${x - offset.x}px` });
 }
+let lastHelperRect;
 /** @type DraggableBuilderParams */
 const dragAndDropHookParams = {
     name: "useDragAndDrop",
@@ -152,6 +153,11 @@ const dragAndDropHookParams = {
             width: helperRect.width,
             height: helperRect.height,
         };
+
+        if (!hasPositionChanged(helperRect, lastHelperRect)) {
+            return;
+        }
+        lastHelperRect = helperRect;
         const dropzoneEl = closest(touching(ctx.getDropZones(), helperRect), helperRect);
         // Update the drop zone if it's in grid mode
         if (
@@ -211,4 +217,8 @@ const dragAndDropHookParams = {
  */
 export function useDragAndDrop(initialParams) {
     return useNativeDraggable(dragAndDropHookParams, initialParams);
+}
+
+function hasPositionChanged(newRect, oldRect) {
+    return JSON.stringify(newRect) !== JSON.stringify(oldRect);
 }

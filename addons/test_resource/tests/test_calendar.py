@@ -1,4 +1,4 @@
-from datetime import date, datetime, UTC
+from datetime import date, datetime, timedelta, UTC
 from zoneinfo import ZoneInfo
 
 from odoo.tests import tagged
@@ -364,5 +364,40 @@ class TestCalendar(TestResourceCommon):
         resource_calendar.write({
             'name': 'Calendar Full-Time',
             'attendance_ids': [(0, 0, {'dayofweek': '4', 'hour_from': 13, 'hour_to': 17})],
+        })
+        self.assertAlmostEqual(resource_calendar.work_time_rate, 100, 2)
+
+    def test_compute_work_time_rate_with_variable_calendar(self):
+        """Test Case: check if the computation of the work time rate in the resource.calendar is correct."""
+        def create_attendance_ids(days, hours):
+            return [(0, 0, {'date': date(2026, 1, 26) + timedelta(days=day), 'hour_from': hour, 'hour_to': hour + 4}) for day in days for hour in hours]
+
+        # Define a mid time
+        resource_calendar = self.env['resource.calendar'].create({
+            'name': 'Calendar Mid-Time',
+            'full_time_required_hours': 40,
+            'resource_type': 'variable',
+            'attendance_ids': create_attendance_ids([0, 1, 7, 8], (8, 16)) + create_attendance_ids([2, 9], (8, 12)),
+        })
+        self.assertAlmostEqual(resource_calendar.work_time_rate, 50, 2)
+
+        # Define a 4/5
+        resource_calendar.write({
+            'name': 'Calendar (4 / 5)',
+            'attendance_ids': create_attendance_ids([2, 9], (12, 16)) + create_attendance_ids([3, 10], (8, 16)),
+        })
+        self.assertAlmostEqual(resource_calendar.work_time_rate, 80, 2)
+
+        # Define a 9/10
+        resource_calendar.write({
+            'name': 'Calendar (9 / 10)',
+            'attendance_ids': create_attendance_ids([4, 11], (8, 12)),
+        })
+        self.assertAlmostEqual(resource_calendar.work_time_rate, 90, 2)
+
+        # Define a Full-Time
+        resource_calendar.write({
+            'name': 'Calendar Full-Time',
+            'attendance_ids': create_attendance_ids([4, 11], (12, 16)),
         })
         self.assertAlmostEqual(resource_calendar.work_time_rate, 100, 2)

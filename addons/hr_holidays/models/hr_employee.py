@@ -675,14 +675,15 @@ class HrEmployee(models.Model):
 
         domain = [
             ('calendar_id', '=', calendar.id),
+            ('date', '!=' if calendar.resource_type == 'variable' else '=', False),
             ('display_type', '=', False),
         ]
 
         init_attendances = self.env['resource.calendar.attendance']._read_group(
             domain=domain,
-            groupby=['dayofweek', 'day_period'],
+            groupby=['date:day', 'dayofweek', 'day_period'],
             aggregates=['hour_from:min', 'hour_to:max'],
-            order='dayofweek,hour_from:min'
+            order='date:day,dayofweek,hour_from:min'
         )
 
         init_attendances = [
@@ -691,7 +692,8 @@ class HrEmployee(models.Model):
                 'hour_to': hour_to,
                 'dayofweek': dayofweek,
                 'day_period': day_period,
-            } for dayofweek, day_period, hour_from, hour_to in init_attendances
+                'date': date,
+            } for date, dayofweek, day_period, hour_from, hour_to in init_attendances
         ]
 
         if day_period:
@@ -709,7 +711,10 @@ class HrEmployee(models.Model):
         default_start = min((att['hour_from'] for att in attendances), default=0.0)
         default_end = max((att['hour_to'] for att in attendances), default=0.0)
 
-        filtered_attendances = [att for att in attendances if int(att['dayofweek']) == target_date.weekday()]
+        filtered_attendances = [att for att in attendances
+                                    if (not att['date'] and int(att['dayofweek']) == target_date.weekday())
+                                    or att['date'] == target_date
+                                    ]
         hour_from = min((att['hour_from'] for att in filtered_attendances), default=default_start)
         hour_to = max((att['hour_to'] for att in filtered_attendances), default=default_end)
 

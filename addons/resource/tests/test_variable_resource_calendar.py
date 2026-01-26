@@ -1,8 +1,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from datetime import datetime, date, timedelta, UTC
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from odoo.tests.common import TransactionCase
-from zoneinfo import ZoneInfo
 
 
 class TestVariableResourceCalendar(TransactionCase):
@@ -18,7 +18,7 @@ class TestVariableResourceCalendar(TransactionCase):
     def test_attendance_intervals_batch_variable_calendar(self):
         """Test that _attendance_intervals_batch returns only attendances in the selected date range"""
         start = date(2025, 11, 1)
-        self.calendar.attendance_ids = [(6, 0, 0)] + [
+        self.calendar.attendance_ids = [(5, 0, 0)] + [
             (0, 0,
                 {
                     'date': start + timedelta(days=day),
@@ -56,7 +56,7 @@ class TestVariableResourceCalendar(TransactionCase):
         target_date = date(2026, 1, 14)
 
         source_monday = date(2026, 1, 5)
-        self.calendar.attendance_ids = [(6, 0, 0)] + [
+        self.calendar.attendance_ids = [(5, 0, 0)] + [
             (0, 0,
                 {
                     'date': source_monday + timedelta(days=weekday),
@@ -93,7 +93,7 @@ class TestVariableResourceCalendar(TransactionCase):
         target_date = date(2026, 2, 15)
 
         source_day1 = source_date.replace(day=1)
-        self.calendar.attendance_ids = [(6, 0, 0)] + [
+        self.calendar.attendance_ids = [(5, 0, 0)] + [
             (0, 0,
                 {
                     'date': source_day1 + timedelta(days=day),
@@ -134,7 +134,7 @@ class TestVariableResourceCalendar(TransactionCase):
 
         # 1st July 2024 is a Monday
         source_day1 = source_date.replace(day=1)
-        self.calendar.attendance_ids = [(6, 0, 0)] + [
+        self.calendar.attendance_ids = [(5, 0, 0)] + [
             (0, 0,
                 {
                     'date': source_day1 + timedelta(days=day),
@@ -171,7 +171,7 @@ class TestVariableResourceCalendar(TransactionCase):
 
         # 1st October 2025 is a Wednesday
         source_day1 = source_date.replace(day=1)
-        self.calendar.attendance_ids = [(6, 0, 0)] + [
+        self.calendar.attendance_ids = [(5, 0, 0)] + [
             (0, 0,
                 {
                     'date': source_day1 + timedelta(days=day),
@@ -207,7 +207,7 @@ class TestVariableResourceCalendar(TransactionCase):
 
         # 1st September 2025 is a Monday
         source_day1 = source_date.replace(day=1)
-        self.calendar.attendance_ids = [(6, 0, 0)] + [
+        self.calendar.attendance_ids = [(5, 0, 0)] + [
             (0, 0,
                 {
                     'date': source_day1 + timedelta(days=day),

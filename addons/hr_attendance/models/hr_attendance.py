@@ -599,8 +599,8 @@ class HrAttendance(models.Model):
                 previous_attendances_duration = mapped_previous_duration[att.employee_id][check_in_datetime.date()]
 
                 expected_worked_hours = sum(
-                    att.employee_id.resource_calendar_id.attendance_ids.filtered(
-                        lambda a: a.dayofweek == str(check_in_datetime.weekday())
+                    att.employee_id.resource_calendar_id._get_global_attendances().filtered(
+                        lambda a: (not a.date and a.dayofweek == str(check_in_datetime.weekday())) or a.date == check_in_datetime.date()
                     ).mapped("duration_hours")
                 )
 

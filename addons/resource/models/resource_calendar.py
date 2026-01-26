@@ -595,11 +595,15 @@ class ResourceCalendar(models.Model):
         """ Calculate the average hours worked per week. """
         self.ensure_one()
         hour_count = 0.0
-        for attendance in self._get_global_attendances():
+        attendances = self._get_global_attendances()
+        for attendance in attendances:
             if attendance.duration_based:
                 hour_count += attendance.duration_hours
             else:
                 hour_count += attendance.hour_to - attendance.hour_from
+
+        if self.resource_type == 'variable' and attendances:
+            hour_count /= len({(att.date.isocalendar().year, att.date.isocalendar().week) for att in attendances})
         return hour_count
 
     def _get_hours_per_day(self):
@@ -609,7 +613,8 @@ class ResourceCalendar(models.Model):
         return hour_per_week / number_of_days if number_of_days else 0
 
     def _get_global_attendances(self):
-        return self.attendance_ids.filtered(lambda attendance: not attendance.display_type)
+        return self.attendance_ids.filtered(lambda attendance: not attendance.display_type
+            and (attendance.date if self.resource_type == 'variable' else not attendance.date))
 
     def _get_unusual_days(self, start_dt, end_dt, company_id=False, resource=None):
         if self:
@@ -820,7 +825,6 @@ class ResourceCalendar(models.Model):
             working_days[attendance.dayofweek] = True
         return working_days
 
-    # TODO: copy_type WEEKDAY
     def copy_from(self, option, date_from, date_to, copy_type=False):
         self.ensure_one()
         assert option in ['WEEK', 'MONTH']

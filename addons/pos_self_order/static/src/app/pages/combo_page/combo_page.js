@@ -20,7 +20,7 @@ export class ComboPage extends Component {
     setup() {
         this.router = useService("router");
         if (!this.props.productTemplate) {
-            this.goBack();
+            this.goProductsPage();
             return;
         }
         useSubEnv({ selectedValues: {} });
@@ -246,8 +246,8 @@ export class ComboPage extends Component {
         return increase ? this.state.qty++ : this.state.qty--;
     }
 
-    isBackVisible() {
-        return !(
+    discardCombo() {
+        return (
             this.state.selectedChoiceIndex === 0 && !this.currentChoiceState.displayAttributesOfItem
         );
     }
@@ -446,7 +446,7 @@ export class ComboPage extends Component {
             this.getComboSelection()
         );
 
-        this.goBack();
+        this.goProductsPage();
     }
 
     getComboPrice() {
@@ -458,7 +458,7 @@ export class ComboPage extends Component {
         );
     }
 
-    goBack() {
+    goProductsPage() {
         this.router.navigate("product_list");
     }
 

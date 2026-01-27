@@ -294,3 +294,10 @@ class TestPaymentTransaction(PaymentCommon):
             'redirect', operation='validation', amount=0, reference='tx-validation',
         )
         validation_tx._validate_amount_and_currency(None, None)
+
+    def test_tx_amount_is_rounded_to_currency_minor_unit(self):
+        self.currency = self.env.ref('base.EUR')
+        self.currency.rounding = 0.001
+        self.amount = 123.452
+        tx = self._create_transaction('direct', state='done', reference='tx-direct')
+        self.assertEqual(tx.amount, 123.45)

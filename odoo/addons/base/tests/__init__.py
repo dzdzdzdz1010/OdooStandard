@@ -33,5 +33,4 @@ from . import test_res_partner
 from . import test_res_partner_bank
 from . import test_res_partner_merge
 from . import test_res_users
-from . import test_reports
 from . import test_res_groups

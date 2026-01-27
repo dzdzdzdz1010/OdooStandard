@@ -87,8 +87,11 @@ class ResourceCalendarAttendance(models.Model):
 
     @api.depends('date')
     def _compute_dayofweek(self):
-        for attendance in self.filtered('date'):
-            attendance.dayofweek = str(attendance.date.weekday())
+        for attendance in self:
+            if attendance.date:
+                attendance.dayofweek = str(attendance.date.weekday())
+            elif not attendance.dayofweek:  # default value
+                attendance.dayofweek = '0'
 
     @api.depends('hour_from', 'hour_to')
     def _compute_duration_hours(self):
@@ -107,6 +110,7 @@ class ResourceCalendarAttendance(models.Model):
         return {
             'date': self.date,
             'dayofweek': self.dayofweek,
+            'day_period': self.day_period,
             'duration_hours': self.duration_hours,
             'hour_from': self.hour_from,
             'hour_to': self.hour_to,

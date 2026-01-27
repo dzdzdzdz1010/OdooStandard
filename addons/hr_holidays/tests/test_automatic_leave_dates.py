@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from odoo.fields import Command
 from odoo.tests import tagged, Form
@@ -335,7 +335,8 @@ class TestAutomaticLeaveDates(TestHrHolidaysCommon):
             'resource_type': 'variable',
             'attendance_ids': [(5, 0, 0),
                                (0, 0, {'date': datetime(2019, 9, 2), 'hour_from': 10, 'hour_to': 12}),
-                               (0, 0, {'date': datetime(2019, 9, 9), 'hour_from': 8, 'hour_to': 12})],
+                               (0, 0, {'date': datetime(2019, 9, 9), 'hour_from': 8, 'hour_to': 12}),
+                               *[(0, 0, {'date': datetime(2019, 9, 2) + timedelta(days=day), 'hour_from': 8, 'hour_to': 16}) for day in set(range(14)) - {0, 7}]],
         })
         employee = self.employee_emp
         employee.resource_calendar_id = calendar
@@ -363,7 +364,7 @@ class TestAutomaticLeaveDates(TestHrHolidaysCommon):
             leave_form.request_date_to_period = 'am'
 
         leave = leave_form.record
-        self.assertEqual(leave.number_of_days, 1)  # because a full day is 3 hours (the average of the calendar)
+        self.assertEqual(leave.number_of_days, 0.5)
         self.assertEqual(leave.number_of_hours, 4)
         self.assertEqual(leave.date_from, datetime(2019, 9, 9, 6, 0, 0))
         self.assertEqual(leave.date_to, datetime(2019, 9, 9, 10, 0, 0))

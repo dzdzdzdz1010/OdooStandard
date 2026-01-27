@@ -673,7 +673,8 @@ class HrEmployee(models.Model):
                 return (datetimes[0], datetimes[2])
             calendar = version.resource_calendar_id
 
-        init_attendances = [att._copy_attendance_vals() for att in calendar._get_global_attendances()._get_attendances_on_date(target_date)]
+        calendar_attendances = calendar._get_global_attendances()
+        init_attendances = [att._copy_attendance_vals() for att in calendar_attendances._get_attendances_on_date(target_date)]
 
         if day_period:
             attendances = [att for att in init_attendances if att['day_period'] == day_period]
@@ -686,7 +687,8 @@ class HrEmployee(models.Model):
         else:
             attendances = init_attendances
 
-        hour_from = min((att['hour_from'] for att in attendances), default=0.0)
-        hour_to = max((att['hour_to'] for att in attendances), default=0.0)
+        default_start, default_end = min((att.hour_from for att in calendar_attendances), default=0.0), max((att.hour_to for att in calendar_attendances), default=0.0)
+        hour_from = min((att['hour_from'] for att in attendances), default=default_start)
+        hour_to = max((att['hour_to'] for att in attendances), default=default_end)
 
         return (hour_from, hour_to)

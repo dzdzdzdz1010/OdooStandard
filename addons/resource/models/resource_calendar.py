@@ -589,10 +589,9 @@ class ResourceCalendar(models.Model):
         # If the employee didn't work a full day, it is still counted, i.e. 19h / week (M/T/W(half day)) -> 3 days
         self.ensure_one()
         attendances = self._get_global_attendances()
-        weekdays = len(set(attendances.mapped('dayofweek')))
         if self.resource_type == 'variable' and attendances:
-            weekdays /= len({(att.date.isocalendar().year, att.date.isocalendar().week) for att in attendances})
-        return weekdays
+            return len(set(attendances.mapped('date'))) / len({(att.date.isocalendar().year, att.date.isocalendar().week) for att in attendances})
+        return len(set(attendances.mapped('dayofweek')))
 
     def _get_hours_per_week(self):
         """ Calculate the average hours worked per week. """
@@ -818,13 +817,18 @@ class ResourceCalendar(models.Model):
     @ormcache('self.id')
     def _get_working_hours(self, date_from, date_to):
         self.ensure_one()
+        result = defaultdict(lambda: self.env['resource.calendar.attendance'])
 
         attendances = self._get_global_attendances()
         if self.resource_type == 'variable':
-            return attendances.filtered(lambda att: att.date and date_from <= att.date <= date_to).grouped('date').items()
-
-        grouped_attendances = attendances.grouped('dayofweek')
-        return {day: grouped_attendances[str(day.weekday())] for day in rrule(DAILY, date_from, until=date_to)}
+            result.update(attendances.filtered(lambda att: att.date and date_from <= att.date <= date_to).grouped('date'))
+        else:
+            grouped_attendances = attendances.grouped('dayofweek')
+            result.update({
+                day.date(): grouped_attendances[str(day.weekday())]
+                for day in rrule(DAILY, date_from, until=date_to, byweekday=attendances.mapped(lambda att: int(att.dayofweek)))
+            })
+        return result
 
     def copy_from(self, option, date_from, date_to, copy_type=False):
         self.ensure_one()

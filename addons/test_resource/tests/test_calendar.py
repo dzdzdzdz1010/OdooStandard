@@ -370,7 +370,7 @@ class TestCalendar(TestResourceCommon):
     def test_compute_work_time_rate_with_variable_calendar(self):
         """Test Case: check if the computation of the work time rate in the resource.calendar is correct."""
         def create_attendance_ids(days, hours):
-            return [(0, 0, {'date': date(2026, 1, 26) + timedelta(days=day), 'hour_from': hour, 'hour_to': hour + 4}) for day in days for hour in hours]
+            return [(0, 0, {'date': date(2026, 1, 26) + timedelta(days=day), 'hour_from': hours[0], 'hour_to': hours[1]}) for day in days]
 
         # Define a mid time
         resource_calendar = self.env['resource.calendar'].create({

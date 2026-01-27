@@ -1059,6 +1059,20 @@ class TestReports(TestReportsCommon):
         self.assertEqual(line_2['document_in']['id'], receipt_2.id)
         self.assertEqual(line_2['document_out']['id'], delivery.id)
 
+        # archived variant lines should be excluded to ensure data consistency
+        with delivery_form.move_ids.new() as move_line:
+            move_line.product_id = gamejoy_xl_blue
+            move_line.product_uom_qty = 16
+        delivery_1 = delivery_form.save()
+        delivery_1.action_confirm()
+        gamejoy_pocket_blue.action_archive()
+
+        _, docs, lines = self.get_report_forecast(product_template_ids=product_template.ids)
+        self.assertTrue(
+            all(line['product']['id'] in docs['product'] for line in lines),
+            "The report must include product data for every line."
+        )
+
     def test_report_forecast_8_delivery_to_receipt_link(self):
         """
         Create 2 deliveries, and 1 receipt tied to the second delivery.

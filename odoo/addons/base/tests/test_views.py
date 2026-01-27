@@ -1892,7 +1892,12 @@ class TestTemplating(ViewCase):
         """)
         self.assertEqual(arch, expected)
 
+<<<<<<< 8e9c2788225aa1e4b483fc082c7bd5ebd7de4b1b
 @tagged('post_install', '-at_install')
+||||||| 25e22463ea889a637e0325664c723dc5e5e965ab
+=======
+
+>>>>>>> 1aa4779bd3fc16923a2686e381991a4ec2850144
 class TestViews(ViewCase):
 
     def test_nonexistent_attribute_removal(self):
@@ -2713,6 +2718,28 @@ class TestViews(ViewCase):
         """
         self.assertValid(arch % 'base.group_no_one')
         self.assertWarning(arch % 'base.dummy')
+
+    def test_groups_field_removed(self):
+        view = self.View.create({
+            'name': 'valid view',
+            'model': 'ir.ui.view',
+            'arch': """
+                <form string="View">
+                    <span class="oe_inline" invisible="0 == 0">
+                        (<field name="name" groups="base.group_portal"/>)
+                    </span>
+                </form>
+            """,
+        })
+        arch = self.View.get_views([(view.id, view.type)])['views']['form']['arch']
+
+        self.assertEqual(arch, """
+                <form string="View">
+                    <span class="oe_inline" invisible="0 == 0">
+                        ()
+                    </span>
+                </form>
+            """.strip())
 
     def test_attrs_groups_behavior(self):
         view = self.View.create({

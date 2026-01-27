@@ -68,6 +68,7 @@ class ReportProjectTaskUser(models.Model):
     # We exclude template tasks, but we still need the field for the views
     is_template = fields.Boolean(readonly=True)
     has_template_ancestor = fields.Boolean(readonly=True)
+    has_project_template = fields.Boolean(readonly=True)
 
     def _select(self):
         return """

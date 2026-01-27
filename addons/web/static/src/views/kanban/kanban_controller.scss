@@ -533,29 +533,28 @@
         .o_kanban_record.o_record_draggable {
             display: none !important;
         }
-        // don't visually fold on smaller screens (aka. mobile)
-        @include media-breakpoint-up(md) {
-            @include o-kanban-slim-col;
 
-            background-color: var(--KanbanGroup-grouped-bg, #{$gray-200});
+        @include o-kanban-slim-col;
 
-            & + .o_kanban_group.o_column_folded {
-                margin-left: 1px;
+        min-width: 2.95rem;
+        background-color: var(--KanbanGroup-grouped-bg, #{$gray-200});
+
+        & + .o_kanban_group.o_column_folded {
+            margin-left: 1px;
+        }
+
+        .o_kanban_header_title {
+            opacity: 0.5;
+
+            .o_column_title {
+                @include o-kanban-v-title;
             }
+        }
 
+        &:hover,
+        &.o_kanban_hover {
             .o_kanban_header_title {
-                opacity: 0.5;
-
-                .o_column_title {
-                    @include o-kanban-v-title;
-                }
-            }
-
-            &:hover,
-            &.o_kanban_hover {
-                .o_kanban_header_title {
-                    opacity: 1;
-                }
+                opacity: 1;
             }
         }
     }

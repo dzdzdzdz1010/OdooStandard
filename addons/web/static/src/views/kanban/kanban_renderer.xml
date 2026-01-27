@@ -52,7 +52,7 @@
                                         <i class="fa fa-plus fa-stack d-block small text-end text-700 opacity-50 opacity-100-hover cursor-pointer" role="img" aria-label="Quick add" title="Quick add" />
                                     </button>
                                 </t>
-                                <button t-else="" class="o_column_unfold btn btn-link d-block mt-0 mt-md-2 p-0 border-0 small text-center text-700 cursor-pointer">
+                                <button t-else="" class="o_column_unfold d-none d-md-block btn btn-link d-block mt-0 mt-md-2 p-0 border-0 small text-center text-700 cursor-pointer">
                                     <i class="fa fa-arrows-h" role="img" aria-label="Unfold" title="Unfold" />
                                 </button>
                             </div>

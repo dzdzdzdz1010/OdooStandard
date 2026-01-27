@@ -199,6 +199,14 @@ class AccountMoveSend(models.AbstractModel):
                     invoice_data['error'] = _("Invoice %s is too big to send via peppol (64MB limit)", invoice.name)
                     continue
 
+                if (
+                    invoice.invoice_pdf_report_id
+                    and not invoice_data.get('error')
+                    and 'ubl_cii_xml_options' in invoice_data
+                    and invoice_data['ubl_cii_xml_options']['ubl_cii_format'] != 'facturx'
+                ):
+                    self._postprocess_invoice_ubl_xml(invoice, invoice_data)
+
                 receiver_identification = f"{partner.peppol_eas}:{partner.peppol_endpoint}"
                 params['documents'].append({
                     'filename': filename,

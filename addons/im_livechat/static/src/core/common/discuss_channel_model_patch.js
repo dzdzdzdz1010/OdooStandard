@@ -29,6 +29,9 @@ const discussChannelPatch = {
     get allowedToLeaveChannelTypes() {
         return [...super.allowedToLeaveChannelTypes, "livechat"];
     },
+    get supportsChannelRenameTypes() {
+        return [...super.supportsChannelRenameTypes, "livechat"];
+    },
     /** @override */
     _computeCanHide() {
         if (this.channel_type === "livechat") {
@@ -37,8 +40,11 @@ const discussChannelPatch = {
         return super._computeCanHide(...arguments);
     },
     get displayName() {
-        if (this.channel_type !== "livechat" || this.self_member_id?.custom_channel_name) {
+        if (this.channel_type !== "livechat") {
             return super.displayName;
+        }
+        if (this.name) {
+            return this.name;
         }
         const selfMemberType = this.isTransient
             ? "visitor"

@@ -100,6 +100,9 @@ export class DiscussChannel extends Record {
     get allowedToLeaveChannelTypes() {
         return ["channel", "group"];
     }
+    get supportsChannelRenameTypes() {
+        return ["channel", "group"];
+    }
     get areAllMembersLoaded() {
         return this.member_count === this.channel_member_ids.length;
     }
@@ -193,13 +196,13 @@ export class DiscussChannel extends Record {
         return this.channel_member_ids.filter(({ persona }) => persona?.notEq(this.store.self));
     }
     get displayName() {
-        if (this.supportsCustomChannelName && this.self_member_id?.custom_channel_name) {
-            return this.self_member_id.custom_channel_name;
-        }
         if (this.channel_type === "chat" && this.correspondent) {
             return this.correspondent.name;
         }
-        if (this.channel_name_member_ids.length && !this.name) {
+        if (this.name) {
+            return this.name;
+        }
+        if (this.channel_name_member_ids.length) {
             const nameParts = this.channel_name_member_ids
                 .sort((m1, m2) => m1.id - m2.id)
                 .slice(0, 3)
@@ -210,7 +213,7 @@ export class DiscussChannel extends Record {
             }
             return formatList(nameParts);
         }
-        return this.name;
+        return "";
     }
     /** @type {"not_fetched"|"pending"|"fetched"} */
     fetchMembersState = "not_fetched";
@@ -654,21 +657,11 @@ export class DiscussChannel extends Record {
             newName !== this.displayName &&
             ((newName && this.channel_type === "channel") || this.isChatChannel)
         ) {
-            if (["channel", "group"].includes(this.channel_type)) {
+            if (this.supportsChannelRenameTypes.includes(this.channel_type)) {
                 this.name = newName;
                 await this.store.env.services.orm.call(
                     "discuss.channel",
                     "channel_rename",
-                    [[this.id]],
-                    { name: newName }
-                );
-            } else if (this.supportsCustomChannelName) {
-                if (this.self_member_id) {
-                    this.self_member_id.custom_channel_name = newName;
-                }
-                await this.store.env.services.orm.call(
-                    "discuss.channel",
-                    "channel_set_custom_name",
                     [[this.id]],
                     { name: newName }
                 );

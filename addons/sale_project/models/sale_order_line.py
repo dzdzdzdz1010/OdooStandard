@@ -1,7 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, Command, fields, models, _
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 
 class SaleOrderLine(models.Model):
@@ -38,7 +38,8 @@ class SaleOrderLine(models.Model):
                     del res['order_id']
 
             if 'order_id' in fields and not res.get('order_id'):
-                assert (partner_id := self.env.context.get('default_partner_id'))
+                if not (partner_id := self.env.context.get('default_partner_id')):
+                    raise ValidationError(_("A customer must be set on a project to create a new sale order item."))
                 project_id = self.env.context.get('link_to_project')
                 sale_order = None
                 so_create_values = {

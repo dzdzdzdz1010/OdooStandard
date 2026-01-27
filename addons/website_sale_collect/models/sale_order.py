@@ -87,11 +87,11 @@ class SaleOrder(models.Model):
                 zip_code = None  # Reset the zip code to skip the `assert` in the `super` call.
         return super()._get_pickup_locations(zip_code=zip_code, country=country, **kwargs)
 
-    def _is_cart_ready_for_payment(self):
+    def _is_cart_ready_for_payment(self, **kwargs):
         """Override of `website_sale` to include errors if no pickup location is selected and to
         ensure the cart is available in the selected store, even if out-of-stock orders are
         allowed."""
-        ready = super()._is_cart_ready_for_payment()
+        ready = super()._is_cart_ready_for_payment(**kwargs)
         if not self._has_deliverable_products():
             return ready
 

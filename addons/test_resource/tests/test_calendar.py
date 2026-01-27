@@ -114,6 +114,61 @@ class TestCalendar(TestResourceCommon):
 
         leave.unlink()
 
+        # 2 weeks calendar week 1
+        hours = self.calendar_jules.get_work_hours_count(
+            self.datetime_tz(2018, 4, 2, 0, 0, 0, tzinfo=self.jules.tz),
+            self.datetime_tz(2018, 4, 6, 23, 59, 59, tzinfo=self.jules.tz),
+        )
+        self.assertEqual(hours, 30)
+
+        # 2 weeks calendar week 1
+        hours = self.calendar_jules.get_work_hours_count(
+            self.datetime_tz(2018, 4, 16, 0, 0, 0, tzinfo=self.jules.tz),
+            self.datetime_tz(2018, 4, 20, 23, 59, 59, tzinfo=self.jules.tz),
+        )
+        self.assertEqual(hours, 30)
+
+        # 2 weeks calendar week 2
+        hours = self.calendar_jules.get_work_hours_count(
+            self.datetime_tz(2018, 4, 9, 0, 0, 0, tzinfo=self.jules.tz),
+            self.datetime_tz(2018, 4, 13, 23, 59, 59, tzinfo=self.jules.tz),
+        )
+        self.assertEqual(hours, 16)
+
+        # 2 weeks calendar week 2, leave during a day where he doesn't work this week
+        leave = self.env['resource.calendar.leaves'].create({
+            'name': 'Time Off Jules week 2',
+            'calendar_id': self.calendar_jules.id,
+            'resource_id': False,
+            'date_from': self.datetime_str(2018, 4, 11, 4, 0, 0, tzinfo=self.jules.tz),
+            'date_to': self.datetime_str(2018, 4, 13, 4, 0, 0, tzinfo=self.jules.tz),
+        })
+
+        hours = self.calendar_jules.get_work_hours_count(
+            self.datetime_tz(2018, 4, 9, 0, 0, 0, tzinfo=self.jules.tz),
+            self.datetime_tz(2018, 4, 13, 23, 59, 59, tzinfo=self.jules.tz),
+        )
+        self.assertEqual(hours, 16)
+
+        leave.unlink()
+
+        # 2 weeks calendar week 2, leave during a day where he works this week
+        leave = self.env['resource.calendar.leaves'].create({
+            'name': 'Time Off Jules week 2',
+            'calendar_id': self.calendar_jules.id,
+            'resource_id': False,
+            'date_from': self.datetime_str(2018, 4, 9, 0, 0, 0, tzinfo=self.jules.tz),
+            'date_to': self.datetime_str(2018, 4, 9, 23, 59, 0, tzinfo=self.jules.tz),
+        })
+
+        hours = self.calendar_jules.get_work_hours_count(
+            self.datetime_tz(2018, 4, 9, 0, 0, 0, tzinfo=self.jules.tz),
+            self.datetime_tz(2018, 4, 13, 23, 59, 59, tzinfo=self.jules.tz),
+        )
+        self.assertEqual(hours, 8)
+
+        leave.unlink()
+
         # leave without calendar, should count for anyone in the company
         leave = self.env['resource.calendar.leaves'].create({
             'name': 'small leave',
@@ -322,8 +377,8 @@ class TestCalendar(TestResourceCommon):
         })
 
         # Jean changes working schedule to Jules'
-        self.jean.resource_calendar_id = self.calendar_patel
-        self.assertEqual(leave.calendar_id, self.calendar_patel, "Leave calendar should update")
+        self.jean.resource_calendar_id = self.calendar_jules
+        self.assertEqual(leave.calendar_id, self.calendar_jules, "Leave calendar should update")
         self.assertEqual(holiday.calendar_id, self.calendar_jean, "Global leave shouldn't change")
 
     def test_compute_work_time_rate_with_one_week_calendar(self):

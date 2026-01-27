@@ -55,6 +55,20 @@ class TestResourceCommon(TransactionCase):
             "38 Hours",
             sum((((9, 12, i), (13, 17, i)) for i in range(5)), ()),
         )
+
+        cls.calendar_jules = cls._define_calendar_2_weeks(
+            "Week 1: 30 Hours - Week 2: 16 Hours",
+            [
+                (8, 16, 0, "0"),
+                (9, 17, 1, "0"),
+                (8, 16, 0, "1"),
+                (7, 15, 2, "1"),
+                (8, 16, 3, "1"),
+                (10, 16, 4, "1"),
+            ],
+            "Europe/Brussels",
+        )
+
         # UTC-8 winter, UTC-7 summer
         cls.calendar_john = cls._define_calendar(
             "8+12 Hours",
@@ -118,4 +132,21 @@ class TestResourceCommon(TransactionCase):
                 "tz": "Europe/Brussels",
                 "resource_calendar_id": cls.calendar_bob.id,
             },
+        )
+
+        cls.two_weeks_resource = cls._define_calendar_2_weeks(
+            "Two weeks resource",
+            [
+                (8, 16, 0, "0"),
+                (8, 16, 1, "0"),
+                (8, 16, 2, "0"),
+                (8, 16, 3, "0"),
+                (8, 16, 4, "0"),
+                (8, 16, 0, "1"),
+                (8, 16, 1, "1"),
+                (8, 16, 2, "1"),
+                (8, 16, 3, "1"),
+                (8, 16, 4, "1"),
+            ],
+            "Europe/Brussels",
         )

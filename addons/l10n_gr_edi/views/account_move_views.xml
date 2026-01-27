@@ -29,6 +29,9 @@
                        invisible="not l10n_gr_edi_enable_view_mydata"
                        required="1"
                        readonly="state != 'draft'"/>
+                <field name="l10n_gr_edi_is_delivery_note"
+                       invisible="not l10n_gr_edi_enable_view_mydata"
+                       readonly="state != 'draft' or l10n_gr_edi_inv_type == '9.3'"/>
                 <field name="l10n_gr_edi_correlation_id"
                        invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_need_correlated)"
                        required="l10n_gr_edi_need_correlated"
@@ -50,6 +53,65 @@
                 <field name="l10n_gr_edi_state"
                        invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_state)"
                        readonly="1"/>
+                <field name="l10n_gr_edi_move_purpose"
+                       invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_is_delivery_note)"
+                       readonly="state != 'draft'"
+                       required="l10n_gr_edi_is_delivery_note"/>
+                <field name="l10n_gr_edi_other_move_purpose"
+                       invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_move_purpose == '19')"
+                       readonly="state != 'draft'"
+                       required="l10n_gr_edi_move_purpose == '19'"/>
+                <label for="l10n_gr_edi_loading_address_street"
+                       string="Loading Address"
+                       invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_is_delivery_note)"/>
+                <div invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_is_delivery_note)">
+                    <div class="o_row">
+                        <field name="l10n_gr_edi_loading_address_street"
+                            placeholder="Street"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                        <field name="l10n_gr_edi_loading_address_number"
+                            placeholder="Number"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                    </div>
+                    <div class="o_row">
+                        <field name="l10n_gr_edi_loading_address_zip"
+                            placeholder="Postal Code"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                        <field name="l10n_gr_edi_loading_address_city"
+                            placeholder="City"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                    </div>
+                </div>
+
+                <label for="l10n_gr_edi_delivery_address_street"
+                    string="Delivery Address"
+                    invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_is_delivery_note)"/>
+                <div invisible="not (l10n_gr_edi_enable_view_mydata and l10n_gr_edi_is_delivery_note)">
+                    <div class="o_row">
+                        <field name="l10n_gr_edi_delivery_address_street"
+                            placeholder="Street"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                        <field name="l10n_gr_edi_delivery_address_number"
+                            placeholder="Number"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                    </div>
+                    <div class="o_row">
+                        <field name="l10n_gr_edi_delivery_address_zip"
+                            placeholder="Postal Code"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                        <field name="l10n_gr_edi_delivery_address_city"
+                            placeholder="City"
+                            readonly="state != 'draft'"
+                            required="l10n_gr_edi_is_delivery_note"/>
+                    </div>
+                </div>
             </xpath>
 
             <xpath expr="//notebook/page[@name='invoice_tab']//list/field[@name='name']" position="after">
@@ -71,6 +133,12 @@
                        widget="dynamic_selection"
                        options="{'available_field': 'l10n_gr_edi_available_cls_vat'}"
                        optional="hide"
+                       column_invisible="parent.country_code != 'GR'"/>
+            </xpath>
+            <xpath expr="//notebook/page[@name='invoice_tab']//list/field[@name='quantity']" position="after">
+                <field name="l10n_gr_edi_measurement_unit"
+                       optional="show"
+                       required="parent.l10n_gr_edi_is_delivery_note"
                        column_invisible="parent.country_code != 'GR'"/>
             </xpath>
 

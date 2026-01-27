@@ -32,3 +32,4 @@ from . import test_res_partner_bank
 from . import test_wizard_base_partner_merge
 from . import test_res_users
 from . import test_res_groups
+from . import test_ir_rule

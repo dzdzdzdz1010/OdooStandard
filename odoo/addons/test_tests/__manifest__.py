@@ -2,7 +2,11 @@
     'name': 'Test Tests',
     'category': 'Hidden/Tests',
     'description': """A module to test the Tests.""",
-    'depends': ['base'],
+    'depends': ['base', 'web'],
+    'data': [
+        'security/ir.model.access.csv',
+        'views/menu.xml',
+    ],
     'author': 'Odoo S.A.',
     'license': 'LGPL-3',
 }

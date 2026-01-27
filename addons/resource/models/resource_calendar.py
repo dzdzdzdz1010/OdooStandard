@@ -814,19 +814,21 @@ class ResourceCalendar(models.Model):
     def _get_duration_based_work_hours_on_date(self, date):
         return sum(self._get_global_attendances()._get_attendances_on_date(date).mapped('duration_hours'))
 
-    @ormcache('self.id')
+    @ormcache('self.id', 'date_from', 'date_to', 'self.attendance_ids')
     def _get_working_hours(self, date_from, date_to):
         self.ensure_one()
         result = defaultdict(lambda: self.env['resource.calendar.attendance'])
 
-        attendances = self._get_global_attendances()
+        if not (attendances := self._get_global_attendances()):
+            return result
+
         if self.resource_type == 'variable':
             result.update(attendances.filtered(lambda att: att.date and date_from <= att.date <= date_to).grouped('date'))
         else:
             grouped_attendances = attendances.grouped('dayofweek')
             result.update({
                 day.date(): grouped_attendances[str(day.weekday())]
-                for day in rrule(DAILY, date_from, until=date_to, byweekday=attendances.mapped(lambda att: int(att.dayofweek)))
+                for day in rrule(DAILY, date_from, until=date_to, byweekday=set(attendances.mapped(lambda att: int(att.dayofweek))))
             })
         return result
 

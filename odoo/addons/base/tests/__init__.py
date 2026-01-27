@@ -4,7 +4,6 @@ from . import common
 from . import test_acl
 from . import test_install
 from . import test_avatar_mixin
-from . import test_init
 from . import test_ir_actions
 from . import test_ir_asset
 from . import test_ir_attachment

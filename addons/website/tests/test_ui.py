@@ -741,3 +741,7 @@ class TestUi(HttpCaseWithWebsiteUser):
 
     def test_mega_footer(self):
         self.start_tour('/', 'mega_footer', login='admin')
+
+    def test_seo_multilang_alt_check(self):
+        self.add_fr_language_to_website()
+        self.start_tour("/", "seo_multilang_alt_check", login="admin")

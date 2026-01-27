@@ -22,7 +22,7 @@
                     <field
                         name="service_upsell_threshold"
                         widget="percentage"
-                        class="oe_inline o_field_highlight"
+                        class="oe_inline o_field_highlight text-body"
                     />
                     of hours sold. <field name="service_upsell_threshold_ratio" class="oe_inline" invisible="not service_upsell_threshold_ratio"/>
                 </div>

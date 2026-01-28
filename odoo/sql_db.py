@@ -402,7 +402,8 @@ class Cursor(BaseCursor):
             else:
                 msg += "Please enable sql debugging to trace the caller."
             _logger.warning(msg)
-            self._close(True)
+            self._cnx.close()
+            self._close()
 
     def _format(self, query, params=None) -> str:
         encoding = psycopg2.extensions.encodings[self.connection.encoding]
@@ -515,9 +516,9 @@ class Cursor(BaseCursor):
 
     def close(self) -> None:
         if not self.closed:
-            self._close(False)
+            self._close()
 
-    def _close(self, leak: bool = False) -> None:
+    def _close(self) -> None:
         if not self._obj:
             return
 
@@ -541,12 +542,9 @@ class Cursor(BaseCursor):
 
         self._closed = True
 
-        if leak:
-            self._cnx.leaked = True  # type: ignore
-        else:
-            chosen_template = tools.config['db_template']
-            keep_in_pool = self.dbname not in ('template0', 'template1', config['db_system'], chosen_template)
-            self.__pool.give_back(self._cnx, keep_in_pool=keep_in_pool)
+        chosen_template = tools.config['db_template']
+        keep_in_pool = self.dbname not in ('template0', 'template1', config['db_system'], chosen_template)
+        self.__pool.give_back(self._cnx, keep_in_pool=keep_in_pool)
 
     def commit(self) -> None:
         """ Perform an SQL `COMMIT` """
@@ -633,12 +631,12 @@ class ConnectionPool:
         """
         Borrow a PsycoConnection from the pool. If no connection is available, create a new one
         as long as there are still slots available. Perform some garbage-collection in the pool:
-        idle, dead and leaked connections are removed.
+        idle and dead connections are removed.
 
         :param dict connection_info: dict of psql connection keywords
         :rtype: PsycoConnection
         """
-        # free idle, dead and leaked connections
+        # free idle and dead connections
         for i, cnx in tools.reverse_enumerate(self._connections):
             if not cnx._pool_in_use and not cnx.closed and time.time() - cnx._pool_last_used > MAX_IDLE_TIMEOUT:
                 self._debug('Close connection at index %d: %r', i, cnx.dsn)
@@ -646,11 +644,6 @@ class ConnectionPool:
             if cnx.closed:
                 self._connections.pop(i)
                 self._debug('Removing closed connection at index %d: %r', i, cnx.dsn)
-                continue
-            if getattr(cnx, 'leaked', False):
-                delattr(cnx, 'leaked')
-                cnx._pool_in_use = False
-                _logger.info('%r: Free leaked connection to %r', self, cnx.dsn)
 
         for i, cnx in enumerate(self._connections):
             if not cnx._pool_in_use and self._dsn_equals(cnx.dsn, connection_info):

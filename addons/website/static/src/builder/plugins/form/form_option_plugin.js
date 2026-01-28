@@ -181,6 +181,7 @@ export class FormOptionPlugin extends Plugin {
             SetDefaultErrorMessageAction,
             SetRequirementComparatorAction,
             SetMultipleFilesAction,
+            ToggleCharacterLimitAction,
         },
         content_not_editable_selectors: ".s_website_form form",
         content_editable_selectors: [
@@ -1404,6 +1405,22 @@ export class SetDefaultErrorMessageAction extends BuilderAction {
             between,
             type
         );
+    }
+}
+/**
+ * Toggles the character limit dataset on input fields.
+ * When applied, it sets a max of 100 and min of 0 characters.
+ * When cleaned, it removes both limits.
+ */
+export class ToggleCharacterLimitAction extends BuilderAction {
+    static id = "toggleCharacterLimit";
+    apply({ editingElement: inputEl }) {
+        inputEl.dataset.maxChars = 100;
+        inputEl.dataset.minChars = 0;
+    }
+    clean({ editingElement: inputEl }) {
+        delete inputEl.dataset.maxChars;
+        delete inputEl.dataset.minChars;
     }
 }
 

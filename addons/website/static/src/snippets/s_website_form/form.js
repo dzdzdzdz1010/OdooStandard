@@ -602,6 +602,23 @@ export class Form extends Interaction {
                 } else if (this.requirementFunction(fieldEl) === false) {
                     this.updateStatusInline(fieldEl.dataset.errorMessage, inputEl);
                     return true;
+                } else if (inputEl.dataset.characterLimit) {
+                    const maxChars = parseInt(inputEl.dataset.maxChars);
+                    const minChars = parseInt(inputEl.dataset.minChars);
+                    const valueLength = inputEl.value.length;
+                    if (
+                        !(minChars > maxChars) &&
+                        (valueLength > maxChars || valueLength < minChars)
+                    ) {
+                        this.updateStatusInline(
+                            _t(
+                                "Value of this field does not lie within character limit.(Max: %(maxChars)s, Min: %(minChars)s)",
+                                { maxChars, minChars }
+                            ),
+                            inputEl
+                        );
+                        return true;
+                    }
                 }
 
                 // Note that checkValidity also takes care of the case where

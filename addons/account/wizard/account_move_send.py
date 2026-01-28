@@ -461,6 +461,8 @@ class AccountMoveSend(models.TransientModel):
         """
         # create an attachment that will become 'invoice_pdf_report_file'
         # note: Binary is used for security reason
+        if not 'pdf_attachment_values' in invoice_data:
+            return
         invoice_sudo = invoice.sudo()
         invoice_sudo.message_main_attachment_id = self.sudo().env['ir.attachment'].create(invoice_data['pdf_attachment_values'])
         invoice_sudo.invalidate_recordset(fnames=['invoice_pdf_report_id', 'invoice_pdf_report_file'])

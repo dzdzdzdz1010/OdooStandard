@@ -240,6 +240,7 @@
             <BuilderSelectItem id="'no_requirement_opt'" dataAttributeActionValue="''">None</BuilderSelectItem>
             <BuilderSelectItem dataAttributeActionValue="'substring'">Contains</BuilderSelectItem>
             <BuilderSelectItem dataAttributeActionValue="'!substring'">Doesn't contain</BuilderSelectItem>
+            <BuilderSelectItem dataAttributeActionValue="'domain'" t-if="domStateCurrentFieldInput.type === 'email'">Matches domain</BuilderSelectItem>
         </BuilderSelect>
         <BuilderSelect id="'require_condition_num_opt'"
                 t-elif="domStateCurrentFieldInput.type === 'number'"
@@ -309,7 +310,12 @@
     <BuilderRow t-if="isMultipleTextConditionForRequirementOptionVisible">
         <div class="d-flex flex-column w-100">
             <p class="hb-row-label mb-0 flex-grow-0 flex-shrink-0 flex-basis-auto">
-                <t t-out="'Enter words'" />
+                <t t-if="domStateCurrentFieldInput.type === 'email'">
+                    <t t-out="'Enter email domains (eg., gmail.com, icloud.com)'" />
+                </t>
+                <t t-else="">
+                    <t t-out="'Enter words'" />
+                </t>
             </p>
             <BuilderList
                 dataAttributeAction="'requirementCondition'"

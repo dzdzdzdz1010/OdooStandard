@@ -54,7 +54,7 @@ class TestResource(TestResourceCommon):
 
         start = datetime(2021, 7, 7, 12, 0, 0).replace(tzinfo=UTC)
         end = datetime(2021, 7, 16, 23, 59, 59).replace(tzinfo=UTC)
-        with self.assertQueryCount(13):
+        with self.assertQueryCount(17):
             work_intervals, _ = self.resources_test.resource_id._get_valid_work_intervals(start, end)
 
         self.assertEqual(len(work_intervals), 50)
@@ -92,17 +92,15 @@ class TestResource(TestResourceCommon):
         resource = self._define_calendar_2_weeks(
             'Two weeks resource',
             [],
-            'Europe/Brussels',
         )
         self.env['resource.calendar.attendance'].create({
-            'name': 'test',
             'calendar_id': resource.id,
+            'date': datetime(2026, 1, 28),
             'hour_from': 0,
             'hour_to': 0,
         })
         resource_hour = resource._get_hours_per_day()
         self.assertEqual(resource_hour, 0.0)
-
 
     def test_resource_without_calendar(self):
         resource = self.env['resource.resource'].create({

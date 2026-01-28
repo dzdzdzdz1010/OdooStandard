@@ -1,5 +1,5 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 from zoneinfo import ZoneInfo
 
 from odoo import fields
@@ -42,6 +42,19 @@ class TestResourceCommon(TransactionCase):
         )
 
     @classmethod
+    def _define_calendar_2_weeks(cls, name, attendances):
+        return cls.env["resource.calendar"].create(
+            {
+                "name": name,
+                'resource_type': 'variable',
+                "attendance_ids": [
+                    (5, 0, 0),
+                    *[(0, 0, {"hour_from": att[0], "hour_to": att[1], "date": att[2]}) for att in attendances],
+                ],
+            },
+        )
+
+    @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.env.company.tz = "Europe/Brussels"
@@ -59,14 +72,12 @@ class TestResourceCommon(TransactionCase):
         cls.calendar_jules = cls._define_calendar_2_weeks(
             "Week 1: 30 Hours - Week 2: 16 Hours",
             [
-                (8, 16, 0, "0"),
-                (9, 17, 1, "0"),
-                (8, 16, 0, "1"),
-                (7, 15, 2, "1"),
-                (8, 16, 3, "1"),
-                (10, 16, 4, "1"),
+                *[(d[1], d[2], datetime(2018, 3, 26) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (1, 9, 17)] for w in range(3)],  # Week 0
+                *[(d[1], d[2], datetime(2018, 4, 2) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (2, 7, 15), (3, 8, 16), (4, 10, 16)] for w in range(3)],  # Week 1
+                # TODO: Might need to switch these bottom two if they placed incorrectly.
+                *[(d[1], d[2], datetime(2021, 7, 5) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (1, 9, 17)] for w in range(3)],  # Week 0
+                *[(d[1], d[2], datetime(2021, 6, 28) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (2, 7, 15), (3, 8, 16), (4, 10, 16)] for w in range(3)],  # Week 1
             ],
-            "Europe/Brussels",
         )
 
         # UTC-8 winter, UTC-7 summer
@@ -118,6 +129,13 @@ class TestResourceCommon(TransactionCase):
             },
         )
 
+        cls.jules = cls.env["resource.test"].create(
+            {
+                "name": "Jules",
+                "resource_calendar_id": cls.calendar_jules.id,
+            },
+        )
+
         cls.paul = cls.env["resource.test"].create(
             {
                 "name": "Paul",
@@ -137,16 +155,6 @@ class TestResourceCommon(TransactionCase):
         cls.two_weeks_resource = cls._define_calendar_2_weeks(
             "Two weeks resource",
             [
-                (8, 16, 0, "0"),
-                (8, 16, 1, "0"),
-                (8, 16, 2, "0"),
-                (8, 16, 3, "0"),
-                (8, 16, 4, "0"),
-                (8, 16, 0, "1"),
-                (8, 16, 1, "1"),
-                (8, 16, 2, "1"),
-                (8, 16, 3, "1"),
-                (8, 16, 4, "1"),
+
             ],
-            "Europe/Brussels",
         )

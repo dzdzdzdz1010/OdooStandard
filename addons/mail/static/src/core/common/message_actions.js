@@ -102,11 +102,11 @@ registerMessageAction("reply-to", {
     sequence: ({ message, store, thread }) =>
         thread?.eq(store.inbox) || message.isSelfAuthored ? 55 : 20,
 });
-registerMessageAction("toggle-star", {
-    condition: ({ message }) => message.canToggleStar,
-    icon: ({ message }) => (message.starred ? "fa fa-star o-mail-starred" : "fa fa-star-o"),
-    name: ({ message }) => (message.starred ? _t("Remove Star") : _t("Add Star")),
-    onSelected: ({ message }) => message.toggleStar(),
+registerMessageAction("toggle-bookmark", {
+    condition: ({ message }) => message.canToggleBookmark,
+    icon: ({ message }) => (message.is_bookmarked ? "fa fa-bookmark o-mail-favorite" : "fa fa-bookmark-o"),
+    name: ({ message }) => (message.is_bookmarked ? _t("Remove from bookmarks") : _t("Bookmark")),
+    onSelected: ({ message, store, thread  }) => message.toggleBookmark(thread?.eq(store.bookmark)),
     sequence: 30,
 });
 registerMessageAction("mark-as-read", {

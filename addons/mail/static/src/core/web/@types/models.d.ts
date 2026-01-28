@@ -24,8 +24,8 @@ declare module "models" {
         onLinkFollowed: (fromThread: Thread) => void;
         onUpdateActivityGroups: () => void;
         scheduleActivity: (resModel: string, resIds: number[], defaultActivityTypeId: number|undefined) => Promise<void>;
-        starred: Thread;
-        unstarAll: () => Promise<void>;
+        bookmark: Thread;
+        removeAllBookmarks: () => Promise<void>;
         updateAppBadge: () => void;
     }
     export interface Thread {

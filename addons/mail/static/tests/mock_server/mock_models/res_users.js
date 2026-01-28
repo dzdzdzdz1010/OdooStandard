@@ -127,8 +127,6 @@ export class ResUsers extends webModels.ResUsers {
         const DiscussChannel = this.env["discuss.channel"];
         /** @type {import("mock_models").DiscussChannelMember} */
         const DiscussChannelMember = this.env["discuss.channel.member"];
-        /** @type {import("mock_models").MailMessage} */
-        const MailMessage = this.env["mail.message"];
         /** @type {import("mock_models").ResPartner} */
         const ResPartner = this.env["res.partner"];
         /** @type {import("mock_models").ResUsers} */
@@ -148,11 +146,9 @@ export class ResUsers extends webModels.ResUsers {
                 id: "inbox",
                 model: "mail.box",
             },
-            starred: {
-                counter: MailMessage._filter([["starred_partner_ids", "in", user.partner_id]])
-                    .length,
+            bookmark: {
                 counter_bus_id: bus_last_id,
-                id: "starred",
+                id: "bookmark",
                 model: "mail.box",
             },
             initChannelsUnreadCounter: members.filter((member) => member.message_unread_counter)

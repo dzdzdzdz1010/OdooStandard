@@ -23,9 +23,9 @@ class MailboxController(http.Controller):
         store = Store().add(messages, "_store_message_fields")
         return {**res, "data": store.get_result(), "messages": messages.ids}
 
-    @http.route("/mail/starred/messages", methods=["POST"], type="jsonrpc", auth="user", readonly=True)
-    def discuss_starred_messages(self, fetch_params=None):
-        domain = [("starred_partner_ids", "in", [request.env.user.partner_id.id])]
+    @http.route("/mail/bookmark/messages", methods=["POST"], type="jsonrpc", auth="user", readonly=True)
+    def discuss_bookmark_messages(self, fetch_params=None):
+        domain = [("bookmarked_partner_ids", "in", [request.env.user.partner_id.id])]
         res = request.env["mail.message"]._message_fetch(domain, **(fetch_params or {}))
         messages = res.pop("messages")
         store = Store().add(messages, "_store_message_fields")

@@ -850,14 +850,14 @@ async function session_update_and_broadcast(request) {
     }
 }
 
-registerRoute("/mail/starred/messages", discuss_starred_messages);
+registerRoute("/mail/bookmark/messages", discuss_bookmark_messages);
 /** @type {RouteCallback} */
-async function discuss_starred_messages(request) {
+async function discuss_bookmark_messages(request) {
     /** @type {import("mock_models").MailMessage} */
     const MailMessage = this.env["mail.message"];
 
     const { fetch_params = {} } = await parseRequestParams(request);
-    const domain = [["starred_partner_ids", "in", [this.env.user.partner_id]]];
+    const domain = [["bookmarked_partner_ids", "in", [this.env.user.partner_id]]];
     const res = MailMessage._message_fetch(domain, makeKwArgs(fetch_params));
     const { messages } = res;
     delete res.messages;

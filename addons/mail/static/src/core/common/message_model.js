@@ -188,7 +188,7 @@ export class Message extends Record {
     write_date = fields.Datetime();
     /** @type {undefined|Boolean} */
     needaction;
-    starred = false;
+    is_bookmarked = false;
     showTranslation = false;
     ended_poll_ids = fields.Many("mail.poll", { inverse: "end_message_id" });
     started_poll_ids = fields.Many("mail.poll", { inverse: "start_message_id" });
@@ -464,7 +464,7 @@ export class Message extends Record {
         });
     }
 
-    get canToggleStar() {
+    get canToggleBookmark() {
         return Boolean(
             !this.is_transient &&
                 !this.isPending &&
@@ -801,14 +801,33 @@ export class Message extends Record {
         return false;
     }
 
-    async toggleStar() {
+    async toggleBookmark(isInBookmarkBox) {
         this.store.insert(
             await this.store.env.services.orm.silent.call(
                 "mail.message",
-                "toggle_message_starred",
+                "toggle_message_bookmark",
                 [[this.id]]
             )
         );
+        this.closeNotificationFn?.();
+        if (!this.is_bookmarked && isInBookmarkBox) {
+            this.closeNotificationFn = this.store.env.services.notification.add(
+            _t("Bookmark removed"),
+            {
+                type: "success",
+                buttons: [
+                    {
+                        name: "Undo",
+                        icon: "fa-undo",
+                        onClick: async () => {
+                            await this.toggleBookmark();
+                            this.closeNotificationFn();
+                        },
+                    },
+                ],
+            }
+        );
+        }
     }
 
     async unfollow() {

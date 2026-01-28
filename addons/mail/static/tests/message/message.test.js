@@ -1123,26 +1123,26 @@ test("toggle_star message", async () => {
         model: "discuss.channel",
         res_id: channelId,
     });
-    onRpc("mail.message", "toggle_message_starred", ({ args }) => {
-        expect.step("rpc:toggle_message_starred");
+    onRpc("mail.message", "toggle_message_bookmark", ({ args }) => {
+        expect.step("rpc:toggle_message_bookmark");
         expect(args[0][0]).toBe(messageId);
     });
     await start();
     await openDiscuss(channelId);
     await contains(".o-mail-Message");
-    await contains(".o-mail-Message [title='Add Star']");
-    await contains(".o-mail-Message [title='Add Star']" + " i.fa-star-o");
-    await contains("button:has(:text('Starred messages'))", { contains: [".badge", { count: 0 }] });
-    await click(".o-mail-Message [title='Add Star']");
-    await contains("button:has(:text('Starred messages'))", { contains: [".badge:text('1')"] });
-    await expect.waitForSteps(["rpc:toggle_message_starred"]);
+    await contains(".o-mail-Message [title='Bookmark']");
+    await contains(".o-mail-Message [title='Bookmark']" + " i.fa-bookmark-o");
+    await contains("button:has(:text('Bookmarks'))", { contains: [".badge", { count: 0 }] });
+    await click(".o-mail-Message [title='Bookmark']");
+    await contains("button:has(:text('Bookmarks'))", { contains: [".badge:text('1')"] });
+    await expect.waitForSteps(["rpc:toggle_message_bookmark"]);
     await contains(".o-mail-Message");
-    await contains(".o-mail-Message [title='Remove Star']" + " i.fa-star");
-    await click(".o-mail-Message [title='Remove Star']");
-    await contains("button:has(:text('Starred messages'))", { contains: [".badge", { count: 0 }] });
-    await expect.waitForSteps(["rpc:toggle_message_starred"]);
+    await contains(".o-mail-Message [title='Remove from bookmarks']" + " i.fa-bookmark");
+    await click(".o-mail-Message [title='Remove from bookmarks']");
+    await contains("button:has(:text('Bookmarks'))", { contains: [".badge", { count: 0 }] });
+    await expect.waitForSteps(["rpc:toggle_message_bookmark"]);
     await contains(".o-mail-Message");
-    await contains(".o-mail-Message [title='Add Star']" + " i.fa-star-o");
+    await contains(".o-mail-Message [title='Bookmark']" + " i.fa-bookmark-o");
 });
 
 test("Name of message author is only displayed in chat window for partners others than the current user", async () => {
@@ -1465,7 +1465,7 @@ test("prevent attachment delete on non-authored message in channels", async () =
     await contains(".o-mail-AttachmentImage div[title='Remove']", { count: 0 });
 });
 
-test("Toggle star should update starred counter on all tabs", async () => {
+test("Toggle bookmark should update bookmark counter on all tabs", async () => {
     const pyEnv = await startServer();
     const channelId = pyEnv["discuss.channel"].create({
         name: "general",
@@ -1482,8 +1482,8 @@ test("Toggle star should update starred counter on all tabs", async () => {
     const env2 = await start({ asTab: true });
     await openDiscuss(channelId, { target: env1 });
     await openDiscuss(undefined, { target: env2 });
-    await click(`${env1.selector} .o-mail-Message [title='Add Star']`);
-    await contains(`${env2.selector} button:has(:text('Starred messages'))`, {
+    await click(`${env1.selector} .o-mail-Message [title='Bookmark']`);
+    await contains(`${env2.selector} button:has(:text('Bookmarks'))`, {
         contains: [".badge:text('1')"],
     });
 });
@@ -2218,7 +2218,7 @@ test("deleted message should not have translate feature", async () => {
     await click(".modal button:contains('Delete')");
     await contains(".o-mail-Message:contains('This message has been removed')");
     await contains(".o-mail-Message [title='Add a Reaction']");
-    await contains(".o-mail-Message [title='Add Star']");
+    await contains(".o-mail-Message [title='Bookmark']");
     await contains(".o-mail-Message [title*='Translate']", { count: 0 });
     await animationFrame(); // in case some extra rendering for expand
     if (queryFirst(".o-mail-Message [title='Expand']")) {

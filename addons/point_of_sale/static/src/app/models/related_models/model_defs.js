@@ -60,6 +60,9 @@ export function processModelDefs(modelDefs) {
                 let inverseField = Object.values(relationModel).find(
                     (f) => f.relation === model && f.name === field.inverse_name
                 );
+                if (inverseMap.has(inverseField)) {
+                    throw new Error("one2many relation must have only one inverse");
+                }
                 if (!inverseField) {
                     const backRefName = getBackRef(model, field.name);
                     inverseField = {

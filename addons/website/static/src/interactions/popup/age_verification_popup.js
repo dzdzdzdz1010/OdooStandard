@@ -1,3 +1,4 @@
+import { cookie } from "@web/core/browser/cookie";
 import { registry } from "@web/core/registry";
 import { Popup } from "@website/interactions/popup/popup";
 
@@ -7,6 +8,10 @@ export class AgeVerificationPopup extends Popup {
     static selector = ".s_popup.s_age_verification_popup";
     dynamicContent = {
         ...this.dynamicContent,
+        _root: {
+            ...this.dynamicContent._root,
+            "t-att-data-age-verification-pending": (el) => (cookie.get(el.id) ? "false" : "true"),
+        },
         ".o_age_verification_yes_btn": {
             "t-on-click.prevent": this.hidePopup,
         },

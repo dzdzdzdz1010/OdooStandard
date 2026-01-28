@@ -2,7 +2,7 @@
 <odoo>
 
 <template id="s_age_verification_popup" name="Age Verification Popup">
-    <div class="s_popup s_age_verification_popup o_snippet_invisible" data-vcss="001">
+    <div class="s_popup s_age_verification_popup o_snippet_invisible" data-vcss="001" data-age-verification-pending="true">
         <div class="modal fade s_popup_middle" style="background-color: var(--black-50) !important;"
             tabindex="-1" role="dialog" aria-label="Age Verification Popup"
             data-bs-focus="false" data-bs-backdrop="false" data-bs-keyboard="false"

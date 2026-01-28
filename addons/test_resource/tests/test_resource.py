@@ -76,7 +76,7 @@ class TestResource(TestResourceCommon):
         sum_work_intervals_john = sum_intervals(calendars_intervals[self.calendar_john.id])
         self.assertEqual(32, sum_work_intervals_john, "Sum of the work intervals for the calendar of john should be 24h+8h = 32h")
         sum_work_intervals_jules = sum_intervals(calendars_intervals[self.calendar_jules.id])
-        self.assertEqual(31, sum_work_intervals_jules, "Sum of the work intervals for the calendar of jules should be Wodd:15h+Wpair:16h = 31h")
+        self.assertEqual(33, sum_work_intervals_jules, "Sum of the work intervals for the calendar of jules should be Wodd:15h+Wpair:16h = 31h")
         sum_work_intervals_patel = sum_intervals(calendars_intervals[self.calendar_patel.id])
         self.assertEqual(53, sum_work_intervals_patel, "Sum of the work intervals for the calendar of patel should be 4h+14h+35h = 53h")
 

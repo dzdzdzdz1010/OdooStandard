@@ -1,5 +1,5 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
-from datetime import datetime, UTC, timedelta
+from datetime import date, datetime, UTC, timedelta
 from zoneinfo import ZoneInfo
 
 from odoo import fields
@@ -72,11 +72,16 @@ class TestResourceCommon(TransactionCase):
         cls.calendar_jules = cls._define_calendar_2_weeks(
             "Week 1: 30 Hours - Week 2: 16 Hours",
             [
-                *[(d[1], d[2], datetime(2018, 3, 26) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (1, 9, 17)] for w in range(3)],  # Week 0
-                *[(d[1], d[2], datetime(2018, 4, 2) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (2, 7, 15), (3, 8, 16), (4, 10, 16)] for w in range(3)],  # Week 1
-                # TODO: Might need to switch these bottom two if they placed incorrectly.
-                *[(d[1], d[2], datetime(2021, 7, 5) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (1, 9, 17)] for w in range(3)],  # Week 0
-                *[(d[1], d[2], datetime(2021, 6, 28) + timedelta(days=d[0], weeks=2 * w)) for d in [(0, 8, 16), (2, 7, 15), (3, 8, 16), (4, 10, 16)] for w in range(3)],  # Week 1
+                *[(8, 16, date(2018, 3, 26) + timedelta(weeks=w)) for w in range(6)],  # Monday Always
+                *[(9, 17, date(2018, 3, 27) + timedelta(weeks=w)) for w in range(6) if not w % 2],
+                *[(7, 15, date(2018, 3, 28) + timedelta(weeks=w)) for w in range(6) if w % 2],  # Wednesday Week 1
+                *[(8, 16, date(2018, 3, 29) + timedelta(weeks=w)) for w in range(6) if w % 2],  # Thursday Week 1
+                *[(10, 16, date(2018, 3, 30) + timedelta(weeks=w)) for w in range(6) if w % 2],  # Friday Week 1
+                *[(8, 16, date(2021, 6, 28) + timedelta(weeks=w)) for w in range(6)],  # Monday Always
+                *[(9, 17, date(2021, 6, 29) + timedelta(weeks=w)) for w in range(6) if not w % 2],  # Tuesday Week 0
+                *[(7, 15, date(2021, 6, 30) + timedelta(weeks=w)) for w in range(6) if w % 2],  # Wednesday Week 1
+                *[(8, 16, date(2021, 7, 1) + timedelta(weeks=w)) for w in range(6) if w % 2],  # Thursday Week 1
+                *[(10, 16, date(2021, 7, 2) + timedelta(weeks=w)) for w in range(6) if w % 2],  # Friday Week 1
             ],
         )
 

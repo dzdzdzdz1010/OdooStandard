@@ -482,8 +482,7 @@ class ResUsers(models.Model):
                 "planned_count": model_activity_states[model_name]['planned_count'],
                 "view_type": getattr(Model, '_systray_view', 'list'),
             }
-            if model_name == 'mail.activity':
-                user_activities[model_name]['activity_ids'] = activities.ids
+            user_activities[model_name]['activity_ids'] = activities.ids
         return list(user_activities.values())
 
     def _store_avatar_card_fields(self, res: Store.FieldList):

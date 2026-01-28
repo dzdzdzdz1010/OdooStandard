@@ -8,6 +8,14 @@
                 <p class="mb-2">
                 Recording will capture participants' audio, video, and screen shares. The recording file will be available in the chat once the call ends.
                 </p>
+                <div class="btn border-transparent d-flex gap-2" t-on-click="() => state.audio = !state.audio">
+                    <div class="pe-2 d-flex align-items-center">
+                        <input type="checkbox" role="switch" t-att-disabled="store.rtc?.recordingState.recording || !store.rtc?.canRecordAudio" t-att-checked="state.audio ? 'checked' : ''"/>
+                    </div>
+                    <label class="d-flex align-items-center flex-wrap mw-100 cursor-pointer gap-2">
+                        <span class="text-truncate text-wrap">Record audio</span>
+                    </label>
+                </div>
                 <div class="btn border-transparent d-flex gap-2" t-on-click="() => state.video = !state.video">
                     <div class="pe-2 d-flex align-items-center">
                         <input type="checkbox" role="switch" t-att-disabled="store.rtc?.recordingState.recording || !store.rtc?.canRecordVideo" t-att-checked="state.video ? 'checked' : ''"/>

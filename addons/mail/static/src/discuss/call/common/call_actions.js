@@ -169,7 +169,7 @@ registerCallAction("record-call", {
     condition: ({ channel, store }) =>
         Boolean(store.rtc?.channel) &&
         channel?.eq(store.rtc.channel) &&
-        store.rtc.canRecord &&
+        (store.rtc.canRecordAudio || store.rtc.canRecordVideo || store.rtc.canRecordTranscription) &&
         store.rtc.channel.rtc_session_ids.length > 1,
     name: ({ store }) =>
         store.rtc.recordingState.recording ? _t("Stop recording") : _t("Start recording"),

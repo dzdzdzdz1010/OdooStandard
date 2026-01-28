@@ -12,6 +12,7 @@ export class RecordingDialog extends Component {
         super.setup();
         this.store = useService("mail.store");
         this.state = useState({
+            audio: false,
             video: false,
             transcription: false,
         });
@@ -28,7 +29,11 @@ export class RecordingDialog extends Component {
         if (this.store.rtc?.recordingState.recording) {
             this.store.rtc.stopRecordingDebounce();
         } else {
-            this.store.rtc.startRecordingDebounce({ transcription: this.state.transcription, video: this.state.video });
+            this.store.rtc.startRecordingDebounce({
+                audio: this.state.audio,
+                transcription: this.state.transcription,
+                video: this.state.video
+            });
         }
         this.props.close();
     }

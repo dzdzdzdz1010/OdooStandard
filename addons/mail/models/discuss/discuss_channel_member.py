@@ -454,7 +454,8 @@ class DiscussChannelMember(models.Model):
                 "Rtc",
                 lambda res: (
                     res.attr("iceServers", ice_servers or False),
-                    res.attr("canRecord", permissions["recording"]),
+                    res.attr("canRecordTranscription", permissions["transcription"]),
+                    res.attr("canRecordAudio", permissions["audioRecording"]),
                     res.attr("canRecordVideo", permissions["videoRecording"]),
                     res.one("localSession", "_store_rtc_session_fields", value=rtc_session),
                     res.attr("serverInfo", self._get_rtc_server_info(rtc_session, ice_servers)),
@@ -508,7 +509,8 @@ class DiscussChannelMember(models.Model):
     def _get_recording_permissions(self, partner_id, extra_predicate=True):
         is_partner = bool(partner_id)
         return {
-            "recording": bool(is_partner and extra_predicate),
+            "transcription": bool(is_partner and extra_predicate),
+            "audioRecording": bool(is_partner and extra_predicate),
             "videoRecording": bool(is_partner and extra_predicate),
         }
 

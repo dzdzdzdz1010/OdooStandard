@@ -310,10 +310,11 @@ export class Rtc extends Record {
     fallbackMode = false;
     isPipMode = false;
     isFullscreen = false;
-    canRecord = false;
+    canRecordTranscription = false;
+    canRecordAudio = false;
     canRecordVideo = false;
     recordingState = fields.Attr(
-        { recording: false, transcription: false, video: false },
+        { recording: false, audio: false, transcription: false, video: false },
         {
             onUpdate() {
                 if (this.recordingState.recording) {
@@ -898,6 +899,7 @@ export class Rtc extends Record {
 
     /**
      * @param {Object} [options]
+     * @param {boolean} [options.audio]
      * @param {boolean} [options.video]
      * @param {boolean} [options.transcription]
      */

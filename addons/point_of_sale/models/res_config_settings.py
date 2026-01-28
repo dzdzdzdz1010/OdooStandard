@@ -54,7 +54,6 @@ class ResConfigSettings(models.TransientModel):
     pos_module_pos_restaurant = fields.Boolean(related='pos_config_id.module_pos_restaurant', readonly=False)
     pos_module_pos_appointment = fields.Boolean(related="pos_config_id.module_pos_appointment", readonly=False)
     pos_module_pos_avatax = fields.Boolean(related='pos_config_id.module_pos_avatax', readonly=False)
-    pos_default_receipt_printer_id = fields.Many2one(related='pos_config_id.default_receipt_printer_id', readonly=False)
     pos_receipt_printer_ids = fields.Many2many(related='pos_config_id.receipt_printer_ids', domain="[('use_type', '=', 'receipt')]", readonly=False)
     pos_preparation_printer_ids = fields.Many2many(related='pos_config_id.preparation_printer_ids', domain="[('use_type', '=', 'preparation')]", readonly=False)
 
@@ -236,10 +235,6 @@ class ResConfigSettings(models.TransientModel):
             pos_config = self.env['pos.config'].browse(pos_config_id)
             return pos_config.open_ui()
 
-    @api.model
-    def _is_cashdrawer_displayed(self, res_config):
-        return res_config.pos_other_devices and bool(res_config.pos_default_receipt_printer_id)
-
     @api.depends('pos_limit_categories', 'pos_config_id')
     def _compute_pos_iface_available_categ_ids(self):
         for res_config in self:
@@ -312,9 +307,3 @@ class ResConfigSettings(models.TransientModel):
                     old._add_trusted_config_id(config.pos_config_id)
                 if old.id in removed_trusted_configs:
                     old._remove_trusted_config_id(config.pos_config_id)
-
-    @api.onchange('pos_receipt_printer_ids')
-    def _onchange_pos_receipt_printer_ids(self):
-        """Clear pos_default_receipt_printer_id if it's removed from pos_receipt_printer_ids"""
-        if self.pos_default_receipt_printer_id.id not in self.pos_receipt_printer_ids.ids:
-            self.pos_default_receipt_printer_id = False

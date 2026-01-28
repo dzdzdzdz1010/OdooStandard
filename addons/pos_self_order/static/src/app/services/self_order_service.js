@@ -471,9 +471,7 @@ export class SelfOrder extends Reactive {
         for (const relPrinter of this.config.receipt_printer_ids) {
             const printerDevice = this.createPrinter(relPrinter);
             this.printer.setFallbackPrinter(printerDevice);
-            if (relPrinter == this.config.default_receipt_printer_id) {
-                this.printer.setPrinter(printerDevice);
-            }
+            this.printer.setPrinter(printerDevice);
 
             useLna = useLna || relPrinter.use_lna;
         }

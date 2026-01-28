@@ -508,9 +508,6 @@ export class PosStore extends WithLazyGetterTrap {
         for (const printer of this.config.receipt_printer_ids) {
             const printerDevice = this.createPrinter(printer);
             this.printer.setFallbackPrinter(printerDevice);
-            if (printer == this.config.default_receipt_printer_id) {
-                this.printer.setPrinter(printerDevice);
-            }
 
             useLna = useLna || printer.use_lna;
         }

@@ -105,7 +105,7 @@ class TestImLivechatMessage(ChatbotCase, MailCommon):
                     "record_name": "Testing Bot",
                     "res_id": discuss_channel.id,
                     "scheduledDatetime": False,
-                    "starred": False,
+                    "is_bookmarked": False,
                     "thread": {
                         "id": discuss_channel.id,
                         "model": "discuss.channel",
@@ -179,7 +179,7 @@ class TestImLivechatMessage(ChatbotCase, MailCommon):
                         "record_name": "test1 Ernest Employee",
                         "res_id": channel_livechat_1.id,
                         "scheduledDatetime": False,
-                        "starred": False,
+                        "is_bookmarked": False,
                         "subject": False,
                         "subtype_id": self.env.ref("mail.mt_note").id,
                         "trackingValues": [],

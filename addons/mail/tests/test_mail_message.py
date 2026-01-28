@@ -17,10 +17,10 @@ class TestMailMessage(common.MailCommon):
         message = message.sudo(False)
         self.env.user.group_ids -= self.env.ref("base.group_partner_manager")
         self.assertFalse(message.has_access("write"))
-        message.toggle_message_starred()
-        self.assertIn(self.env.user.partner_id, message.starred_partner_ids)
-        self.env["mail.message"].unstar_all()
-        self.assertNotIn(self.env.user.partner_id, message.starred_partner_ids)
+        message.toggle_message_bookmark()
+        self.assertIn(self.env.user.partner_id, message.bookmarked_partner_ids)
+        self.env["mail.message"].remove_all_bookmarks()
+        self.assertNotIn(self.env.user.partner_id, message.bookmarked_partner_ids)
 
     def test_unlink_failure_message_notify_author(self):
         recipient = new_test_user(self.env, login="Bob", email="invalid_email_addr")

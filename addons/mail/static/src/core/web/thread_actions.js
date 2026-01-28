@@ -11,11 +11,11 @@ registerThreadAction("mark-all-read", {
     sequence: 1,
     name: _t("Mark all read"),
 });
-registerThreadAction("unstar-all", {
+registerThreadAction("remove-all-bookmarks", {
     condition: ({ owner, thread }) =>
-        thread?.id === "starred" && !owner.isDiscussSidebarChannelActions,
+        thread?.id === "bookmark" && !owner.isDiscussSidebarChannelActions,
     disabledCondition: ({ thread }) => thread.isEmpty,
-    onSelected: ({ store }) => store.unstarAll(),
+    onSelected: ({ store }) => store.removeAllBookmarks(),
     sequence: 2,
-    name: _t("Unstar all"),
+    name: _t("Remove all bookmarks"),
 });

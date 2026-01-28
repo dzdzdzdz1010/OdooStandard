@@ -49,9 +49,8 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #   2: _init_messaging_global_fields (discuss)
     #       - fetch discuss_channel_member (is_self)
     #       - _compute_message_unread
-    #   2: _init_messaging_global_fields (mail)
+    #   1: _init_messaging_global_fields (mail)
     #       - _get_needaction_count (inbox counter)
-    #       - search mail_message (starred counter)
     #   23: _process_request_for_all (discuss):
     #       - search discuss_channel (channels_domain)
     #       22: store add channel:
@@ -79,7 +78,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #           - search discuss_channel_res_groups_rel (group_ids)
     #           - search_fetch ir_attachment (_compute_avatar_cache_key -> _compute_avatar_128)
     #           - fetch res_groups (group_public_id)
-    _query_count_init_messaging = 34
+    _query_count_init_messaging = 33
     # Queries for _query_count_discuss_channels (in order):
     #   1: insert res_device_log
     #   3: _search_is_member (for current user, first occurence channels_as_member)
@@ -131,7 +130,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
     #   22: store add message:
     #       - fetch mail_message
     #       - search mail_message_schedule
-    #       - search mail_message_res_partner_starred_rel
+    #       - search mail_message_res_partner_bookmarked_rel
     #       - search message_attachment_rel
     #       - search mail_message_res_partner_rel
     #       - search mail_message_reaction
@@ -288,7 +287,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
         member = members.filtered(lambda m: m.partner_id == self.users[0].partner_id).with_user(self.users[0])
         member._mark_as_read(message_0.id)
         # add star
-        message_0.toggle_message_starred()
+        message_0.toggle_message_bookmark()
         self.env.company.sudo().name = 'YourCompany'
         # add folded channel
         members = self.channel_chat_1.channel_member_ids
@@ -501,10 +500,9 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                     "id": "inbox",
                     "model": "mail.box",
                 },
-                "starred": {
-                    "counter": 1,
+                "bookmark": {
                     "counter_bus_id": bus_last_id,
-                    "id": "starred",
+                    "id": "bookmark",
                     "model": "mail.box",
                 },
                 "initChannelsUnreadCounter": 3,
@@ -1343,7 +1341,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "record_name": "general",
                 "res_id": 1,
                 "scheduledDatetime": False,
-                "starred": False,
+                "is_bookmarked": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
                 "thread": {"id": channel.id, "model": "discuss.channel"},
@@ -1381,7 +1379,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "record_name": "public channel 1",
                 "res_id": channel.id,
                 "scheduledDatetime": False,
-                "starred": True,
+                "is_bookmarked": True,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
                 "trackingValues": [],
@@ -1417,7 +1415,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "record_name": "public channel 2",
                 "res_id": channel.id,
                 "scheduledDatetime": False,
-                "starred": False,
+                "is_bookmarked": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_comment").id,
                 "trackingValues": [],
@@ -1454,7 +1452,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "record_name": "group restricted channel 1",
                 "res_id": channel.id,
                 "scheduledDatetime": False,
-                "starred": False,
+                "is_bookmarked": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
                 "trackingValues": [],
@@ -1490,7 +1488,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "record_name": "group restricted channel 2",
                 "res_id": channel.id,
                 "scheduledDatetime": False,
-                "starred": False,
+                "is_bookmarked": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_comment").id,
                 "trackingValues": [],
@@ -1523,7 +1521,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "record_name": "test1 Ernest Employee",
                 "res_id": channel.id,
                 "scheduledDatetime": False,
-                "starred": False,
+                "is_bookmarked": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
                 "trackingValues": [],
@@ -1556,7 +1554,7 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "record_name": "Visitor Ernest Employee",
                 "res_id": channel.id,
                 "scheduledDatetime": False,
-                "starred": False,
+                "is_bookmarked": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
                 "trackingValues": [],

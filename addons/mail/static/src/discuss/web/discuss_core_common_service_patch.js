@@ -4,18 +4,18 @@ import { patch } from "@web/core/utils/patch";
 patch(DiscussCoreCommon.prototype, {
     _handleNotificationChannelDelete(thread, metadata) {
         const { notifId } = metadata;
-        const filteredStarredMessages = [];
-        let starredCounter = 0;
-        for (const msg of this.store.starred.messages) {
+        const filteredBookmarkedMessages = [];
+        let bookmarkedCounter = 0;
+        for (const msg of this.store.bookmark.messages) {
             if (!msg.thread?.eq(thread)) {
-                filteredStarredMessages.push(msg);
+                filteredBookmarkedMessages.push(msg);
             } else {
-                starredCounter++;
+                bookmarkedCounter++;
             }
         }
-        this.store.starred.messages = filteredStarredMessages;
-        if (notifId > this.store.starred.counter_bus_id) {
-            this.store.starred.counter -= starredCounter;
+        this.store.bookmark.messages = filteredBookmarkedMessages;
+        if (notifId > this.store.bookmark.counter_bus_id) {
+            this.store.bookmark.counter -= bookmarkedCounter;
         }
         this.store.inbox.messages = this.store.inbox.messages.filter(
             (msg) => !msg.thread?.eq(thread)

@@ -167,13 +167,10 @@ class WebclientController(ThreadController):
             },
         )
         res.attr(
-            "starred",
+            "bookmark",
             {
-                "counter": user.env["mail.message"].search_count(
-                    [("starred_partner_ids", "in", user.partner_id.ids)],
-                ),
                 "counter_bus_id": bus_last_id,
-                "id": "starred",
+                "id": "bookmark",
                 "model": "mail.box",
             },
         )

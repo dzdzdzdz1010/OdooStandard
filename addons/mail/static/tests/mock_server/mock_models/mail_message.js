@@ -160,7 +160,7 @@ export class MailMessage extends models.ServerModel {
                             ["res_partner_id", "=", this.env.user.partner_id],
                         ]).length
                 );
-                data["starred"] = message.starred_partner_ids?.includes(this.env.user?.partner_id);
+                data["is_bookmarked"] = message.bookmarked_partner_ids?.includes(this.env.user?.partner_id);
                 const trackingValues = MailTrackingValue.browse(message.tracking_value_ids);
                 const formattedTrackingValues =
                     MailTrackingValue._tracking_value_format(trackingValues);
@@ -342,7 +342,7 @@ export class MailMessage extends models.ServerModel {
     }
 
     /** @param {number[]} ids */
-    toggle_message_starred(ids) {
+    toggle_message_bookmark(ids) {
         /** @type {import("mock_models").BusBus} */
         const BusBus = this.env["bus.bus"];
         /** @type {import("mock_models").ResPartner} */
@@ -351,40 +351,50 @@ export class MailMessage extends models.ServerModel {
         const messages = this.browse(ids);
         const store = new mailDataHelpers.Store();
         for (const message of messages) {
-            const wasStarred = message.starred_partner_ids.includes(this.env.user.partner_id);
+            const wasBookmarked = message.bookmarked_partner_ids.includes(this.env.user.partner_id);
             this.write([message.id], {
-                starred_partner_ids: [
-                    wasStarred
+                bookmarked_partner_ids: [
+                    wasBookmarked
                         ? Command.unlink(this.env.user.partner_id)
                         : Command.link(this.env.user.partner_id),
                 ],
             });
             const [partner] = ResPartner.read(this.env.user.partner_id);
-            BusBus._sendone(partner, "mail.message/toggle_star", {
-                message_ids: [message.id],
-                starred: !wasStarred,
-            });
-            store.add(this.browse(message.id), { starred: !wasStarred });
+            store.add(this.browse(message.id), { is_bookmarked: !wasBookmarked });
+            BusBus._sendone(
+                partner,
+                "mail.record/insert",
+                store.get_result()
+            );
         }
         return store.get_result();
     }
 
-    unstar_all() {
+    remove_all_bookmarks() {
         /** @type {import("mock_models").BusBus} */
         const BusBus = this.env["bus.bus"];
         /** @type {import("mock_models").ResPartner} */
         const ResPartner = this.env["res.partner"];
 
-        const messages = this._filter([["starred_partner_ids", "in", this.env.user.partner_id]]);
+        const messages = this._filter([["bookmarked_partner_ids", "in", this.env.user.partner_id]]);
         this.write(
             messages.map((message) => message.id),
-            { starred_partner_ids: [Command.unlink(this.env.user.partner_id)] }
+            { bookmarked_partner_ids: [Command.unlink(this.env.user.partner_id)] }
         );
         const [partner] = ResPartner.read(this.env.user.partner_id);
-        BusBus._sendone(partner, "mail.message/toggle_star", {
+        BusBus._sendone(partner, "mail.message/toggle_bookmark", {
             message_ids: messages.map((message) => message.id),
-            starred: false,
+            is_bookmarked: false,
         });
+        const store = new mailDataHelpers.Store();
+        for (const message of messages) {
+            store.add(this.browse(message.id), { is_bookmarked: false });
+        }
+        BusBus._sendone(
+            partner,
+            "mail.record/insert",
+            store.get_result()
+        );
     }
 
     /** @param {number} id */

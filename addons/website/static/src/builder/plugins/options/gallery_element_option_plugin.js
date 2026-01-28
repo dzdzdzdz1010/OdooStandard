@@ -20,7 +20,8 @@ import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
 export class GalleryElementOption extends BaseOptionComponent {
     static template = "website.GalleryElementOption";
     static selector =
-        ".s_image_gallery img, .s_carousel .carousel-item, .s_quotes_carousel .carousel-item, .s_carousel_intro .carousel-item, .s_carousel_cards .carousel-item";
+        ".s_image_gallery img:not([aria-hidden]), .s_carousel .carousel-item, .s_quotes_carousel .carousel-item, .s_carousel_intro .carousel-item, .s_carousel_cards .carousel-item";
+
     setup() {
         this.state = useDomState((editingElement) => {
             const isImageWall = editingElement.closest('[data-snippet="s_images_wall"]');

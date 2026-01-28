@@ -9,18 +9,22 @@ beforeEach(enableTransitions);
 describe.current.tags("interaction_dev");
 
 test("carousel_slider updates min height of carousel items", async () => {
+    // Use a dummy base64 image for all images, so that the test doesn't need to
+    // fetch any image and risk stalling on load.
+    const base64Image =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAH0lEQVQYV2NkQAL/GRikGGF8KOcZWADGAbEZkTkgAQDXKwcebKRDwQAAAABJRU5ErkJggg==";
     const { core } = await startInteractions(`
         <section>
             <div id="slideshow_sample" class="carousel carousel-dark slide" data-bs-ride="false" data-bs-interval="0">
                 <div class="carousel-inner">
                     <div class="carousel-item active">
-                        <img class="img img-fluid d-block mh-100 mw-100 mx-auto rounded object-fit-cover" src="/web/image/website.library_image_08" data-name="Image" data-index="0" alt=""/>
+                        <img class="img img-fluid d-block mh-100 mw-100 mx-auto rounded object-fit-cover" src="${base64Image}" data-name="Image" data-index="0" alt=""/>
                     </div>
                     <div class="carousel-item">
-                        <img class="img img-fluid d-block mh-100 mw-100 mx-auto rounded object-fit-cover" src="/web/image/website.library_image_03" data-name="Image" data-index="1" alt=""/>
+                        <img class="img img-fluid d-block mh-100 mw-100 mx-auto rounded object-fit-cover" src="${base64Image}" data-name="Image" data-index="1" alt=""/>
                     </div>
                     <div class="carousel-item">
-                        <img class="img img-fluid d-block mh-100 mw-100 mx-auto rounded object-fit-cover" src="/web/image/website.library_image_02" data-name="Image" data-index="2" alt=""/>
+                        <img class="img img-fluid d-block mh-100 mw-100 mx-auto rounded object-fit-cover" src="${base64Image}" data-name="Image" data-index="2" alt=""/>
                     </div>
                 </div>
                 <div class="o_carousel_controllers">
@@ -29,9 +33,18 @@ test("carousel_slider updates min height of carousel items", async () => {
                         <span class="visually-hidden">Previous</span>
                     </button>
                     <div class="carousel-indicators">
-                        <button type="button" data-bs-target="#slideshow_sample" data-bs-slide-to="0" style="background-image: url(/web/image/website.library_image_08)" class="active" aria-label="Carousel indicator"/>
-                        <button type="button" style="background-image: url(/web/image/website.library_image_03)" data-bs-target="#slideshow_sample" data-bs-slide-to="1" aria-label="Carousel indicator"/>
-                        <button type="button" style="background-image: url(/web/image/website.library_image_02)" data-bs-target="#slideshow_sample" data-bs-slide-to="2" aria-label="Carousel indicator"/>
+                        <button type="button" data-bs-target="#slideshow_sample" data-bs-slide-to="0" class="active">
+                            <span class="visually-hidden">Carousel indicator</span>
+                            <img class="object-fit-cover w-100 h-100" aria-hidden="true" src="${base64Image}"/>
+                        </button>
+                        <button type="button" data-bs-target="#slideshow_sample" data-bs-slide-to="1">
+                            <span class="visually-hidden">Carousel indicator</span>
+                            <img class="object-fit-cover w-100 h-100" aria-hidden="true" src="${base64Image}"/>
+                        </button>
+                        <button type="button" data-bs-target="#slideshow_sample" data-bs-slide-to="2">
+                            <span class="visually-hidden">Carousel indicator</span>
+                            <img class="object-fit-cover w-100 h-100" aria-hidden="true" src="${base64Image}"/>
+                        </button>
                     </div>
                     <button class="carousel-control-next o_not_editable" contenteditable="false" t-attf-data-bs-target="#slideshow_sample" data-bs-slide="next" aria-label="Next" title="Next">
                         <span class="carousel-control-next-icon" aria-hidden="true"/>
@@ -46,7 +59,7 @@ test("carousel_slider updates min height of carousel items", async () => {
 
     expect(core.interactions).toHaveLength(1);
     for (const itemEl of itemEls) {
-        expect(itemEl).toHaveStyle({ minHeight });
+        expect(itemEl).toHaveStyle({ "min-height": minHeight }, { inline: true });
     }
 
     core.stopInteractions();

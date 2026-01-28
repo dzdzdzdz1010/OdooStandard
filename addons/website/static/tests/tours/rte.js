@@ -239,21 +239,13 @@ registerWebsitePreviewTour(
         },
         {
             content: "translate placeholder",
-            trigger: ".modal-dialog input:first",
+            trigger: `.options-container [data-action-id='translateAttribute'][data-action-param='placeholder'] input`,
             run: "edit test Parseltongue placeholder",
         },
         {
             content: "translate default value",
-            trigger: ".modal-dialog input:last",
+            trigger: `.options-container [data-action-id='translateAttribute'][data-action-param='value'] input`,
             run: "edit test Parseltongue default value",
-        },
-        {
-            trigger: '.modal input:value("test Parseltongue placeholder")',
-        },
-        {
-            content: "close modal",
-            trigger: ".modal-footer .btn-primary",
-            run: "click",
         },
         {
             content: "check: input marked as translated",
@@ -294,6 +286,9 @@ registerWebsitePreviewTour(
             trigger:
                 ":iframe body:not(:has(#wrap p font:first:text(paragraphs <b>describing</b>)))",
         },
+        // TODO: fix this. We are not on the translated page anymore, we should
+        // be able to use `clickOnEditAndWaitEditMode`. But the systray takes
+        // time to reload after switching pages.
         ...clickOnEditAndWaitEditModeInTranslatedPage(),
         {
             content: "select text",

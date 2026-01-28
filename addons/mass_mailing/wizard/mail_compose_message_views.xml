@@ -11,9 +11,6 @@
                     <field name="campaign_id" groups="mass_mailing.group_mass_mailing_campaign"
                         invisible="composition_mode != 'mass_mail' or not model_is_thread"/>
                 </xpath>
-                <xpath expr="//field[@name='template_id']" position="attributes">
-                    <attribute name="invisible">True</attribute>
-                </xpath>
             </field>
         </record>
 

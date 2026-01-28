@@ -305,8 +305,7 @@ export class RelationalModel extends Model {
                 // TODO?: maybe mark available whatever result.length is, but store the length
                 // in the value, and when considering filters to display (other PR), filter out
                 // queries where result.length is 0
-                const markAsAvailableOffline =
-                    actionId && (config.isMonoRecord ? config.resId : result.length);
+                const markAsAvailableOffline = actionId && (config.isMonoRecord || result.length);
                 if (markAsAvailableOffline) {
                     const params = config.isMonoRecord ? { resId: config.resId } : {};
                     this.offline.setAvailableOffline(actionId, viewType, params);
@@ -634,7 +633,12 @@ export class RelationalModel extends Model {
                     groups.splice(
                         index,
                         0,
-                        Object.assign({}, group, { count: 0, length: 0, records: [], aggregates })
+                        Object.assign({}, group, {
+                            count: 0,
+                            length: 0,
+                            records: [],
+                            aggregates,
+                        })
                     );
                 }
             });
@@ -719,7 +723,9 @@ export class RelationalModel extends Model {
             const fieldContext = config.activeFields[fieldNames[0]].context;
             context = makeContext([context, fieldContext], evalContext);
         }
-        const spec = getFieldsSpec(activeFields, fields, evalContext, { withInvisible: true });
+        const spec = getFieldsSpec(activeFields, fields, evalContext, {
+            withInvisible: true,
+        });
         const args = [resId ? [resId] : [], changes, fieldNames, spec];
         let response;
         try {
@@ -799,7 +805,9 @@ export class RelationalModel extends Model {
      */
     async _updateCount(config) {
         const count = await this.keepLast.add(
-            this.orm.searchCount(config.resModel, config.domain, { context: config.context })
+            this.orm.searchCount(config.resModel, config.domain, {
+                context: config.context,
+            })
         );
         config.countLimit = Number.MAX_SAFE_INTEGER;
         return count;

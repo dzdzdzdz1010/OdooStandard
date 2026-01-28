@@ -54,7 +54,7 @@
         <button t-if="model.root.isInEdition and props.removeRecord" class="btn btn-secondary o_form_button_remove" t-on-click="props.removeRecord" data-hotkey="x">
             Remove
         </button>
-        <button t-if="!model.root.isInEdition and canCreate" type="button" class="btn btn-secondary o_form_button_create" data-hotkey="c" t-on-click.stop="create">
+        <button t-if="!model.root.isInEdition and canCreate" t-att-disabled="isNewButtonDisabled" type="button" class="btn btn-secondary o_form_button_create" data-hotkey="c" t-on-click.stop="create" data-available-offline="">
             New
         </button>
     </t>

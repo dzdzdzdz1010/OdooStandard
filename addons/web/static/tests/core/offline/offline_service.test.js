@@ -96,7 +96,6 @@ test("offlineUI: disable interactive elements except [data-available-offline]", 
             <div>
                 <button type="button" class="button_to_disable"> Disable this button </button>
                 <button type="button" class="button_available_offline" data-available-offline=""> Don't disable this button </button>
-                <input type="checkbox" name="checkbox" class="checkbox_to_disable"/>
             </div>
         `;
         static props = ["*"];
@@ -105,20 +104,16 @@ test("offlineUI: disable interactive elements except [data-available-offline]", 
     await mountWithCleanup(Root);
     expect(`.button_to_disable`).not.toHaveAttribute("disabled");
     expect(`.button_available_offline`).not.toHaveAttribute("disabled");
-    expect(`.checkbox_to_disable`).not.toHaveAttribute("disabled");
 
     getService("offline").offline = true;
     expect(`.button_to_disable`).toHaveAttribute("disabled");
     expect(`.button_available_offline`).not.toHaveAttribute("disabled");
-    expect(`.checkbox_to_disable`).toHaveAttribute("disabled");
     expect(`.button_to_disable`).toHaveClass("o_disabled_offline");
     expect(`.button_available_offline`).not.toHaveClass("o_disabled_offline");
-    expect(`.checkbox_to_disable`).toHaveClass("o_disabled_offline");
 
     getService("offline").offline = false;
     expect(`.button_to_disable`).not.toHaveAttribute("disabled");
     expect(`.button_available_offline`).not.toHaveAttribute("disabled");
-    expect(`.checkbox_to_disable`).not.toHaveAttribute("disabled");
 });
 
 test("offlineUI: don't disable already disabled elements", async () => {

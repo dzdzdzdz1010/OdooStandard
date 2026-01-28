@@ -467,6 +467,17 @@ export class KanbanController extends Component {
     get isNewButtonDisabled() {
         const { createGroup } = this.props.archInfo.activeActions;
         const list = this.model.root;
+        if (
+            this.offlineService.offline &&
+            !this.offlineService.isAvailableOffline(this.env.config.actionId, "form", false) &&
+            !this.offlineService.isAvailableOffline(
+                this.env.config.actionId,
+                "kanban:quick_create_form",
+                false
+            )
+        ) {
+            return true;
+        }
         return (
             this.model.isReady &&
             list.isGrouped &&

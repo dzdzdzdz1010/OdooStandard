@@ -267,6 +267,17 @@ export class ListController extends Component {
         return {};
     }
 
+    get isNewButtonDisabled() {
+        if (
+            this.offlineService.offline &&
+            !this.offlineService.isAvailableOffline(this.env.config.actionId, "form", false)
+        ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     getExportableFields() {
         return unique(
             this.props.archInfo.columns

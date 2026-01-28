@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="web.OfflineSystray">
+        <div t-if="this.offlineService.offline and !offlineService.hasScheduledCalls" t-on-click="() => this.offlineService.checkConnection()">
+            <i t-if="env.isSmall"
+                class="fa fa-chain-broken o_nav_entry text-danger offline_systray"
+                role="img"
+                aria-label="Working offline"
+                data-tooltip="Working offline"/>
+            <button t-else=""
+                class="o_nav_entry px-2 o_tag text-bg-danger offline_systray"
+                data-available-offline=""
+                data-tooltip="Click to check connection">
+                <i class="fa fa-chain-broken me-1"></i> Working offline
+            </button>
+        </div>
+        <Dropdown t-if="offlineService.hasScheduledCalls">
+            <div t-on-click="() => this.offlineService.checkConnection()">
+                <i t-if="env.isSmall"
+                    t-attf-class="fa {{ inError? 'fa-exclamation' : 'fa-chain-broken' }} o_nav_entry text-danger offline_systray"
+                    role="img"
+                    t-attf-aria-label="{{ inError ? 'Sync Issues' : 'Working offline' }}"
+                    t-attf-data-tooltip="{{ inError ? 'Sync Issues' : 'Working offline'"/>
+                <button t-else=""
+                    class="o_nav_entry px-2 o_tag text-bg-danger offline_systray"
+                    data-available-offline=""
+                    data-tooltip="Click to check connection and Sync">
+                    <i t-attf-class="fa {{ inError ? 'fa-exclamation' : 'fa-chain-broken' me-1"/><t t-esc="labelText"></t><i class="fa fa-caret-down ms-2"/>
+                </button>
+            </div>
+            <t t-set-slot="content">
+                <t t-foreach="groupEntries" t-as="entry" t-key="entry[0]">
+                    <div>
+                        <t t-esc="entry[0]"/>
+                    </div>
+                    <t t-foreach="entry[1]" t-as="element" t-key="element.id">
+                        <DropdownItem>
+                            <div>
+                                <span t-out="element.displayName"/> <span t-out="element.status"/>
+                                <button
+                                    t-if="element.viewType === 'form'"
+                                    class="btn fa fa-eye fa-xl px-3 ms-auto"
+                                    title="Open"
+                                    data-available-offline=""
+                                 t-on-click="() => this.openView(element.id)"/>
+                                <button
+                                    class="btn fa fa-trash fa-xl px-3 ms-auto"
+                                    title="Discard offline changes"
+                                    data-available-offline=""
+                                    t-on-click.stop="() => this.offlineService.removeScheduledORM(element.id)"/>
+                            </div>
+                        </DropdownItem>
+                    </t>
+                </t>
+            </t>
+        </Dropdown>
+    </t>
+
+</templates>

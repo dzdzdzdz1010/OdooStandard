@@ -34,7 +34,8 @@ registerThreadAction("livechat-status", {
         channel?.channel_type === "livechat" &&
         store.has_access_livechat &&
         !channel.livechat_end_dt &&
-        !owner.isDiscussContent,
+        !owner.isDiscussContent &&
+        !owner.isDiscussSidebarChannelActions,
     dropdown: true,
     dropdownMenuClass: "p-0",
     dropdownTemplate: "im_livechat.LivechatStatusSelection",

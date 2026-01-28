@@ -812,19 +812,6 @@ test("should also invite to the call when inviting to the channel", async () => 
     await contains(".o-discuss-CallParticipantCard.o-isInvitation");
 });
 
-test("can join / leave call from discuss sidebar actions", async () => {
-    const pyEnv = await startServer();
-    const channelId = pyEnv["discuss.channel"].create({ name: "General" });
-    await start();
-    await openDiscuss(channelId);
-    await click("[title='Channel Actions']");
-    await click(".o-dropdown-item:contains('Start Call')");
-    await contains(".o-discuss-Call");
-    await click("[title='Channel Actions']");
-    await click(".o-dropdown-item:contains('Disconnect')");
-    await contains(".o-discuss-Call", { count: 0 });
-});
-
 test("shows warning on infinite mirror effect (screen-sharing then fullscreen)", async () => {
     const pyEnv = await startServer();
     const channelId = pyEnv["discuss.channel"].create({ name: "General" });

@@ -30,17 +30,5 @@ registry.category("web_tour.tours").add("im_livechat.looking_for_help_discuss_ca
             trigger:
                 ".o-mail-DiscussSidebar:has(.o-mail-DiscussSidebarChannel:contains(Accounting))",
         },
-        {
-            trigger: "button[name='livechat-status']",
-            run: "hover",
-        },
-        {
-            trigger: ".o-livechat-LivechatStatusSelection-Label:contains(In progress)",
-            run: "click",
-        },
-        {
-            trigger:
-                ".o-mail-DiscussSidebar:not(:has(.o-mail-DiscussSidebarChannel:contains(Accounting)))",
-        },
     ],
 });

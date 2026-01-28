@@ -47,6 +47,24 @@ class MailGuest(models.Model):
                 else None
             )
 
+    @api.depends("name")
+    @api.depends_context("display_email", "formatted_display_name")
+    def _compute_display_name(self):
+        if not self.env.context.get("display_email"):
+            super()._compute_display_name()
+            return
+        for guest in self:
+            if self.env.context.get("formatted_display_name"):
+                guest.display_name = self.env._(
+                    "%(guest_name)s --(External)--",
+                    guest_name=guest.name,
+                )
+            else:
+                guest.display_name = self.env._(
+                    "%(guest_name)s (External)",
+                    guest_name=guest.name,
+                )
+
     def _get_guest_from_token(self, token=""):
         """Returns the guest record for the given token, if applicable."""
         guest = self.env["mail.guest"]

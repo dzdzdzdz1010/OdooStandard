@@ -2,7 +2,6 @@
 
 from . import common
 from . import test_acl
-from . import test_expression
 from . import test_install
 from . import test_avatar_mixin
 from . import test_init

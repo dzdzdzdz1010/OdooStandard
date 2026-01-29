@@ -161,8 +161,7 @@ class TestLeadAssign(TestLeadAssignCommon):
         self.members.invalidate_model(['lead_month_count'])
         self.assertEqual(self.sales_team_1_m3.lead_month_count, 12)
 
-        # sales_team_1_m2 is opt-out (new field in 14.3) -> even with max, no lead assigned
-        self.sales_team_1_m2.update({'assignment_max': 45, 'assignment_optout': True})
+        self.sales_team_1_m2.update({'assignment_max': 0})
         self.sales_team_1_m3.update({'assignment_max': 45})
         with self.with_user('user_sales_manager'):
             teams_data, members_data = self.sales_team_1._action_assign_leads(force_quota=True)
@@ -204,6 +203,35 @@ class TestLeadAssign(TestLeadAssignCommon):
         self.assertEqual(self.sales_team_1_m1.lead_month_count, 0)  # archived do not get leads
         self.assertEqual(self.sales_team_1_m2.lead_month_count, 0)  # opt-out through assignment_max = 0
         self.assertEqual(self.sales_team_1_m3.lead_month_count, 16)  # ignore actual quota (round(45/30) => +2) + existing 14 and not capped anymore
+
+        # Test assignment_max_enabled = False by trying to assign the remaining leads again
+        self.sales_team_1_m3.update({'assignment_max_enabled': False, 'assignment_max': 16})
+
+        with self.with_user('user_sales_manager'):
+            self.env['crm.team'].browse(self.sales_team_1.ids)._action_assign_leads()
+
+        self.assertEqual(self.sales_team_1_m1.lead_month_count, 0)  # archived do not get leads
+        self.assertEqual(self.sales_team_1_m2.lead_month_count, 0)  # opt-out through assignment_max = 0
+        self.assertEqual(self.sales_team_1_m3.lead_month_count, 18)  # Should exceed the assignment_max of 16, regardless of quota,
+
+        # re-enable assignment_max and try to assign more leads
+        self.sales_team_1_m3.update({'assignment_max_enabled': True})
+
+        additional_leads = self._create_leads_batch(
+            lead_type='lead',
+            user_ids=[False],
+            partner_ids=[False],
+            count=2,
+        )
+        additional_leads.flush_recordset()
+
+        with self.with_user('user_sales_manager'):
+            self.env['crm.team'].browse(self.sales_team_1.ids)._action_assign_leads(force_quota=True)
+
+        self.members.invalidate_model(['lead_month_count'])
+        self.assertEqual(self.sales_team_1_m1.lead_month_count, 0)  # archived do not get leads
+        self.assertEqual(self.sales_team_1_m2.lead_month_count, 0)  # opt-out through assignment_max = 0
+        self.assertEqual(self.sales_team_1_m3.lead_month_count, 19)  # Quota rounding allows one extra lead (round(16/30) => +1)
 
     @mute_logger('odoo.models.unlink')
     def test_assign_duplicates(self):

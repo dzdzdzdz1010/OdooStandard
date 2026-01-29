@@ -153,6 +153,61 @@ class TranslationToolsTestCase(BaseCase):
         self.assertEqual(result, source)
         self.assertItemsEqual(terms, ['Form stuff'])
 
+    def test_translate_xml_inline6(self):
+        """ Test xml_translate() with non-inline elements with o_translate_inline. """
+        terms = []
+        source = """<form string="Form stuff">
+                        <h1 class="o_translate_inline">Blah</h1>more text
+                        <h1 class="o_translate_inline" t-if="True">Other Blah</h1>even more text
+                    </form>"""
+        result = xml_translate(terms.append, source)
+        self.assertEqual(result, source)
+        self.assertItemsEqual(terms,
+            ['Form stuff', '<h1 class="o_translate_inline">Blah</h1>more text', 'Other Blah', 'even more text'])
+
+    def test_translate_xml_inline7(self):
+        """ Test xml_translate() with non-inline elements inside o_translate_inline. """
+        terms = []
+        source = """<form string="Form stuff">
+                        <span class="o_translate_inline">Blah<h1>more text</h1></span>
+                        <span class="o_translate_inline">Other Blah<h1 t-if="True">even more text</h1></span>
+                    </form>"""
+        result = xml_translate(terms.append, source)
+        self.assertEqual(result, source)
+        self.assertItemsEqual(terms,
+            ['Form stuff', '<span class="o_translate_inline">Blah<h1>more text</h1></span>', 'Other Blah', 'even more text'])
+
+    def test_translate_xml_highlight(self):
+        """ Test xml_translate() with highlight span (with o_translate_inline). """
+        terms = []
+        source = """<div>
+                        <span class="o_text_highlight o_text_highlight_underline o_translate_inline">
+                            <span class="o_text_highlight_item">
+                                Here is a <a>link</a> in highlight
+                            </span>
+                        </span>
+                    </div>"""
+        result = xml_translate(terms.append, source)
+        self.assertEqual(result, source)
+        self.assertItemsEqual(terms, ["""<span class="o_text_highlight o_text_highlight_underline o_translate_inline">
+                            <span class="o_text_highlight_item">
+                                Here is a <a>link</a> in highlight
+                            </span>
+                        </span>"""])
+
+    def test_translate_xml_groups(self):
+        """ Test xml_translate() with groups attributes. """
+        terms = []
+        source = """<t t-name="stuff">
+                        stuff before
+                        <span groups="anyone"/>
+                        stuff after
+                    </t>"""
+        result = xml_translate(terms.append, source)
+        self.assertEqual(result, source)
+        self.assertItemsEqual(terms,
+            ['stuff before', 'stuff after'])
+
     def test_translate_xml_t(self):
         """ Test xml_translate() with t-* attributes. """
         terms = []
@@ -328,6 +383,46 @@ class TranslationToolsTestCase(BaseCase):
         self.assertEqual(result, """<p>A <i class="fa-check"/> B</p>""")
         result = html_translate(lambda term: term, source)
         self.assertEqual(result, source)
+
+    def test_force_inline_translation(self):
+        """ Test xml_translate() with elements translated as a whole (using the
+            `o_translate_inline` class).
+        """
+        terms = []
+        source = """<form>
+                        <p>{}</p>
+                    </form>""".format
+        content_v1 = """<span class="o_text_highlight o_text_highlight_wavy {}">
+                        Go to the <a href="/contactus">Contact Us</a> page
+                    </span>""".format
+        content_v2 = """<span class="o_text_highlight o_text_highlight_wavy {}">
+                        <a href="/contactus">Contact Us</a>
+                    </span>""".format
+
+        source_v1 = source(content_v1(''))
+        source_inline_v1 = source(content_v1('o_translate_inline'))
+        source_inline_v2 = source(content_v2('o_translate_inline'))
+
+        # Translate an element without the `o_translate_inline` modifier.
+        result_1 = xml_translate(terms.append, source_v1)
+        self.assertEqual(result_1, source_v1)
+        self.assertItemsEqual(terms, ['Go to the', 'Contactz Us', 'page'])
+
+        # Translate an element that has a non-"inline-translated" child
+        # amongst its text content.
+        terms = []
+        result_inline = xml_translate(terms.append, source_inline_v1)
+        self.assertEqual(result_inline, source_inline_v1)
+        # The `o_translate_inline` element should be translated as a whole.
+        self.assertItemsEqual(terms, [content_v1('o_translate_inline')])
+
+        # Translate an element that contains only a non-"inline-translated"
+        # child element.
+        terms = []
+        result_inline = xml_translate(terms.append, source_inline_v2)
+        self.assertEqual(result_inline, source_inline_v2)
+        # The `o_translate_inline` element should be translated as a whole.
+        self.assertItemsEqual(terms, [content_v2('o_translate_inline')])
 
 
 class TestLanguageInstall(TransactionCase):

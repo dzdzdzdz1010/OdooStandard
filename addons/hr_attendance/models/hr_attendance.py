@@ -16,6 +16,7 @@ from odoo.fields import Domain
 from odoo.http import request
 from odoo.tools import convert, format_datetime, format_duration, format_time
 from odoo.tools.intervals import Intervals
+from odoo.tools.float_utils import float_compare, float_is_zero
 
 
 def get_google_maps_url(latitude, longitude):
@@ -79,6 +80,11 @@ class HrAttendance(models.Model):
     expected_hours = fields.Float(compute="_compute_expected_hours", store=True, aggregator="sum")
     device_tracking_enabled = fields.Boolean(related="employee_id.company_id.attendance_device_tracking")
     linked_overtime_ids = fields.Many2many('hr.attendance.overtime.line', compute='_compute_linked_overtime_ids', readonly=False)
+    break_duration = fields.Float(
+        string="Break Duration",
+        help="Extra unpaid break duration (hours) excluding scheduled lunch.",
+        default=0.0,
+    )
 
     @api.depends("check_in", "employee_id")
     def _compute_date(self):
@@ -172,7 +178,7 @@ class HrAttendance(models.Model):
         self.ensure_one()
         return self.employee_id.resource_calendar_id or self.employee_id.company_id.resource_calendar_id
 
-    @api.depends('check_in', 'check_out')
+    @api.depends('check_in', 'check_out', 'break_duration')
     def _compute_worked_hours(self):
         """ Computes the worked hours of the attendance record.
             The worked hours of resource with flexible calendar is computed as the difference
@@ -184,9 +190,25 @@ class HrAttendance(models.Model):
                 check_out_tz = attendance.check_out.astimezone(tz)
                 attendance_intervals = Intervals([(check_in_tz, check_out_tz, attendance)])
                 delta = sum((i[1] - i[0]).total_seconds() for i in attendance_intervals)
+                break_seconds = max(attendance.break_duration or 0.0, 0.0) * 3600.0
+                if break_seconds:
+                    delta = max(delta - break_seconds, 0.0)
                 attendance.worked_hours = delta / 3600.0
             else:
                 attendance.worked_hours = False
+
+    @api.constrains('break_duration', 'check_in', 'check_out')
+    def _check_break_duration(self):
+        for attendance in self:
+            duration = attendance.break_duration or 0.0
+            if float_compare(duration, 0.0, precision_digits=4) < 0:
+                raise exceptions.ValidationError(_("Break duration cannot be negative."))
+            if not attendance.check_out and not float_is_zero(duration, precision_digits=4):
+                raise exceptions.ValidationError(_("You can only set a break duration once the employee has checked out."))
+            if attendance.check_in and attendance.check_out and duration:
+                total_hours = (attendance.check_out - attendance.check_in).total_seconds() / 3600.0
+                if float_compare(duration, total_hours, precision_digits=4) > 0:
+                    raise exceptions.ValidationError(_("Break duration cannot exceed the attendance duration."))
 
     @api.constrains('check_in', 'check_out')
     def _check_validity_check_in_check_out(self):
@@ -339,7 +361,7 @@ class HrAttendance(models.Model):
             raise AccessError(_("Do not have access, user cannot edit the attendances that are not his own."))
         domain_pre = self._get_overtimes_to_update_domain()
         result = super(HrAttendance, self).write(vals)
-        if any(field in vals for field in ['employee_id', 'check_in', 'check_out']):
+        if any(field in vals for field in ['employee_id', 'check_in', 'check_out', 'break_duration']):
             # Merge attendance dates before and after write to recompute the
             # overtime if the attendances have been moved to another day
             domain_post = self._get_overtimes_to_update_domain()

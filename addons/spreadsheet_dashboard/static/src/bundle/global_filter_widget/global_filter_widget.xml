@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="spreadsheet.GlobalFilterWidget">
+        <t t-if="!state.isLoading">
+            <t t-if="state.filtersAndValues.length">
+                <div t-if="state.folded" class="d-flex align-items-center">
+                    <i class="fa fa-lg fa-caret-right pe-2"
+                        data-tooltip="Modify global filter"
+                        t-on-click="() => state.folded = false"/>
+                    <div class="d-print-contents d-flex flex-wrap gap-1">
+                        <span t-if="!state.facets.length"> No global filter applied </span>
+                        <t t-foreach="state.facets" t-as="facet" t-key="facet.id">
+                            <DashboardFacet facet="facet"
+                                clearFilter="() => this.onFilterChange(facet.id, undefined)"
+                                onClick="() => state.folded = false" />
+                        </t>
+                    </div>
+                </div>
+                <div t-else="" class="d-flex">
+                    <a t-on-click="() => state.folded = true">
+                        <i class="fa fa-lg fa-caret-down pe-2"/>
+                    </a>
+                    <DashboardFilterList
+                        filtersAndValues="state.filtersAndValues"
+                        searchableParentRelations="state.searchableParentRelations"
+                        onFilterChange.bind="onFilterChange"
+                        model="state.model"/>
+                </div>
+            </t>
+            <div t-elif="!lastDashboardId" class="text-muted">
+                Select a dashboard to edit a global filter.
+            </div>
+            <div t-else="" class="text-muted">
+                No global filters defined for this dashboard.
+            </div>
+        </t>
+    </t>
+
+</templates>

@@ -1,0 +1,6 @@
+"id","name","auto_apply","country_id","name@th_TH",sequence
+"l10n_th_fiscal_position_template_1","Domestic Company","1","base.th","นิติบุคคลในประเทศ","1"
+"l10n_th_fiscal_position_template_2","Domestic Individual","1","base.th","บุคคลธรรมดาในประเทศ","2"
+"l10n_th_fiscal_position_template_3","Foreign Entity","1","","นิติบุคคลต่างประเทศ","3"
+"l10n_th_fiscal_position_template_4","Foreign Individual","1","","บุคคลธรรมดาต่างประเทศ","4"
+"l10n_th_fiscal_position_template_5","Government Entity","1","base.th","หน่วยงานราชการ / รัฐวิสาหกิจ","5"

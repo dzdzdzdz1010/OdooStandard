@@ -210,14 +210,25 @@ export class ImageTransformation extends Component {
 
     convertPixelWidthToPercentage() {
         const currentPixelWidth = this.image.offsetWidth;
-        const widthPercent = (currentPixelWidth / this.image.parentElement.offsetWidth) * 100;
+        const parentStyles = window.getComputedStyle(this.image.parentElement);
+        const widthPercent =
+            (currentPixelWidth /
+                (this.image.parentElement.offsetWidth -
+                    parseFloat(parentStyles.paddingLeft) -
+                    parseFloat(parentStyles.paddingRight))) *
+            100;
         this.image.style.width = widthPercent.toFixed(2) + "%";
     }
 
     mouseUp() {
+        if (!this.transfo.active) {
+            return;
+        }
         this.isCurrentlyTransforming = false;
+        if (this.transfo.active.type.length === 2) {
+            this.convertPixelWidthToPercentage();
+        }
         this.transfo.active = null;
-        this.convertPixelWidthToPercentage();
         this.props.onApply?.();
         this.props.onChange();
     }

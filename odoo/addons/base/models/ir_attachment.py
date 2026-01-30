@@ -251,6 +251,10 @@ class IrAttachment(models.Model):
     def _inverse_datas(self):
         self._set_attachment_data(lambda attach: base64.b64decode(attach.datas or b''))
 
+    def _fetch_content(self):
+        self.ensure_one()
+        return self.raw
+
     def _set_attachment_data(self, asbytes):
         for attach in self:
             # compute the fields that depend on datas

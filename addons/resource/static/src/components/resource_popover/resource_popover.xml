@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates>
+    <t t-name="resource.ResourcePopover">
+        <div t-ref="root">
+            <Record t-props="currentRecordProps" t-slot-scope="currentRecord">
+                <div class="popover-header d-flex justify-content-between py-0 pe-2">
+                    <h4 class="py-1 m-0" name="work_entry_popover_header" t-esc="getTitle(currentRecord.record)"/>
+                    <span class="ms-4 mt-1 me-2 cursor-pointer" t-on-click.stop="props.close">
+                        <i class="fa fa-close" />
+                    </span>
+                </div>
+                <div class="popover-body o_form_view o_form_nosheet py-0">
+                    <FormRenderer record="currentRecord.record" archInfo="archInfo" class="'p-0 pt-3'"/>
+                </div>
+                <Record t-props="newRecordProps(currentRecord.record)" t-slot-scope="newRecord">
+                    <div t-if="state.isSplit">
+                        <div class="popover-header d-flex justify-content-between py-0 pe-2 rounded-0">
+                            <t t-set="newRecordTitle" t-value="getTitle(newRecord.record)"/>
+                            <h4 class="py-1 m-0" t-if="newRecordTitle" t-esc="newRecordTitle"/>
+                            <h4 class="py-1 m-0" t-else="">
+                                New Working Time
+                            </h4>
+                        </div>
+                        <div class="popover-body o_form_view o_form_nosheet py-0">
+                            <FormRenderer record="newRecord.record" archInfo="archInfo" class="'p-0 pt-3'"/>
+                        </div>
+                    </div>
+                    <div class="popover-footer d-flex justify-content-between">
+                        <div t-if="!props.readonly" class="p-3 pt-0 d-flex gap-1 w-100 o_form_nosheet">
+                            <span class="me-auto">
+                                <button class="btn btn-sm btn-primary"
+                                        t-on-click="onSave.bind(this, currentRecord.record, newRecord.record)">Save</button>
+                                <button class="btn btn-sm btn-secondary" t-if="props.isSplittable" t-on-click="onToggleSplit">
+                                    <t t-if="state.isSplit">
+                                        Discard
+                                    </t>
+                                    <t t-else="">
+                                        Split
+                                    </t>
+                                </button>
+                            </span>
+                            <ViewButton t-if="!state.isSplit" className="'btn btn-sm ms-0 btn-danger'"
+                                        clickParams="{type: 'object', name: 'unlink'}"
+                                        icon="'fa-trash'"
+                                        record="currentRecord.record"
+                                        string.translate="Delete"/>
+                        </div>
+                        <span t-else="" class="w-100 text-center mb-2 mx-2">
+                            <i class="fa fa-lock me-1"/>
+                            <span>You cannot edit this working time</span>
+                        </span>
+                    </div>
+                </Record>
+            </Record>
+        </div>
+    </t>
+</templates>

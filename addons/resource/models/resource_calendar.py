@@ -53,6 +53,8 @@ class ResourceCalendar(models.Model):
     attendance_ids = fields.One2many(
         'resource.calendar.attendance', 'calendar_id', 'Working Time',
         compute='_compute_attendance_ids', store=True, readonly=False, copy=True)
+    filtered_attendance_ids = fields.One2many('resource.calendar.attendance', 'calendar_id', 'Working Time',
+        compute='_compute_filtered_attendance_ids', inverse='_inverse_filtered_attendance_ids', readonly=False)
     company_id = fields.Many2one(
         'res.company', 'Company', domain=lambda self: [('id', 'in', self.env.companies.ids)],
         default=lambda self: self.env.company, index='btree_not_null')
@@ -84,18 +86,6 @@ class ResourceCalendar(models.Model):
         string='Calendar Type', default='fixed', required=True)
 
     # --------------------------------------------------
-    # Constrains
-    # --------------------------------------------------
-
-    @api.constrains('attendance_ids')
-    def _check_attendance_ids(self):
-        for res_calendar in self:
-            # Avoid superimpose in attendance
-            attendance_ids = res_calendar.attendance_ids.filtered(
-                lambda attendance: not attendance.display_type)
-            res_calendar._check_overlap(attendance_ids)
-
-    # --------------------------------------------------
     # Compute Methods
     # --------------------------------------------------
 
@@ -112,6 +102,21 @@ class ResourceCalendar(models.Model):
                 'attendance_ids': [(5, 0, 0)] + [
                     (0, 0, attendance._copy_attendance_vals()) for attendance in company_calendar.attendance_ids],
             })
+
+    @api.depends("resource_type")
+    def _compute_filtered_attendance_ids(self):
+        for calendar in self:
+            if calendar.resource_type == 'fixed':
+                calendar.filtered_attendance_ids = calendar.attendance_ids.filtered(lambda a: not a.date)
+            else:
+                calendar.filtered_attendance_ids = calendar.attendance_ids.filtered(lambda a: a.date)
+
+    def _inverse_filtered_attendance_ids(self):
+        for calendar in self:
+            if calendar.resource_type == 'fixed':
+                fixed_attendance_ids = calendar.attendance_ids.filtered(lambda a: not a.date)
+                calendar.attendance_ids |= calendar.filtered_attendance_ids.filtered(lambda a: a not in fixed_attendance_ids)
+                fixed_attendance_ids.filtered(lambda a: a not in calendar.filtered_attendance_ids).unlink()
 
     @api.depends('company_id')
     def _compute_global_leave_ids(self):
@@ -499,7 +504,8 @@ class ResourceCalendar(models.Model):
         hours_based_weekdays = set()
         duration_based_weekdays = set()
         for attendance in attendance_ids:
-            if attendance.duration_based and attendance.dayofweek in hours_based_weekdays or not attendance.duration_based and attendance.dayofweek in duration_based_weekdays:
+            if (attendance.duration_based and attendance.calendar_id.resource_type == "fixed" and attendance.dayofweek in hours_based_weekdays
+                    or not attendance.duration_based and attendance.dayofweek in duration_based_weekdays):
                 raise ValidationError(self.env._("You cannot define hours and duration based attendances for the same day."))
             if attendance.duration_based:
                 duration_based_weekdays.add(attendance.dayofweek)
@@ -832,16 +838,18 @@ class ResourceCalendar(models.Model):
             })
         return result
 
-    def copy_from(self, option, date_from, date_to, copy_type=False):
+    def copy_from(self, option, date_from, date_to, copy_type=False, force=False):
         self.ensure_one()
+        date_from = fields.Date.from_string(date_from)
+        date_to = fields.Date.from_string(date_to)
         assert option in ['WEEK', 'MONTH']
         if option == 'MONTH':
             assert copy_type in ['WEEKDAY', 'DATE']
         assert self.resource_type == 'variable'
-
+        week_start = int(self.env["res.lang"]._lang_get(self.env.user.lang).week_start) - 1
         if option == 'WEEK':
-            source_start = date_from - timedelta(days=date_from.weekday())
-            target_start = date_to - timedelta(days=date_to.weekday())
+            source_start = date_from - timedelta(days=(date_from.weekday()-week_start)%7)
+            target_start = date_to - timedelta(days=(date_to.weekday()-week_start)%7)
             source_end = source_start + timedelta(days=6)
             target_end = target_start + timedelta(days=6)
         else:  # option == 'MONTH'
@@ -851,14 +859,17 @@ class ResourceCalendar(models.Model):
             target_end = (target_start + relativedelta(months=1)) - timedelta(days=1)
 
         source_attendances = self.attendance_ids.filtered(lambda att: att.date and source_start <= att.date <= source_end)
-        self.attendance_ids.filtered(lambda att: att.date and target_start <= att.date <= target_end).unlink()
+        target_attendances = self.attendance_ids.filtered(lambda att: att.date and target_start <= att.date <= target_end)
+        if target_attendances and not force:
+            return False
+        target_attendances.unlink()
 
         vals_list = []
         for source_date, attendances in source_attendances.grouped('date').items():
             if option == 'WEEK':
                 target_date = source_date + timedelta(days=(target_start - source_start).days)
             else:  # option == 'MONTH'
-                offset = (source_start.weekday() - target_start.weekday()) * (copy_type == 'WEEKDAY')
+                offset = ((source_start.weekday() - week_start) % 7 - (target_start.weekday() - week_start) % 7) * (copy_type == 'WEEKDAY')
                 if not (0 < source_date.day + offset <= target_end.day):
                     continue
                 target_date = target_start.replace(day=source_date.day + offset)
@@ -871,4 +882,4 @@ class ResourceCalendar(models.Model):
                     'dayofweek': str(target_date.weekday()),
                 })
 
-        self.env['resource.calendar.attendance'].create(vals_list)
+        return self.env['resource.calendar.attendance'].create(vals_list)

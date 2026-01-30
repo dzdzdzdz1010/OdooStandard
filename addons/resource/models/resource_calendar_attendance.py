@@ -1,5 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from odoo import api, fields, models
+from odoo.tools import format_time
+from odoo.tools.date_utils import float_to_time
 
 
 class ResourceCalendarAttendance(models.Model):
@@ -99,11 +101,13 @@ class ResourceCalendarAttendance(models.Model):
             attendance.duration_hours = max(0, attendance.hour_to - attendance.hour_from)
 
     def _compute_display_name(self):
-        super()._compute_display_name()
-        dayofweek_selection = dict(self._fields['dayofweek']._description_selection(self.env))
-        day_period_selection = dict(self._fields['day_period']._description_selection(self.env))
-        for record in self.filtered(lambda l: not l.display_type):
-            record.display_name = f"{dayofweek_selection[record.dayofweek]} ({day_period_selection[record.day_period]})"
+        for attendance in self:
+            if attendance.duration_based:
+                attendance.display_name = self.env._("%(duration)s Attendance", duration=format_time(self.env, float_to_time(attendance.duration_hours), time_format="short"))
+            else:
+                attendance.display_name = self.env._("%(hour_from)s - %(hour_to)s Attendance",
+                                                     hour_from=format_time(self.env, float_to_time(attendance.hour_from), time_format="short"),
+                                                     hour_to=format_time(self.env, float_to_time(attendance.hour_to), time_format="short"))
 
     def _copy_attendance_vals(self):
         self.ensure_one()

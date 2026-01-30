@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+    <t t-name="resource.CopyDialog">
+        <Dialog size="'sm'" title="'Copy Options'">
+            <div class="d-flex gap-2">
+                Copy Type
+                <div role="radiogroup">
+                    <div class="form-check o_radio_item" aria-atomic="true" t-on-click="() => this.onChange('WEEKDAY')">
+                        <input
+                            type="radio"
+                            class="form-check-input o_radio_input"
+                            t-att-checked="state.copyType === 'WEEKDAY'"
+                        />
+                        <label class="form-check-label o_form_label">
+                            Days of the week
+                        </label>
+                    </div>
+                    <div class="form-check o_radio_item" aria-atomic="true" t-on-click="() => this.onChange('DATE')">
+                        <input
+                            type="radio"
+                            class="form-check-input o_radio_input"
+                            t-att-checked="state.copyType === 'DATE'"
+                        />
+                        <label class="form-check-label o_form_label">
+                            Exact Dates
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-primary" t-on-click="_confirm" data-hotkey="q">Copy</button>
+                <button class="btn btn-secondary" t-on-click="_dismiss" data-hotkey="x">Discard</button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

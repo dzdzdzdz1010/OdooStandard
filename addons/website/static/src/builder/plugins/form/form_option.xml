@@ -257,6 +257,33 @@
             />
         </BuilderRow>
     </t>
+    <BuilderRow label.translate="Restrict File Types">
+        <BuilderCheckbox
+            id="'restrict_file_types_opt'"
+            dataAttributeAction="'restrictFileTypes'"
+            dataAttributeActionValue="'true'"
+            action="'toggleRestrictFileTypes'"
+            applyTo="`input[type='file']`"
+            preview="false"
+        />
+    </BuilderRow>
+    <t t-if="isActiveItem('restrict_file_types_opt')">
+        <BuilderRow label.translate="Only PDF" level="1" tooltip="'.pdf'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'pdf'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Documents" level="1" tooltip="'.doc, .docx, .xls, .xlsx, .ppt, .pptx, .txt, .pdf'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'documents'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Images" level="1" tooltip="'.jpg, .jpeg, .png, .gif, .svg, .webp'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'images'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Videos" level="1" tooltip="'.mov, .mpeg, .avi, .mkv, .mp4'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'videos'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Audios" level="1" tooltip="'.mp3, .m4a, .aac, .wav'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'audios'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+    </t>
     <BuilderRow label.translate="Requirement"
             t-if="domStateCurrentFieldInput.hasDateTimePicker or domStateCurrentFieldInput.isTextArea or canHaveTextValidationCondition.includes(domStateCurrentFieldInput.type)">
         <BuilderSelect id="'require_condition_text_opt'"

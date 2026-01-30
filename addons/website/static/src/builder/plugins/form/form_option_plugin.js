@@ -182,6 +182,8 @@ export class FormOptionPlugin extends Plugin {
             SetRequirementComparatorAction,
             SetMultipleFilesAction,
             ToggleCharacterLimitAction,
+            RestrictFileInputToAction,
+            ToggleRestrictFileTypesAction
         },
         content_not_editable_selectors: ".s_website_form form",
         content_editable_selectors: [
@@ -1421,6 +1423,52 @@ export class ToggleCharacterLimitAction extends BuilderAction {
     clean({ editingElement: inputEl }) {
         delete inputEl.dataset.maxChars;
         delete inputEl.dataset.minChars;
+    }
+}
+/**
+ * Toggles the restriction of file types on file input fields.
+ */
+export class ToggleRestrictFileTypesAction extends BuilderAction {
+    static id = "toggleRestrictFileTypes";
+    clean({ editingElement: inputEl }) {
+        delete inputEl.dataset.allowedFileTypes;
+    }
+}
+/**
+ * Restricts to the allowed file types on file input fields.
+ * When applied, it adds the selected file type to the allowed types.
+ */
+export class RestrictFileInputToAction extends BuilderAction {
+    static id = "restrictFileInputTo";
+    apply({ editingElement: inputEl, params: { mainParam: activeValue } }) {
+        if (!inputEl.dataset.allowedFileTypes || activeValue === "pdf") {
+            inputEl.dataset.allowedFileTypes = JSON.stringify([activeValue]);
+        } else {
+            let allowedFileTypes = JSON.parse(inputEl.dataset.allowedFileTypes);
+            allowedFileTypes = allowedFileTypes.filter((fileType) => fileType !== "pdf");
+            if (!allowedFileTypes.includes(activeValue)) {
+                allowedFileTypes.push(activeValue);
+            }
+            inputEl.dataset.allowedFileTypes = JSON.stringify(allowedFileTypes);
+        }
+    }
+    clean({ editingElement: inputEl, params: { mainParam: activeValue } }) {
+        if (inputEl.dataset.allowedFileTypes) {
+            let allowedFileTypes = JSON.parse(inputEl.dataset.allowedFileTypes);
+            allowedFileTypes = allowedFileTypes.filter((fileType) => fileType !== activeValue);
+            if (allowedFileTypes.length) {
+                inputEl.dataset.allowedFileTypes = JSON.stringify(allowedFileTypes);
+            } else {
+                delete inputEl.dataset.allowedFileTypes;
+            }
+        }
+    }
+    isApplied({ editingElement: inputEl, params: { mainParam: activeValue } }) {
+        if (inputEl.dataset.allowedFileTypes) {
+            const currentValue = JSON.parse(inputEl.dataset.allowedFileTypes);
+            return currentValue.includes(activeValue);
+        }
+        return false;
     }
 }
 

@@ -255,6 +255,8 @@ class ResourceCalendar(models.Model):
             default = {}
         if not default.get('name'):
             default.update(name=_('%s (copy)') % (self.name))
+        if not default.get('global_leave_ids'):
+            default.update(global_leave_ids=False)
         return super(ResourceCalendar, self).copy(default)
 
     @api.constrains('attendance_ids')

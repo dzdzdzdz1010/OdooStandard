@@ -47,19 +47,44 @@ export class EventConfiguratorPopup extends Component {
             return this.props.availabilityPerTicket[ticket.id];
         }
         const ticketAvailability = this.props.availabilityPerTicket[ticket.id][this.slotId];
-        const existingUnsyncRegistration = this.pos.models["event.registration"].filter(
-            (r) => typeof r.id === "string" && r.event_slot_id.id === this.slotId
-        );
         if (ticketAvailability === "unlimited") {
             return ticket.event_id.seats_limited ? ticket.event_id.seats_available : "unlimited";
         }
-        return Math.max(ticketAvailability - existingUnsyncRegistration.length, 0);
+        return Math.max(ticketAvailability, 0);
+    }
+    getTicketRemainingQty(ticket) {
+        const maxTicketQty = this.getTicketMaxQty(ticket);
+        if (maxTicketQty === "unlimited") {
+            return maxTicketQty;
+        }
+        return Math.max(maxTicketQty - this.state[ticket.id].qty, 0);
     }
     getProductProxy(productId) {
         return this.pos.models["product.product"].get(productId);
     }
     confirm() {
         const data = [];
+        // Check ticket quantity based on event or slot limitations
+        const event = this.props.tickets[0].event_id;
+        const slotOrEventAvailableSeats = this.slotId
+            ? this.slotAvailability
+            : event.seats_available;
+        const totalTicketQuantity = (Object.entries(this.state) ?? []).reduce(
+            (sum, [_, { qty }]) => sum + qty,
+            0
+        );
+        if (event.seats_limited && totalTicketQuantity > slotOrEventAvailableSeats) {
+            this.dialog.add(AlertDialog, {
+                title: _t("%s limitation error", this.slotId ? "Slot" : "Event"),
+                body: _t(
+                    "You selected more tickets than available seats (max %s). Please select a smaller amount.",
+                    slotOrEventAvailableSeats
+                ),
+            });
+            this.props.close();
+            return;
+        }
+        // Check ticket quantity based on each ticket limitations
         for (const [ticketId, { qty }] of Object.entries(this.state)) {
             if (qty > 0) {
                 const ticket = this.pos.models["event.event.ticket"].get(parseInt(ticketId));
@@ -67,7 +92,7 @@ export class EventConfiguratorPopup extends Component {
 
                 if (!available) {
                     this.dialog.add(AlertDialog, {
-                        title: _t("Error"),
+                        title: _t("Ticket limitation error"),
                         body: _t(
                             "The selected ticket (%s) is not available. Please select a different ticket.",
                             [ticket.name]

@@ -590,7 +590,7 @@ class ResourceCalendar(models.Model):
         self.ensure_one()
         attendances = self._get_global_attendances()
         if self.resource_type == 'variable' and attendances:
-            return len(set(attendances.mapped('date'))) / len({(att.date.isocalendar().year, att.date.isocalendar().week) for att in attendances})
+            return len(set(attendances.mapped('date'))) / len({(att.date.toordinal() - 1) // 7 for att in attendances})
         return len(set(attendances.mapped('dayofweek')))
 
     def _get_hours_per_week(self):

@@ -8,6 +8,7 @@ import { _t } from "@web/core/l10n/translation";
 import { post } from "@web/core/network/http_service";
 import { user } from "@web/core/user";
 import { delay } from "@web/core/utils/concurrency";
+import { rpc } from "@web/core/network/rpc";
 import { session } from "@web/session";
 import {
     formatDate,
@@ -317,7 +318,10 @@ export class Form extends Interaction {
     async send() {
         this.el.querySelector("#s_website_form_result, #o_website_form_result")?.replaceChildren(); // !compatibility
         this.removeErrorMessages();
-        if (!this.checkErrorFields({})) {
+        const isValidFileInputs = await this.checkFileTypeValidationErrors(
+            this.el.querySelectorAll("input[type=file]:not([disabled])")
+        );
+        if (!this.checkErrorFields({}) || !isValidFileInputs) {
             this.updateStatus("error", _t("Please fill in the form correctly."));
             return false;
         }
@@ -542,6 +546,25 @@ export class Form extends Interaction {
             delete inputEl.fileList;
         });
     }
+    /**
+     * Checks all file inputs for validation errors (number of files,
+     * size, type).
+     */
+    async checkFileTypeValidationErrors(inputEls) {
+        let allValid = true;
+        for (const inputEl of inputEls) {
+            const fieldEl = inputEl.closest(".form-field, .s_website_form_field");
+            fieldEl.classList.remove("o_has_error");
+            inputEl.classList.remove("is-invalid");
+            if (!(await this.isFileInputValid(inputEl))) {
+                // Update field color if invalid
+                fieldEl.classList.add("o_has_error");
+                inputEl.classList.add("is-invalid");
+                allValid = false;
+            }
+        }
+        return allValid;
+    }
 
     checkErrorFields(errorFields) {
         let formValid = true;
@@ -597,11 +620,26 @@ export class Form extends Interaction {
                     if (!date || !date.isValid) {
                         return true;
                     }
-                } else if (inputEl.type === "file" && !this.isFileInputValid(inputEl)) {
-                    return true;
                 } else if (this.requirementFunction(fieldEl) === false) {
                     this.updateStatusInline(fieldEl.dataset.errorMessage, inputEl);
                     return true;
+                } else if (inputEl.dataset.characterLimit) {
+                    const maxChars = parseInt(inputEl.dataset.maxChars);
+                    const minChars = parseInt(inputEl.dataset.minChars);
+                    const valueLength = inputEl.value.length;
+                    if (
+                        !(minChars > maxChars) &&
+                        (valueLength > maxChars || valueLength < minChars)
+                    ) {
+                        this.updateStatusInline(
+                            _t(
+                                "Value of this field does not lie within character limit.(Max: %(maxChars)s, Min: %(minChars)s)",
+                                { maxChars, minChars }
+                            ),
+                            inputEl
+                        );
+                        return true;
+                    }
                 }
 
                 // Note that checkValidity also takes care of the case where
@@ -710,7 +748,7 @@ export class Form extends Interaction {
      * @param {HTMLElement} inputEl an input of type file
      * @returns {Boolean} true if the input is valid, false otherwise.
      */
-    isFileInputValid(inputEl) {
+    async isFileInputValid(inputEl) {
         // Note: the `maxFilesNumber` and `maxFileSize` data-attributes may
         // not always be present, if the Form comes from an older version
         // for example.
@@ -739,6 +777,40 @@ export class Form extends Interaction {
                     this.updateStatusInline(errorMessage, inputEl);
                     return false;
                 }
+            }
+        }
+        const restrictFileTypes = inputEl.dataset.restrictFileTypes;
+        if (restrictFileTypes) {
+            for (const file of Object.values(inputEl.files)) {
+                let isValidType = true;
+                try {
+                    // first 1024 bytes are enough to guess the mimetype
+                    const buffer = await file.slice(0, 1024).arrayBuffer();
+                    const bytes = new Uint8Array(buffer);
+                    const file_data = btoa(String.fromCharCode(...bytes));
+
+                    const result = await rpc("/web/binary/guess_mimetype", {
+                        file_data: file_data,
+                    });
+                    const mimetype = result.mimetype;
+
+                    const allowedFileTypes = JSON.parse(inputEl.dataset.allowedFileTypes);
+                    const fileType = Object.keys(this.fileTypesCheck).find((type) =>
+                        this.fileTypesCheck[type](mimetype)
+                    );
+                    if (allowedFileTypes && !allowedFileTypes.includes(fileType)) {
+                        isValidType = false;
+                        const errorMessage = _t(
+                            "The file “%(fileName)s” has an invalid file type. Allowed type(s) is/are: %(allowedFileTypes)s.",
+                            { fileName: file.name, allowedFileTypes: allowedFileTypes }
+                        );
+                        this.updateStatusInline(errorMessage, inputEl);
+                    }
+                } catch (err) {
+                    const errorMessage = _t("Error reading file: %(arr)s", { err });
+                    this.updateStatusInline(errorMessage, inputEl);
+                }
+                return isValidType;
             }
         }
         return true;
@@ -790,9 +862,28 @@ export class Form extends Interaction {
             case "!contains":
                 return !isContains(comparable, value);
             case "substring":
-                return value.includes(comparable);
-            case "!substring":
-                return !value.includes(comparable);
+            case "!substring": {
+                // Parse words from comparable; empty list means no restriction
+                const words = JSON.parse(comparable)
+                    .map(({ requirement_text }) => requirement_text.trim())
+                    .filter(Boolean);
+                // Pass if no words, otherwise:
+                // substring: at least one word must be included
+                // !substring: no word must be included
+                return (
+                    !words.length ||
+                    (comparator === "substring"
+                        ? words.some((w) => value.includes(w))
+                        : words.every((w) => !value.includes(w)))
+                );
+            }
+            case "domain": {
+                // Parse domains from comparable; empty list means no restriction
+                const domains = JSON.parse(comparable)
+                    .map(({ requirement_text }) => requirement_text.trim())
+                    .filter(Boolean);
+                return !domains.length || domains.some((domain) => value.endsWith("@" + domain));
+            }
             case "equal":
             case "selected":
                 return value === comparable;
@@ -1109,6 +1200,95 @@ export class Form extends Interaction {
             error.remove();
         });
     }
+    /**
+     * Checks if the mimetype corresponds to a PDF file.
+     *
+     * @param {string} mimetype The mimetype of the file.
+     * @returns {boolean} true if the mimetype is a PDF file, false otherwise.
+     */
+    isPdf(mimetype) {
+        const allowedTypes = ["application/pdf"];
+        return allowedTypes.includes(mimetype);
+    }
+    /**
+     * Checks if the mimetype corresponds to a document file.
+     *
+     * @param {string} mimetype The mimetype of the file.
+     * @returns {boolean} true if the mimetype is a document file, false otherwise.
+     */
+    isDoc(mimetype) {
+        const allowedTypes = [
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain",
+            "application/pdf",
+        ];
+        return allowedTypes.includes(mimetype);
+    }
+    /**
+     * Checks if the mimetype corresponds to an image file.
+     *
+     * @param {string} mimetype The mimetype of the file.
+     * @returns {boolean} true if the mimetype is an image file, false otherwise.
+     */
+    isImage(mimetype) {
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/svg+xml",
+            "image/webp",
+            "image/apng",
+        ];
+        return allowedTypes.includes(mimetype);
+    }
+    /**
+     * Checks if the mimetype corresponds to a video file.
+     *
+     * @param {string} mimetype The mimetype of the file.
+     * @returns {boolean} true if the mimetype is a video file, false otherwise.
+     */
+    isVideo(mimetype) {
+        const allowedTypes = [
+            "video/quicktime",
+            "video/mpeg",
+            "video/x-msvideo",
+            "video/x-matroska",
+            "video/webm",
+            "video/mp4",
+        ];
+        return allowedTypes.includes(mimetype);
+    }
+    /**
+     * Checks if the mimetype corresponds to an audio file.
+     *
+     * @param {string} mimetype The mimetype of the file.
+     * @returns {boolean} true if the mimetype is an audio file, false otherwise.
+     */
+    isAudio(mimetype) {
+        const allowedTypes = [
+            "audio/mpeg",
+            "audio/mp4",
+            "audio/x-m4a",
+            "audio/aac",
+            "audio/aacp",
+            "audio/wav",
+            "audio/x-wav",
+        ];
+        return allowedTypes.includes(mimetype);
+    }
+    // Mapping of file type keys to their respective check functions.
+    fileTypesCheck = {
+        pdf: this.isPdf,
+        documents: this.isDoc,
+        videos: this.isVideo,
+        audios: this.isAudio,
+        images: this.isImage,
+    };
 }
 
 registry.category("public.interactions").add("website.form", Form);

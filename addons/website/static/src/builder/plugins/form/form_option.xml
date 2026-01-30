@@ -230,6 +230,60 @@
                 records="state.valueList.availableRecords" />
         </div>
     </BuilderRow>
+    <BuilderRow label.translate="Character Limit" t-if="isCharacterLimitOptionVisible">
+        <BuilderCheckbox
+            id="'character_limit_opt'"
+            dataAttributeAction="'characterLimit'"
+            dataAttributeActionValue="'true'"
+            action="'toggleCharacterLimit'"
+            preview="false"
+            applyTo="`input, textarea`"
+        />
+    </BuilderRow>
+    <t t-if="isActiveItem('character_limit_opt')">
+        <BuilderRow label.translate="Min Characters" level="1">
+            <BuilderNumberInput
+                title.translate="The minimum number of characters required"
+                dataAttributeAction="'minChars'"
+                applyTo="`input, textarea`"
+            />
+        </BuilderRow>   
+        <BuilderRow label.translate="Max Characters" level="1">
+            <BuilderNumberInput
+                title.translate="The maximum number of characters allowed."
+                dataAttributeAction="'maxChars'"
+                default="100"
+                applyTo="`input, textarea`"
+            />
+        </BuilderRow>
+    </t>
+    <BuilderRow label.translate="Restrict File Types">
+        <BuilderCheckbox
+            id="'restrict_file_types_opt'"
+            dataAttributeAction="'restrictFileTypes'"
+            dataAttributeActionValue="'true'"
+            action="'toggleRestrictFileTypes'"
+            applyTo="`input[type='file']`"
+            preview="false"
+        />
+    </BuilderRow>
+    <t t-if="isActiveItem('restrict_file_types_opt')">
+        <BuilderRow label.translate="Only PDF" level="1" tooltip="'.pdf'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'pdf'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Documents" level="1" tooltip="'.doc, .docx, .xls, .xlsx, .ppt, .pptx, .txt, .pdf'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'documents'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Images" level="1" tooltip="'.jpg, .jpeg, .png, .gif, .svg, .webp'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'images'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Videos" level="1" tooltip="'.mov, .mpeg, .avi, .mkv, .mp4'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'videos'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+        <BuilderRow label.translate="Audios" level="1" tooltip="'.mp3, .m4a, .aac, .wav'">
+            <BuilderCheckbox action="'restrictFileInputTo'" actionParam="'audios'" applyTo="`input[type='file']`" preview="false"/>
+        </BuilderRow>
+    </t>
     <BuilderRow label.translate="Requirement"
             t-if="domStateCurrentFieldInput.hasDateTimePicker or domStateCurrentFieldInput.isTextArea or canHaveTextValidationCondition.includes(domStateCurrentFieldInput.type)">
         <BuilderSelect id="'require_condition_text_opt'"
@@ -240,6 +294,7 @@
             <BuilderSelectItem id="'no_requirement_opt'" dataAttributeActionValue="''">None</BuilderSelectItem>
             <BuilderSelectItem dataAttributeActionValue="'substring'">Contains</BuilderSelectItem>
             <BuilderSelectItem dataAttributeActionValue="'!substring'">Doesn't contain</BuilderSelectItem>
+            <BuilderSelectItem dataAttributeActionValue="'domain'" t-if="domStateCurrentFieldInput.type === 'email'">Matches domain</BuilderSelectItem>
         </BuilderSelect>
         <BuilderSelect id="'require_condition_num_opt'"
                 t-elif="domStateCurrentFieldInput.type === 'number'"
@@ -305,6 +360,25 @@
             dataAttributeAction="'requirementBetween'"
             action="'setDefaultErrorMessage'"
             type="'date'"/>
+    </BuilderRow>
+    <BuilderRow t-if="isMultipleTextConditionForRequirementOptionVisible">
+        <div class="d-flex flex-column w-100">
+            <p class="hb-row-label mb-0 flex-grow-0 flex-shrink-0 flex-basis-auto">
+                <t t-if="domStateCurrentFieldInput.type === 'email'">
+                    <t t-out="'Enter email domains (eg., gmail.com, icloud.com)'" />
+                </t>
+                <t t-else="">
+                    <t t-out="'Enter words'" />
+                </t>
+            </p>
+            <BuilderList
+                dataAttributeAction="'requirementCondition'"
+                action="'setDefaultErrorMessage'"
+                addItemTitle.translate="Add"
+                itemShape="{ requirement_text: 'text'}"
+                defaultNewValue="{ requirement_text: '' }"
+            />
+        </div>
     </BuilderRow>
     <BuilderRow label.translate="Error Message" level="1" t-if="isActiveItem('error_message_opt')">
         <BuilderTextInput placeholder.translate="Write custom error message" id="'error_message_input_opt'" dataAttributeAction="'errorMessage'"/>

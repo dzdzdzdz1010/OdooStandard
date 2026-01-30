@@ -730,7 +730,7 @@ class EventEvent(models.Model):
             return _('next month')
         return _('on %(date)s', date=format_date(self.env, self.date_begin, lang_code=lang_code, date_format='medium'))
 
-    def _get_external_description(self):
+    def _get_external_description(self, ical=False):
         """
         Description of the event shortened to maximum 1900 characters to
         leave some space for addition by sub-modules, such as the even link.
@@ -762,7 +762,10 @@ class EventEvent(models.Model):
             cal_event.add('dtstart').value = event.date_begin.astimezone(pytz.timezone(event.date_tz))
             cal_event.add('dtend').value = event.date_end.astimezone(pytz.timezone(event.date_tz))
             cal_event.add('summary').value = event.name
-            cal_event.add('description').value = event._get_external_description()
+            cal_event.add('description').value = event._get_external_description(ical=True)
+            xalt = cal_event.add('x-alt-desc')
+            xalt.value = cal_event.description.value
+            xalt.params['FMTTYPE'] = ['text/html']
             if event.address_id:
                 cal_event.add('location').value = event.address_inline
 

@@ -461,10 +461,12 @@ class Event(models.Model):
             return self.env.ref('website_event.mt_event_unpublished', raise_if_not_found=False)
         return super(Event, self)._track_subtype(init_values)
 
-    def _get_external_description(self):
+    def _get_external_description(self, ical=False):
         """ Adding the URL of the event into the description """
         self.ensure_one()
         event_url = f'<a href="{self.event_register_url}">{self.name}</a>'
+        if ical:
+            event_url = '<div style="white-space: pre-wrap;">' + event_url + '</div>'
         description = event_url + '\n' + super()._get_external_description()
         return description
 

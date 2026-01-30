@@ -131,6 +131,12 @@ class AccountEdiProxyClientUser(models.Model):
                 'errors': False,
             }
         }
+        start_time_timestamp = fields.Datetime.now().timestamp()
+        limit_time = tools.config['limit_time_real']
+        if tools.config.get('limit_time_real_cron', -1) > 0:
+            limit_time = tools.config['limit_time_real_cron']
+        limit_time -= 60  # Margin of 1 minute to avoid timeouts
+
         for edi_user in self:
             params['domain']['receiver_identifier'] = edi_user.edi_identification
             try:
@@ -172,6 +178,9 @@ class AccountEdiProxyClientUser(models.Model):
             )
 
             for uuid, content in all_messages.items():
+                if fields.Datetime.now().timestamp() - start_time_timestamp > limit_time:
+                    need_retrigger = True
+                    break
                 enc_key = content["enc_key"]
                 document_content = content["document"]
                 filename = content["filename"] or 'attachment'  # default to attachment, which should not usually happen

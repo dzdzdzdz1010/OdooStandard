@@ -20,3 +20,23 @@ class AccountMoveLine(models.Model):
             if not self.product_uom_id.is_zero(qty):
                 price_unit_val_dif = price_unit_val_dif + components_cost / qty
         return price_unit_val_dif, relevant_qty
+<<<<<<< a1fa62c4e965351382940ed365c2ff02a1580501
+||||||| d4b6897211c65ba6d6ba8132480627e6fa66c481
+
+    def _get_stock_moves(self):
+        moves = super()._get_stock_moves()
+        finished_moves = set()
+        for m in moves:
+            if mo := m._get_subcontract_production():
+                finished_moves.add(mo.move_finished_ids.filtered(lambda mf: mf.product_id == m.product_id).id)
+        return moves | self.env['stock.move'].browse(finished_moves)
+=======
+
+    def _get_stock_moves(self):
+        moves = super()._get_stock_moves()
+        finished_moves = set()
+        for m in moves:
+            if mo := m._get_subcontract_production():
+                finished_moves |= set(mo.move_finished_ids.filtered(lambda mf: mf.product_id == m.product_id).ids)
+        return moves | self.env['stock.move'].browse(finished_moves)
+>>>>>>> 07689888c7efa03f661c3daeb0b4b1bb6eedafb6

@@ -28,6 +28,7 @@ class HrExpenseSplit(models.TransientModel):
             result['currency_id'] = expense.currency_id
             result['approval_state'] = expense.approval_state
             result['approval_date'] = expense.approval_date
+            result['submission_date'] = expense.submission_date
             result['manager_id'] = expense.manager_id
         return result
 
@@ -59,6 +60,7 @@ class HrExpenseSplit(models.TransientModel):
     )
     approval_state = fields.Selection(selection=EXPENSE_APPROVAL_STATE, copy=False, readonly=True)
     approval_date = fields.Datetime(string="Approval Date", readonly=True)
+    submission_date = fields.Datetime(string="Submission Date", readonly=True)
     manager_id = fields.Many2one(
         comodel_name='res.users',
         string="Manager",
@@ -113,6 +115,7 @@ class HrExpenseSplit(models.TransientModel):
             'product_uom_id': self.product_id.uom_id.id,
             'approval_state': self.approval_state,
             'approval_date': self.approval_date,
+            'submission_date': self.submission_date,
             'manager_id': self.manager_id.id,
         }
 

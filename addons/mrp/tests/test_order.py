@@ -221,9 +221,14 @@ class TestMrpOrder(TestMrpCommon):
         self.assertEqual(mo.move_raw_ids[1].move_line_ids.mapped('quantity'), [11])
         self.assertEqual(mo.move_raw_ids[0].quantity, 2)
         self.assertEqual(mo.move_raw_ids[1].quantity, 11)
-        mo.button_mark_done()
+        warning = Form.from_action(self.env, mo.button_mark_done()).save()
+        warning.action_confirm()
         self.assertEqual(len(mo.move_raw_ids), 2)
         self.assertEqual(len(mo.move_raw_ids.mapped('move_line_ids')), 2)
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 2, 'product_expected_qty_uom':  1},
+            {'product_consumed_qty_uom': 11, 'product_expected_qty_uom': 10},
+        ])
         self.assertEqual(mo.move_raw_ids.mapped('quantity'), [2, 11])
         self.assertEqual(mo.move_raw_ids.mapped('move_line_ids.quantity'), [2, 11])
 
@@ -257,9 +262,14 @@ class TestMrpOrder(TestMrpCommon):
         self.assertEqual(mo.move_raw_ids[1].move_line_ids.mapped('quantity'), [5])
         self.assertEqual(mo.move_raw_ids[0].quantity, 0)
         self.assertEqual(mo.move_raw_ids[1].quantity, 5)
-        mo.button_mark_done()
+        warning = Form.from_action(self.env, mo.button_mark_done()).save()
+        warning.action_confirm()
         self.assertEqual(len(mo.move_raw_ids), 2)
         self.assertEqual(len(mo.move_raw_ids.mapped('move_line_ids')), 1)
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 0, 'product_expected_qty_uom': 1},
+            {'product_consumed_qty_uom': 5, 'product_expected_qty_uom': 10},
+        ])
         self.assertEqual(mo.move_raw_ids.mapped('quantity'), [0, 5])
         self.assertEqual(mo.move_raw_ids.mapped('product_uom_qty'), [1, 10])
         self.assertEqual(mo.move_raw_ids.mapped('state'), ['cancel', 'done'])
@@ -346,7 +356,7 @@ class TestMrpOrder(TestMrpCommon):
 
         productions = mo | mo_backorder
         self.assertEqual(sum(productions.move_raw_ids.filtered(lambda m: m.product_id == p1).mapped('quantity')), 20)
-        self.assertEqual(sum(productions.move_finished_ids.mapped('quantity')), 5)
+        self.assertEqual(productions.move_finished_ids.mapped('quantity'), [2.0, 3.0])
 
     def test_update_quantity_3(self):
         bom = self.env['mrp.bom'].create({
@@ -812,7 +822,15 @@ class TestMrpOrder(TestMrpCommon):
         self.assertEqual(len(mo.move_raw_ids), 4)
 
         mo.move_raw_ids.picked = True
-        mo.button_mark_done()
+        action = mo.button_mark_done()
+
+        warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context'])).save()
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 0, 'product_expected_qty_uom':  3},
+            {'product_consumed_qty_uom': 0, 'product_expected_qty_uom': 12},
+        ])
+        warning.action_confirm()
+
         self.assertTrue(all(s in ['done', 'cancel'] for s in mo.move_raw_ids.mapped('state')))
 
     def test_product_produce_7(self):
@@ -845,48 +863,10 @@ class TestMrpOrder(TestMrpCommon):
         mo = mo_form.save()
         self.assertAlmostEqual(sum(mo.move_finished_ids.move_line_ids.mapped('quantity')), 4)
 
-    def test_consumption_strict_1(self):
-        """ Checks the constraints of a strict BOM without tracking when playing around
-        quantities to consume."""
-        mo, bom, p_final, p1, p2 = self.generate_mo(consumption='strict', qty_final=1)
-        self.assertEqual(len(mo), 1, 'MO should have been created')
-
-        self.env['stock.quant']._update_available_quantity(p1, self.stock_location, 100)
-        self.env['stock.quant']._update_available_quantity(p2, self.stock_location, 5)
-
-        mo.action_assign()
-
-        mo_form = Form(mo)
-
-        # try adding another line for a bom product to increase the quantity
-        mo_form.qty_producing = 1
-        with mo_form.move_raw_ids.new() as line:
-            line.product_id = p1
-        mo = mo_form.save()
-        details_operation_form = Form(mo.move_raw_ids[-1], view=self.env.ref('stock.view_stock_move_operations'))
-        with details_operation_form.move_line_ids.new() as ml:
-            ml.quantity = 1
-            ml.picked = True
-        details_operation_form.save()
-        # Won't accept to be done, instead return a wizard
-        mo.button_mark_done()
-        self.assertEqual(mo.state, 'to_close')
-        consumption_issues = mo._get_consumption_issues()
-        action = mo._action_generate_consumption_wizard(consumption_issues)
-        warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context']))
-        warning = warning.save()
-
-        self.assertEqual(len(warning.mrp_consumption_warning_line_ids), 1)
-        self.assertEqual(warning.mrp_consumption_warning_line_ids[0].product_consumed_qty_uom, 5)
-        self.assertEqual(warning.mrp_consumption_warning_line_ids[0].product_expected_qty_uom, 4)
-        # Force the warning (as a manager)
-        warning.action_confirm()
-        self.assertEqual(mo.state, 'done')
-
     def test_consumption_warning_1(self):
         """ Checks the constraints of a strict BOM without tracking when playing around
         quantities to consume."""
-        mo, bom, p_final, p1, p2 = self.generate_mo(consumption='warning', qty_final=1)
+        mo, _, _, p1, p2 = self.generate_mo(qty_final=1)
         self.assertEqual(len(mo), 1, 'MO should have been created')
 
         self.env['stock.quant']._update_available_quantity(p1, self.stock_location, 100)
@@ -919,66 +899,9 @@ class TestMrpOrder(TestMrpCommon):
         self.assertEqual(len(warning.mrp_consumption_warning_line_ids), 1)
         self.assertEqual(warning.mrp_consumption_warning_line_ids[0].product_consumed_qty_uom, 5)
         self.assertEqual(warning.mrp_consumption_warning_line_ids[0].product_expected_qty_uom, 4)
-        # Force the warning (as a manager or employee)
+
+        # Force the warning
         warning.action_confirm()
-        self.assertEqual(mo.state, 'done')
-
-    def test_consumption_flexible_1(self):
-        """ Checks the constraints of a strict BOM without tracking when playing around
-        quantities to consume."""
-        mo, bom, p_final, p1, p2 = self.generate_mo(consumption='flexible', qty_final=1)
-        self.assertEqual(len(mo), 1, 'MO should have been created')
-
-        self.env['stock.quant']._update_available_quantity(p1, self.stock_location, 100)
-        self.env['stock.quant']._update_available_quantity(p2, self.stock_location, 5)
-
-        mo.action_assign()
-
-        mo_form = Form(mo)
-
-        # try adding another line for a bom product to increase the quantity
-        mo_form.qty_producing = 1
-        with mo_form.move_raw_ids.new() as line:
-            line.product_id = p1
-        mo = mo_form.save()
-        details_operation_form = Form(mo.move_raw_ids[-1], view=self.env.ref('stock.view_stock_move_operations'))
-        with details_operation_form.move_line_ids.new() as ml:
-            ml.quantity = 1
-        details_operation_form.save()
-
-        # Won't accept to be done, instead return a wizard
-        mo.button_mark_done()
-        self.assertEqual(mo.state, 'done')
-
-    def test_consumption_flexible_2(self):
-        """ Checks the constraints of a strict BOM only apply to the product of the BoM. """
-        mo, bom, p_final, p1, p2 = self.generate_mo(consumption='flexible', qty_final=1)
-        self.assertEqual(len(mo), 1, 'MO should have been created')
-
-        self.env['stock.quant']._update_available_quantity(p1, self.stock_location, 100)
-        self.env['stock.quant']._update_available_quantity(p2, self.stock_location, 5)
-        add_product = self.env['product.product'].create({
-            'name': 'additional',
-            'is_storable': True,
-        })
-        mo.action_assign()
-
-        mo_form = Form(mo)
-
-        # try adding another line for a bom product to increase the quantity
-        mo_form.qty_producing = 1
-        with mo_form.move_raw_ids.new() as line:
-            line.product_id = p1
-        with mo_form.move_raw_ids.new() as line:
-            line.product_id = add_product
-        mo = mo_form.save()
-        details_operation_form = Form(mo.move_raw_ids[-1], view=self.env.ref('stock.view_stock_move_operations'))
-        with details_operation_form.move_line_ids.new() as ml:
-            ml.quantity = 1
-        details_operation_form.save()
-
-        # Won't accept to be done, instead return a wizard
-        mo.button_mark_done()
         self.assertEqual(mo.state, 'done')
 
     def test_product_produce_10(self):
@@ -1154,7 +1077,6 @@ class TestMrpOrder(TestMrpCommon):
         self.env['stock.quant']._update_available_quantity(p1, self.stock_location, 4)
         self.env['stock.quant']._update_available_quantity(p2, self.stock_location, 1)
 
-        mo.bom_id.consumption = 'flexible'  # Because we'll over-consume with a product not defined in the BOM
         mo.action_assign()
         mo.is_locked = False
 
@@ -2021,7 +1943,6 @@ class TestMrpOrder(TestMrpCommon):
             'uom_id': self.uom_unit.id,
             'product_qty': 1.0,
             'type': 'normal',
-            'consumption': 'flexible',
             'bom_line_ids': [Command.create({'product_id': component.id, 'product_qty': 1})],
         })
         self.env['stock.quant']._update_available_quantity(component, self.stock_location_components, 25.0)
@@ -2372,6 +2293,12 @@ class TestMrpOrder(TestMrpCommon):
         mo.move_raw_ids[0].quantity = 90
         mo.move_raw_ids[1].quantity = 70
         action = mo.button_mark_done()
+        warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context'])).save()
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 90, 'product_expected_qty_uom': 30},
+            {'product_consumed_qty_uom': 70, 'product_expected_qty_uom': 20},
+        ])
+        action = warning.action_confirm()
         backorder = Form(self.env['mrp.production.backorder'].with_context(**action['context']))
         backorder.save().action_backorder()
         mo_backorder = mo.production_group_id.production_ids[-1]
@@ -2413,6 +2340,11 @@ class TestMrpOrder(TestMrpCommon):
         mo.move_raw_ids.filtered(lambda m: m.product_id == p1).quantity = 5
         mo.move_raw_ids.filtered(lambda m: m.product_id == p2).quantity = 10
         action = mo.button_mark_done()
+        warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context'])).save()
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 5, 'product_expected_qty_uom': 10},
+        ])
+        action = warning.action_confirm()
         backorder = Form(self.env['mrp.production.backorder'].with_context(**action['context']))
         backorder.save().action_backorder()
         mo_backorder = mo.production_group_id.production_ids[-1]
@@ -2440,7 +2372,6 @@ class TestMrpOrder(TestMrpCommon):
             'product_tmpl_id': self.product_4.product_tmpl_id.id,
             'uom_id': self.uom_unit.id,
             'product_qty': 1.0,
-            'consumption': 'flexible',
             'type': 'normal',
             'bom_line_ids': [
                 Command.create({'product_id': self.product_2.id, 'product_qty': 1}),
@@ -3068,7 +2999,6 @@ class TestMrpOrder(TestMrpCommon):
             'uom_id': self.uom_unit.id,
             'product_qty': 1.0,
             'type': 'normal',
-            'consumption': 'flexible',
             'operation_ids': [
                 Command.create({'name': 'Test', 'workcenter_id': workcenter_2.id, 'time_cycle': 60, 'sequence': 1}),
             ],
@@ -3463,7 +3393,6 @@ class TestMrpOrder(TestMrpCommon):
             'product_tmpl_id': self.product_6.product_tmpl_id.id,
             'uom_id': self.uom_unit.id,
             'ready_to_produce': 'asap',
-            'consumption': 'flexible',
             'product_qty': 1.0,
             'operation_ids': [
                 Command.create({
@@ -3861,18 +3790,15 @@ class TestMrpOrder(TestMrpCommon):
     def test_consumption_action_set_qty_and_validate(self):
         """
         Check `To Consume` and `Consumed` qty are correctly updated to match the consumption warning values
-        under 5 use cases:
+        under 4 use cases:
         scenario 1:
         - bom is changed after MO is created => action_set_qty = match BoM
         scenario 2 (combined 3 use cases since they shouldn't affect each other):
         - a component move is deleted before MO is confirmed => action_set_qty = add missing BoM component
-        - a component's UoM is changed after MO is created => action_set_qty = match BoM qty, but leave UoM unchanged (i.e. correctly convert)
+        - a component's UoM is changed after MO is created => action_set_qty = match BoM qty, but leave UoM unchanged
         - add a new component not part of the BOM
-        scenario 3:
-        - a component has 2 moves in a MO => action_set_qty = set the 1st move to the correct qty, set 2nd move to 0
-          (i.e. no way to know how to distribute quantity across these moves since warning aggregates qty by product)
         """
-        mo, bom, p_final, p1, p2 = self.generate_mo(consumption='warning', qty_final=10, qty_base_1=12, qty_base_2=20)
+        mo, bom, p_final, p1, p2 = self.generate_mo(qty_final=10, qty_base_1=12, qty_base_2=20)
 
         #### scenario 1 - change BoM after MO created ####
         mo_form = Form(mo)
@@ -3934,15 +3860,17 @@ class TestMrpOrder(TestMrpCommon):
         warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context']))
         consumption = warning.save()
         self.assertEqual(len(consumption.mrp_consumption_warning_line_ids), 3, "deleted move should also show as an consumption line diff from BoM")
-        # mrp_consumption_warning_line_ids[2] = p1 => 12 unit qty_base
-        # mrp_consumption_warning_line_ids[1] = p2 => 10 unit qty_base
-        # mrp_consumption_warning_line_ids[0] = self.product_1 => 10 unit qty_base
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[0].product_consumed_qty_uom, 40, "additional component was not correctly passed to wizard")
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[0].product_expected_qty_uom, 0, "additional component should have no expected qty")
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[1].product_consumed_qty_uom, 0, "missing line was not correctly passed to wizard")
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[1].product_expected_qty_uom, 40, "expected qty should match current BoM qty for qty being produced")
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[2].product_consumed_qty_uom, 576, "qty consumed was not correctly converted to product's uom before passing to wizard")
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[2].product_expected_qty_uom, 48, "expected qty should match current BoM qty for qty being produced")
+        for line in consumption.mrp_consumption_warning_line_ids:
+            if line.product_id == p1:
+                self.assertEqual(line.product_consumed_qty_uom, 48, "quantity consumed must be in the same UoM as the move")
+                self.assertEqual(line.product_expected_qty_uom, 4, "expected qty should match current BoM qty for qty being produced")
+            elif line.product_id == p2:
+                self.assertEqual(line.product_consumed_qty_uom, 0, "missing BoM line was not correctly passed to wizard")
+                self.assertEqual(line.product_expected_qty_uom, 40, "expected qty should match current BoM qty for qty being produced")
+            else:
+                self.assertEqual(line.product_consumed_qty_uom, 40, "additional component was not correctly passed to wizard")
+                self.assertEqual(line.product_expected_qty_uom, 0, "additional component should have no expected qty")
+
         action = consumption.action_set_qty()
         backorder2 = Form(self.env['mrp.production.backorder'].with_context(**action['context']))
         backorder2.save().action_backorder()
@@ -3966,43 +3894,6 @@ class TestMrpOrder(TestMrpCommon):
         self.assertEqual(len(mo2_backorder.move_raw_ids), 2, "missing line should NOT have been added in but additional line should")
         self.assertEqual(mo2_backorder.move_raw_ids.product_id.ids, [p1.id, self.product_1.id])
         self.assertEqual(mo2_backorder.move_raw_ids[0].product_uom_qty, 12, "backorder values are based on original MO, not current bom")
-
-        #### scenario 3 - repeated comp move ####
-        # bom.bom_line_ids[0]/product_id = p2
-        bom.bom_line_ids[0].unlink()
-        mo3 = self.env['mrp.production'].create({
-            'product_id': p_final.id,
-            'bom_id': bom.id,
-            'product_qty': 1,
-            'uom_id': p_final.uom_id.id,
-        })
-        mo3_form = Form(mo3)
-        with mo3_form.move_raw_ids.new() as line:
-            line.product_id = p1
-            line.product_uom_qty = 5
-        mo3 = mo3_form.save()
-        mo3.action_confirm()
-        self.assertEqual(len(mo3.move_raw_ids), 2, "there should be 2 comp lines")
-        self.assertEqual(len(mo3.move_raw_ids.product_id), 1, "comp lines should have same product")
-        mo3_form = Form(mo3)
-        mo3_form.qty_producing = 1
-        mo3 = mo3_form.save()
-        self.assertEqual(mo3.move_raw_ids[0].product_uom_qty, 12, "BoM created comp move does not match expected To Consume qty")
-        self.assertEqual(mo3.move_raw_ids[0].quantity, 12, "BoM created comp move does not match expected Consumed qty")
-        self.assertEqual(mo3.move_raw_ids[1].product_uom_qty, 5, "Manually added comp move does not match original To Consume qty")
-        self.assertEqual(mo3.move_raw_ids[1].quantity, 5, "Manually added comp move was not Consumed")
-        action = mo3.button_mark_done()
-        warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context']))
-        consumption = warning.save()
-        self.assertEqual(len(consumption.mrp_consumption_warning_line_ids), 1, "warning lines should be grouped by product")
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[0].product_expected_qty_uom, 12, "BoM expected qty not correctly passed to wizard")
-        self.assertEqual(consumption.mrp_consumption_warning_line_ids[0].product_consumed_qty_uom, 17, "total Consumed qty not correctly passed to wizard")
-        action = consumption.action_set_qty()
-        self.assertEqual(mo3.move_raw_ids[0].product_uom_qty, 12, "BoM created comp move does not match expected To Consume qty")
-        self.assertEqual(mo3.move_raw_ids[0].quantity, 12, "BoM created comp move does not match expected Consumed qty")
-        self.assertEqual(mo3.move_raw_ids[1].product_uom_qty, 5, "Manually added comp move To Consume qty should be unchanged")
-        self.assertEqual(mo3.move_raw_ids[1].quantity, 0, "Extra line Consumed qty not correctly zero-ed")
-        self.assertEqual(mo3.state, 'done')
 
     def test_exceeded_consumed_qty_and_duplicated_lines(self):
         """
@@ -4039,7 +3930,13 @@ class TestMrpOrder(TestMrpCommon):
         mo = mo_form.save()
 
         mo.move_raw_ids[0].move_line_ids.quantity = 1.5
-        mo.button_mark_done()
+        action = mo.button_mark_done()
+
+        warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context'])).save()
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 1.5, 'product_expected_qty_uom': 1.0},
+        ])
+        warning.action_confirm()
 
         self.assertEqual(mo.state, 'done')
 
@@ -4891,7 +4788,6 @@ class TestMrpOrder(TestMrpCommon):
             'product_id': self.product_6.id,
             'product_tmpl_id': self.product_6.product_tmpl_id.id,
             'ready_to_produce': 'asap',
-            'consumption': 'flexible',
             'product_qty': 1.0,
             'operation_ids': [Command.create({
                 'name': 'Cutting Machine',
@@ -5437,7 +5333,11 @@ class TestMrpOrder(TestMrpCommon):
         mo = mo_form.save()
         self.assertEqual(mo.move_raw_ids.mapped('quantity'), [2.0, 5.0])
         self.assertEqual(mo.move_raw_ids.mapped('picked'), [False, False])
-        mo.button_mark_done()
+        warning = Form.from_action(self.env, mo.button_mark_done()).save()
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 5.0, 'product_expected_qty_uom': 4.0},
+        ])
+        warning.action_confirm()
         self.assertEqual(mo.state, 'done')
 
     def test_change_bom_and_quantity_together(self):

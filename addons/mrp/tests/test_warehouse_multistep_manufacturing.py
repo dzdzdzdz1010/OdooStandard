@@ -321,14 +321,10 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
         """
         with Form(self.warehouse) as warehouse:
             warehouse.manufacture_steps = 'pbm_sam'
-        bom = self.env['mrp.bom'].search([
-            ('product_id', '=', self.finished_product.id)
-        ])
         new_product = self.env['product.product'].create({
             'name': 'New product',
             'is_storable': True,
         })
-        bom.consumption = 'flexible'
         production_form = Form(self.env['mrp.production'])
         production_form.product_id = self.finished_product
         production_form.picking_type_id = self.warehouse.manu_type_id
@@ -806,7 +802,13 @@ class TestMultistepManufacturingWarehouse(TestMrpCommon):
             byprod_move.product_id = bprod2
             byprod_move.quantity = 1.0
         mo = mo_form.save()
-        mo.with_context({'skip_consumption': True}).button_mark_done()
+        action = mo.button_mark_done()
+
+        warning = Form(self.env['mrp.consumption.warning'].with_context(**action['context'])).save()
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 1.0, 'product_expected_qty_uom': 0.0},
+        ])
+        warning.action_confirm()
 
         self.assertEqual(len(mo.picking_ids), 2, "Should have 2 pickings: Components + (Final product and byproducts)")
         for picking in mo.picking_ids:

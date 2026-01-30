@@ -971,7 +971,6 @@ class TestUnbuild(TestMrpCommon):
         bom = self.env['mrp.bom'].create({
             'product_id': self.product_2.id,
             'product_tmpl_id': self.product_2.product_tmpl_id.id,
-            'consumption': 'flexible',
             'product_qty': 1.0,
             'type': 'normal',
             'bom_line_ids': [
@@ -988,7 +987,12 @@ class TestUnbuild(TestMrpCommon):
 
         mo.qty_producing = 1.0
         mo.move_raw_ids.write({'quantity': 15, 'picked': True})
-        mo.button_mark_done()
+
+        warning = Form.from_action(self.env, mo.button_mark_done()).save()
+        self.assertRecordValues(warning.mrp_consumption_warning_line_ids, [
+            {'product_consumed_qty_uom': 15, 'product_expected_qty_uom': 20},
+        ])
+        warning.action_confirm()
 
         Form.from_action(self.env, mo.button_unbuild()).save().action_validate()
         self.assertEqual(mo.unbuild_ids.produce_line_ids.filtered(lambda m: m.product_id == self.product_3).product_uom_qty, 15)
@@ -999,7 +1003,6 @@ class TestUnbuild(TestMrpCommon):
         bom = self.env['mrp.bom'].create({
             'product_id': self.product_2.id,
             'product_tmpl_id': self.product_2.product_tmpl_id.id,
-            'consumption': 'flexible',
             'product_qty': 1.0,
             'type': 'normal',
             'bom_line_ids': [Command.create({'product_id': self.product_3.id, 'product_qty': 1})]

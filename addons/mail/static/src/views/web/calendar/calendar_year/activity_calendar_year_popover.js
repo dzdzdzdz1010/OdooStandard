@@ -8,10 +8,14 @@ export class ActivityCalendarYearPopover extends CalendarYearPopover {
         this.actionService = useService("action");
     }
 
-    async onRecordClick(record) {
-        const action = await this.orm.call("mail.activity", "action_open_document", [
-            record.rawRecord.id,
-        ]);
-        this.actionService.doAction(action);
+    onRecordClick(record) {
+        this.actionService.doActionButton({
+            type: "object",
+            name: "action_open_document",
+            resModel: "mail.activity",
+            resId: record.rawRecord.id,
+            onClose: () => this.props.model.load(),
+        });
+        this.props.close();
     }
 }

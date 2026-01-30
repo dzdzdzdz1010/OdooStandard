@@ -1531,6 +1531,10 @@ Please change the quantity done or the rounding precision in your settings.""",
         }
         if self.location_dest_id.ids:
             vals['location_dest_id'] = self.location_dest_id.id
+
+        if self.env.context.get('move_picking_partner_id'):
+            vals['partner_id'] = self.env.context.get('move_picking_partner_id')
+
         return vals
 
     def _should_be_assigned(self):

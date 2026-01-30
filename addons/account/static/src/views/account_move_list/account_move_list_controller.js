@@ -27,6 +27,7 @@ export class AccountMoveListController extends FileUploadListController {
     }
 
     async loadExtraPrintItems() {
+        debugger;
         return this.orm.call("account.move", "get_extra_print_items", [this.actionMenuProps.getActiveIds()]);
     }
 

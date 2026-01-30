@@ -90,7 +90,7 @@ export class ModelMany2Many extends Component {
         this.setSelection([
             ...this.domState.selection,
             {
-                id: `new-${uniqueId()}`,
+                id: `${uniqueId()}`,
                 name: name,
                 display_name: name,
                 model: this.state.searchModel,

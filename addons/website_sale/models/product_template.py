@@ -270,6 +270,35 @@ class ProductTemplate(models.Model):
 
     #=== BUSINESS METHODS ===#
 
+    def get_attribute_values_for_image_assignment(self, product_variant_id=False):
+        current_value_ids = (
+            self.env['product.product']
+            .browse(product_variant_id)
+            .product_template_attribute_value_ids.ids
+            if product_variant_id else []
+        )
+
+        attributes = [
+            {
+                'id': line.attribute_id.id,
+                'name': line.attribute_id.name,
+                'values': [
+                    {
+                        'id': ptav.id,
+                        'name': ptav.name,
+                    }
+                    for ptav in line.product_template_value_ids
+                    if ptav.ptav_active
+                ],
+            }
+            for line in self.attribute_line_ids
+            if line.attribute_id.create_variant != 'no_variant'
+        ]
+        return {
+            'attributes': attributes,
+            'current_value_ids': current_value_ids,
+        }
+
     def _prepare_variant_values(self, combination):
         variant_dict = super()._prepare_variant_values(combination)
         variant_dict['base_unit_count'] = self.base_unit_count

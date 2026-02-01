@@ -63,16 +63,16 @@ class ProductProduct(models.Model):
     @api.depends(
         'product_variant_image_ids',
         'product_variant_image_ids.image_1920',
-        'product_variant_image_ids.sequence',
     )
     def _compute_image_variant_1920(self):
         for product in self:
-            if product.product_variant_image_ids:
-                product.image_variant_1920 = (
-                    product.product_variant_image_ids.sorted('sequence')[0].image_1920
-                )
-            else:
-                product.image_variant_1920 = False
+            image = product.product_variant_image_ids.sorted('sequence')[:1]
+            image_variant_1920 = (
+                image.image_1920
+                if image and image.attribute_value_ids and image._is_applicable_to_variant(product)
+                else False
+            )
+            product.image_variant_1920 = image_variant_1920 or product.product_tmpl_id.image_1920
 
     def _get_base_unit_price(self, price):
         self.ensure_one()
@@ -243,6 +243,7 @@ class ProductProduct(models.Model):
 
         :rtype: list[str]
         """
+        # TODO
         self.ensure_one()
         return [
             self.env['website'].image_url(extra_image, 'image_1920')

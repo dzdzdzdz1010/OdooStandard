@@ -170,7 +170,7 @@
 
     <!-- /shop product listing -->
     <template id="website_sale.products" name="Products">
-        <t t-set="website_sale_sortable" t-value="website._get_product_sort_mapping()"/>
+        <t t-set="website_sale_sortable" t-value="website._get_product_sort_mapping()" track="1"/>
         <t t-call="website.layout"
             additional_title="category.name"
             opt_wsale_filter_tags="is_view_active('website_sale.filter_products_tags')"

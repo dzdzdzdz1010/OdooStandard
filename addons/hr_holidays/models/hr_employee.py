@@ -329,6 +329,7 @@ class HrEmployee(models.Model):
     @api.model
     def get_time_off_dashboard_data(self, target_date=None):
         return {
+            'has_future_allocation': self.env['hr.leave.type'].has_future_allocation(),
             'has_accrual_allocation': self.env['hr.leave.type'].has_accrual_allocation(),
             'allocation_data': self.env['hr.leave.type'].get_allocation_data_request(target_date, False),
             'allocation_request_amount': self.get_allocation_requests_amount(),

@@ -461,6 +461,17 @@ class HrLeaveType(models.Model):
         ]))
 
     @api.model
+    def has_future_allocation(self):
+        employee = self.env['hr.employee']._get_contextual_employee()
+        if not employee:
+            return False
+        return bool(self.env['hr.leave.allocation'].search_count([
+            ('employee_id', '=', employee.id),
+            ('state', '=', 'validate'),
+            ('date_from', '>', date.today()),
+        ]))
+
+    @api.model
     def get_allocation_data_request(self, target_date=None, hidden_allocations=True):
         employee = self.env["hr.employee"]._get_contextual_employee()
         if not employee:

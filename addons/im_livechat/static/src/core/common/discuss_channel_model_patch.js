@@ -1,15 +1,16 @@
 import { DiscussChannel } from "@mail/discuss/core/common/discuss_channel_model";
-
 import { fields } from "@mail/model/misc";
 
 import { patch } from "@web/core/utils/patch";
 import { formatList } from "@web/core/l10n/utils";
+import { url } from "@web/core/utils/urls";
 
 /** @type {import("models").DiscussChannel} */
 const discussChannelPatch = {
     setup() {
         super.setup(...arguments);
         this.chatbot = fields.One("Chatbot", { inverse: "channel_id" });
+        this.country_id = fields.One("res.country");
         this.livechat_agent_history_ids = fields.Many("im_livechat.channel.member.history", {
             inverse: "channelAsAgentHistory",
         });
@@ -22,6 +23,18 @@ const discussChannelPatch = {
             inverse: "channelAsCustomerHistory",
         });
         this.livechat_looking_for_help_since_dt = fields.Datetime();
+        this.livechat_end_dt = fields.Datetime();
+        this.livechat_operator_id = fields.One("res.partner");
+        this.livechatVisitorMember = fields.One("discuss.channel.member", {
+            compute() {
+                if (this.channel_type !== "livechat") {
+                    return;
+                }
+                return [...this.channel_member_ids]
+                    .sort((a, b) => a.id - b.id)
+                    .find((member) => member.livechat_member_type === "visitor");
+            },
+        });
     },
     get allowDescriptionTypes() {
         return [...super.allowDescriptionTypes, "livechat"];
@@ -110,6 +123,9 @@ const discussChannelPatch = {
             return false;
         }
         return super.showImStatus;
+    },
+    get transcriptUrl() {
+        return url(`/im_livechat/download_transcript/${this.id}`);
     },
 };
 patch(DiscussChannel.prototype, discussChannelPatch);

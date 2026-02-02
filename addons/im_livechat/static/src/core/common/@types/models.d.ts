@@ -31,12 +31,17 @@ declare module "models" {
     }
     export interface DiscussChannel {
         chatbot: Chatbot;
+        country_id: Country;
         livechat_agent_history_ids: LivechatChannelMemberHistory[];
         livechat_channel_id: LivechatChannel;
         livechat_channel_member_history_ids: LivechatChannelMemberHistory[];
         livechat_customer_history_ids: LivechatChannelMemberHistory[];
+        livechat_end_dt: import("luxon").DateTime;
         livechat_looking_for_help_since_dt: import("luxon").DateTime;
+        livechat_operator_id: ResPartner;
         livechatShouldAskLeaveConfirmation: Readonly<boolean>;
+        livechatVisitorMember: ChannelMember;
+        transcriptUrl: Readonly<string>;
     }
     export interface LivechatChannel {
         channel_ids: DiscussChannel[];
@@ -64,9 +69,6 @@ declare module "models" {
     }
     export interface Thread {
         composerHidden: Readonly<boolean>;
-        livechat_end_dt: import("luxon").DateTime;
-        livechatVisitorMember: ChannelMember;
-        transcriptUrl: Readonly<string>;
     }
 
     export interface Models {

@@ -70,7 +70,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
         number_of_accrued_days = 10
         accrual_plan = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'carryover_date': 'other',
             'carryover_day': 31,
             'carryover_month': '12',
@@ -143,7 +143,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
         carryover_limit = 10
         accrual_plan = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'carryover_date': 'other',
             'carryover_day': 31,
             'carryover_month': '12',
@@ -230,7 +230,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
         carryover_limit = 10
         accrual_plan_1 = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'carryover_date': 'other',
             'carryover_day': 31,
             'carryover_month': '12',
@@ -253,7 +253,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
 
         accrual_plan_2 = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan With All Leaves Carried Over',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'level_ids': [
                 (0, 0, {
                 'milestone_date': 'creation',
@@ -334,7 +334,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
         number_of_accrued_days = 10
         accrual_plan = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'carryover_date': 'other',
             'carryover_day': 31,
             'carryover_month': '12',
@@ -402,7 +402,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
         with freeze_time('2024-01-01'):
             accrual_plan = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
                 'name': 'Test Accrual Plan',
-                'can_be_carryover': True,
+                'accrued_gain_action': 'carryover',
                 'carryover_date': 'year_start',
                 'level_ids': [
                     (0, 0, {
@@ -461,7 +461,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
 
         accrual_plan = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'carryover_date': 'other',
             'carryover_day': 1,
             'carryover_month': '9',
@@ -536,7 +536,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
         number_of_accrued_days = 10
         accrual_plan = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'carryover_date': 'other',
             'carryover_day': 31,
             'carryover_month': '12',
@@ -615,7 +615,7 @@ class TestExpiringLeaves(HttpCase, TestHrHolidaysCommon):
         number_of_accrued_days = 10
         accrual_plan = self.env['hr.leave.accrual.plan'].with_context(tracking_disable=True).sudo().create({
             'name': 'Test Accrual Plan',
-            'can_be_carryover': True,
+            'accrued_gain_action': 'carryover',
             'carryover_date': 'other',
             'carryover_day': 31,
             'carryover_month': '12',

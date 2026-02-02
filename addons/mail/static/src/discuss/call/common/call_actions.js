@@ -177,11 +177,7 @@ registerCallAction("record-call", {
     isActive: ({ store }) => store.rtc?.recordingState.recording,
     icon: ({ action }) => (action.isActive ? "fa fa-dot-circle-o" : "fa fa-circle text-danger"),
     onSelected: ({ store }) => {
-        if (store.rtc.recordingState.recording) {
-            store.rtc.stopRecordingDebounce();
-        } else {
-            store.env.services.dialog.add(RecordingDialog, {});
-        }
+        store.env.services.dialog.add(RecordingDialog, {});
     },
     sequence: 50,
     sequenceGroup: 200,

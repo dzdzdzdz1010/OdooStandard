@@ -1464,8 +1464,9 @@ export class Rtc extends Record {
                 this.sfuClient.updateUpload("camera", this.cameraTrack);
                 this.sfuClient.updateUpload("screen", this.screenTrack);
                 this.recordingState = this.sfuClient.recordingState;
-                this.canRecord = this.sfuClient.availableFeatures.recording;
+                this.canRecordAudio = this.sfuClient.availableFeatures.audioRecording;
                 this.canRecordVideo = this.sfuClient.availableFeatures.videoRecording;
+                this.canRecordTranscription = this.sfuClient.availableFeatures.transcription;
                 if (this.recordingRequest) {
                     this._startRecording(this.recordingRequest);
                 }
@@ -1475,8 +1476,9 @@ export class Rtc extends Record {
                     if (!this.localChannel) {
                         return;
                     }
-                    this.canRecord = false;
+                    this.canRecordAudio = false;
                     this.canRecordVideo = false;
+                    this.canRecordTranscription = false;
                     this.recordingState = { recording: false, transcription: false, video: false };
                     let text;
                     if (cause === "full") {
@@ -1825,8 +1827,9 @@ export class Rtc extends Record {
         browser.clearTimeout(this.sfuTimeout);
         this.sfuClient = undefined;
         this.network = undefined;
-        this.canRecord = false;
+        this.canRecordAudio = false;
         this.canRecordVideo = false;
+        this.canRecordTranscription = false;
         /**
          * Contains the requested options of the recording when the recording
          * is awaiting for the SFU to connect.

@@ -96,19 +96,19 @@ export const catalogSuggestion = {
         if (monthly) {
             steps.push({
                 content: "Check catalog record monthly demand for product ${productName}",
-                trigger: `.o_kanban_record:contains('${productName}') div[name='monthly_demand'] span:visible:contains('${monthly}')`,
+                trigger: `.o_kanban_record:contains('${productName}') div[name='monthly_demand'] span:visible:text('${monthly}')`,
             });
         }
         if (suggest) {
             steps.push({
                 content: `Check catalog record suggested quantity for product ${productName}`,
-                trigger: `.o_kanban_record:contains('${productName}') div[name='kanban_purchase_suggest'] span:visible:contains('${suggest}')`,
+                trigger: `.o_kanban_record:contains('${productName}') div[name='kanban_purchase_suggest'] span:visible:text('${suggest}')`,
             });
         }
         if (forecast) {
             steps.push({
                 content: `Check catalog record forecasted quantity for product ${productName}`,
-                trigger: `.o_kanban_record:contains('${productName}') span[name='o_kanban_forecasted_qty']:visible:contains('${forecast}')`,
+                trigger: `.o_kanban_record:contains('${productName}') span[name='o_kanban_forecasted_qty']:visible:text('${forecast}')`,
             });
         }
         return steps;
@@ -137,7 +137,9 @@ export const catalogSuggestion = {
      * @param {number } expectedOrder 0 is the first card
      */
     checkKanbanRecordPosition(product, expectedOrder) {
-        const trigger = `.o_purchase_product_kanban_catalog_view article.o_kanban_record:nth-child(${expectedOrder + 1}):contains("${product}")`;
+        const trigger = `.o_purchase_product_kanban_catalog_view article.o_kanban_record:nth-child(${
+            expectedOrder + 1
+        }):contains("${product}")`;
         return [{ trigger }];
     },
 

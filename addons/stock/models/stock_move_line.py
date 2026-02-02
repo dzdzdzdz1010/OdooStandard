@@ -216,7 +216,7 @@ class StockMoveLine(models.Model):
                                 serial_number=self.lot_name,
                                 location_list=format_list(self.env, quants.location_id.mapped('display_name'))
                             )
-                elif self.lot_id:
+                if self.lot_id:
                     counter = Counter([line.lot_id.id for line in move_lines_to_check])
                     if counter.get(self.lot_id.id) and counter[self.lot_id.id] > 1:
                         message = _('You cannot use the same serial number twice. Please correct the serial numbers encoded.')
@@ -355,6 +355,8 @@ class StockMoveLine(models.Model):
                 vals['picked'] = self.env['stock.move'].browse(vals['move_id']).picked
             if vals.get('quant_id'):
                 vals.update(self._copy_quant_info(vals))
+            # if vals.get('lot_id'):
+            #    vals['lot_name'] = self.env['stock.lot'].browse(vals['lot_id']).name
 
         mls = super().create(vals_list)
 
@@ -434,6 +436,10 @@ class StockMoveLine(models.Model):
 
         if ('lot_id' in vals or 'quant_id' in vals) and len(self.product_id) > 1:
             raise UserError(_("Changing the Lot/Serial number for move lines with different products is not allowed."))
+
+        if vals.get('lot_id'):
+            lot_id = vals['lot_id'] if isinstance(vals['lot_id'], models.BaseModel) else self.env['stock.lot'].browse(vals['lot_id'])
+            vals['lot_name'] = lot_id.name
 
         moves_to_recompute_state = self.env['stock.move']
         triggers = [

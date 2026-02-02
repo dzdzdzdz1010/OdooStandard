@@ -22,11 +22,11 @@ import { KanbanRenderer } from "./kanban_renderer";
 import { useProgressBar } from "./progress_bar_hook";
 import { SelectionBox } from "@web/views/view_components/selection_box";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onMounted,
     onWillStart,
-    useEffect,
     useRef,
     useState,
     useSubEnv,
@@ -164,7 +164,7 @@ export class KanbanController extends Component {
                 return state;
             },
         });
-        useEffect(
+        useLayoutEffect(
             (isReady) => {
                 if (isReady) {
                     if (this.env.isSmall && this.model.root.isGrouped) {
@@ -212,7 +212,7 @@ export class KanbanController extends Component {
         onMounted(() => {
             this.firstLoad = false;
         });
-        useEffect(
+        useLayoutEffect(
             () => {
                 this.onSelectionChanged();
             },

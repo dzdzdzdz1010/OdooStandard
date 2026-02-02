@@ -15,7 +15,8 @@ import { loadBundle } from "@web/core/assets";
 import { renderToMarkup } from "@web/core/utils/render";
 import { useService } from "@web/core/utils/hooks";
 
-import { Component, onWillUnmount, useEffect, useRef, onWillStart, markup } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, onWillUnmount, useRef, onWillStart, markup } from "@odoo/owl";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { cookie } from "@web/core/browser/cookie";
@@ -135,7 +136,7 @@ export class GraphRenderer extends Component {
             await loadBundle("web.chartjs_lib");
         });
 
-        useEffect(() => this.renderChart());
+        useLayoutEffect(() => this.renderChart());
         onWillUnmount(this.onWillUnmount);
     }
 

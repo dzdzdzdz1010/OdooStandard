@@ -36,12 +36,12 @@ import { SelectCreateDialog } from "@web/views/view_dialogs/select_create_dialog
  * @typedef {import("services").ServiceFactories} Services
  */
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onWillUpdateProps,
     status,
     useComponent,
-    useEffect,
     useEnv,
     useState,
     useSubEnv,
@@ -729,7 +729,7 @@ export class X2ManyFieldDialog extends Component {
         const { autofocusFieldIds, disableAutofocus } = this.archInfo;
         if (!disableAutofocus) {
             // to simplify
-            useEffect(
+            useLayoutEffect(
                 (isInEdition) => {
                     let elementToFocus;
                     if (isInEdition) {

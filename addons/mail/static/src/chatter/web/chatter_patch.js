@@ -13,7 +13,8 @@ import { RecipientsInput } from "@mail/core/web/recipients_input";
 import { SearchMessageInput } from "@mail/core/common/search_message_input";
 import { SearchMessageResult } from "@mail/core/common/search_message_result";
 import { KeepLast } from "@web/core/utils/concurrency";
-import { status, useEffect } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { status } from "@odoo/owl";
 
 import { _t } from "@web/core/l10n/translation";
 import { browser } from "@web/core/browser/browser";
@@ -132,7 +133,7 @@ const chatterPatch = {
             },
             () => !this.store.meetingViewOpened || this.env.inMeetingView
         );
-        useEffect(
+        useLayoutEffect(
             () => {
                 if (!this.state.thread) {
                     return;
@@ -153,7 +154,7 @@ const chatterPatch = {
             },
             () => [this.state.thread, this.state.thread?.isLoadingAttachments]
         );
-        useEffect(
+        useLayoutEffect(
             () => {
                 if (
                     this.state.thread &&
@@ -165,7 +166,7 @@ const chatterPatch = {
             },
             () => [this.state.thread?.status, this.attachments]
         );
-        useEffect(
+        useLayoutEffect(
             () => {
                 this.state.aside = this.props.isChatterAside;
             },

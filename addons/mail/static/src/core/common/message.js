@@ -13,12 +13,12 @@ import { htmlToTextContentInline } from "@mail/utils/common/format";
 import { isEventHandled, markEventHandled } from "@web/core/utils/misc";
 import { renderToElement } from "@web/core/utils/render";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onMounted,
     toRaw,
     useChildSubEnv,
-    useEffect,
     useRef,
     useState,
     useSubEnv,
@@ -187,7 +187,7 @@ export class Message extends Component {
                 this.shadowRoot.appendChild(ellipsisStyle);
             }
         });
-        useEffect(
+        useLayoutEffect(
             () => {
                 if (this.shadowBody.el) {
                     const bodyEl = createElementWithContent(
@@ -212,7 +212,7 @@ export class Message extends Component {
                 this.isEditing,
             ]
         );
-        useEffect(
+        useLayoutEffect(
             () => {
                 if (!this.isEditing) {
                     this.prepareMessageBody(this.messageBody.el);

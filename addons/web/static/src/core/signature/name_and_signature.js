@@ -9,7 +9,8 @@ import { useAutofocus } from "@web/core/utils/hooks";
 import { renderToString } from "@web/core/utils/render";
 import { getDataURLFromFile } from "@web/core/utils/urls";
 
-import { Component, useState, onWillStart, useRef, useEffect } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, useState, onWillStart, useRef } from "@odoo/owl";
 
 let htmlId = 0;
 export class NameAndSignature extends Component {
@@ -50,7 +51,7 @@ export class NameAndSignature extends Component {
         this.signNameInputRef = useRef("signNameInput");
         this.signInputLoad = useRef("signInputLoad");
         useAutofocus({ refName: "signNameInput" });
-        useEffect(
+        useLayoutEffect(
             (el) => {
                 if (el) {
                     el.click();
@@ -68,7 +69,7 @@ export class NameAndSignature extends Component {
         });
 
         this.signatureRef = useRef("signature");
-        useEffect(
+        useLayoutEffect(
             (el) => {
                 if (el) {
                     this.signaturePad = new SignaturePad(el, {

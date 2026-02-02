@@ -31,6 +31,7 @@ import { FormErrorDialog } from "./form_error_dialog/form_error_dialog";
 import { FormStatusIndicator } from "./form_status_indicator/form_status_indicator";
 import { FormCogMenu } from "./form_cog_menu/form_cog_menu";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onError,
@@ -39,7 +40,6 @@ import {
     onWillUnmount,
     status,
     useComponent,
-    useEffect,
     useRef,
     useState,
     useSubEnv,
@@ -320,7 +320,7 @@ export class FormController extends Component {
 
         const { disableAutofocus } = this.archInfo;
         if (!disableAutofocus) {
-            useEffect(
+            useLayoutEffect(
                 (isInEdition) => {
                     if (
                         !isInEdition &&

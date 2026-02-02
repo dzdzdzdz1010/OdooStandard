@@ -1,6 +1,7 @@
 /** @odoo-module */
 
-import { Component, onWillRender, useEffect, useRef, useState, xml } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, onWillRender, useRef, useState, xml } from "@odoo/owl";
 import { Test } from "../core/test";
 import { refresh } from "../core/url";
 import { formatTime, throttle } from "../hoot_utils";
@@ -129,7 +130,7 @@ function useMovable(containerRefName, handleRefName, allowDrag) {
     let offsetX = 0;
     let offsetY = 0;
 
-    useEffect(onEffect, computeEffectDependencies);
+    useLayoutEffect(onEffect, computeEffectDependencies);
 
     return {
         resetPosition,

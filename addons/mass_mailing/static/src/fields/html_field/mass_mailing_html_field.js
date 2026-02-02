@@ -6,7 +6,8 @@ import { normalizeHTML, parseHTML } from "@html_editor/utils/html";
 import { MassMailingIframe } from "@mass_mailing/iframe/mass_mailing_iframe";
 import { ThemeSelectorIframe } from "@mass_mailing/themes/theme_selector/theme_selector_iframe";
 import { getCSSRules, toInline } from "@mail/views/web/fields/html_mail_field/convert_inline";
-import { onWillUpdateProps, status, toRaw, useEffect, useRef } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { onWillUpdateProps, status, toRaw, useRef } from "@odoo/owl";
 import { loadBundle } from "@web/core/assets";
 import { Domain } from "@web/core/domain";
 import { registry } from "@web/core/registry";
@@ -101,7 +102,7 @@ export class MassMailingHtmlField extends HtmlField {
             [this.state]
         );
 
-        useEffect(
+        useLayoutEffect(
             () => {
                 if (!this.codeViewRef.el) {
                     return;

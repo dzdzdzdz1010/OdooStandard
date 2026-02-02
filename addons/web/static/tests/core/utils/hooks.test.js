@@ -190,7 +190,7 @@ describe("useAutofocus", () => {
         // "first" is focused first since it has the last call to "useAutofocus"
         expect("input:first").toBeFocused();
 
-        // We now remove and add again the second input, which triggers the useEffect of the hook and and apply focus
+        // We now remove and add again the second input, which triggers the useLayoutEffect of the hook and and apply focus
         state.showSecond = false;
         await animationFrame();
 

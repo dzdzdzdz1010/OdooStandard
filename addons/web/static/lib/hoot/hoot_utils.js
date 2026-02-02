@@ -1,7 +1,8 @@
 /** @odoo-module */
 
 import { on, queryAll } from "@odoo/hoot-dom";
-import { reactive, useComponent, useEffect, useExternalListener } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { reactive, useComponent, useExternalListener } from "@odoo/owl";
 import { isNode } from "@web/../lib/hoot-dom/helpers/dom";
 import {
     isInstanceOf,
@@ -1600,7 +1601,7 @@ export function useAutofocus(ref) {
     }
 
     let displayed = new Set();
-    useEffect(autofocus, () => [ref.el]);
+    useLayoutEffect(autofocus, () => [ref.el]);
 }
 
 /**

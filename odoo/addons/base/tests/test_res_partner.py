@@ -1,5 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import unittest
+
 from contextlib import contextmanager
 from unittest.mock import patch
 
@@ -8,8 +10,10 @@ from odoo.addons.base.models.ir_mail_server import extract_rfc2822_addresses
 from odoo.addons.base.models.res_partner import ResPartner
 from odoo.addons.base.tests.common import TransactionCaseWithUserDemo
 from odoo.exceptions import AccessError, RedirectWarning, UserError, ValidationError
-from odoo.tests import Form
+from odoo.tests import Form, can_import, loaded_demo_data
 from odoo.tests.common import new_test_user, tagged, TransactionCase, users
+from odoo.addons.base.tests.test_ir_ui_view import ViewCase
+from odoo.tools.misc import file_open
 
 # samples use effective TLDs from the Mozilla public suffix
 # list at http://publicsuffix.org
@@ -1161,3 +1165,174 @@ class TestPartnerCategory(TransactionCase):
         result = self.env['res.partner.category'].name_search('buggy_test')
         self.assertEqual(len(result), 1)
         self.assertEqual(result, [(category.id, category.display_name)])
+
+
+class FormatAddressCase(ViewCase):
+    def assertAddressView(self, model):
+        # pe_partner_address_form
+        address_arch = """<form><div class="o_address_format"><field name="city"/></div></form>"""
+        address_view = self.View.create({
+            'name': 'view',
+            'model': model,
+            'arch': address_arch,
+            'priority': 900,
+        })
+
+        # view can be created without address_view
+        form_arch = """<form><field name="id"/><div class="o_address_format"><field name="street"/></div></form>"""
+        view = self.View.create({
+            'name': 'view',
+            'model': model,
+            'arch': form_arch,
+        })
+
+        # default view, no address_view defined
+        arch = self.env[model].get_view(view.id)['arch']
+        self.assertIn('"street"', arch)
+        self.assertNotIn('"city"', arch)
+
+        # custom view, address_view defined
+        self.env.company.country_id.address_view_id = address_view
+        arch = self.env[model].get_view(view.id)['arch']
+        self.assertNotIn('"street"', arch)
+        self.assertIn('"city"', arch)
+        self.assertRegex(arch, r'<form>.*<div class="o_address_format">.*</div>.*</form>')
+        # no_address_format context
+        arch = self.env[model].with_context(no_address_format=True).get_view(view.id)['arch']
+        self.assertIn('"street"', arch)
+        self.assertNotIn('"city"', arch)
+
+        belgium = self.env.ref('base.be')
+        france = self.env.ref('base.fr')
+
+        belgium.address_view_id = None
+        france.address_view_id = address_view
+
+        company_a, company_b = self.env['res.company'].create([
+            {'name': 'foo', 'country_id': belgium.id},
+            {'name': 'bar', 'country_id': france.id},
+        ])
+
+        arch = self.env[model].with_company(company_a).get_view(view.id)['arch']
+        self.assertIn('"street"', arch)
+        self.assertNotIn('"city"', arch)
+
+        arch = self.env[model].with_company(company_b).get_view(view.id)['arch']
+        self.assertNotIn('"street"', arch)
+        self.assertIn('"city"', arch)
+
+
+@tagged('at_install', '-post_install')  # LEGACY at_install
+class TestPartnerFormatAddress(FormatAddressCase):
+    def test_address_view(self):
+        self.env.company.country_id = self.env.ref('base.us')
+        self.assertAddressView('res.partner')
+
+    def test_display_name_address_formatting(self):
+        france = self.env.ref('base.fr')
+
+        partner = self.env['res.partner'].create({
+            'name': 'John Doe',
+            'street': '123 Main Street',
+            'street2': '',
+            'city': 'Paris',
+            'country_id': france.id,
+        })
+
+        # Default display_name without context
+        self.assertIn('John Doe', partner.display_name)
+
+        # display_name with show_address context
+        display_name = partner.with_context(show_address=True).display_name
+        self.assertIn('123 Main Street', display_name)
+        self.assertIn('Paris', display_name)
+        self.assertNotIn('\n\n', display_name)
+
+
+@tagged("post_install", "-at_install")
+class TestImportFiles(TransactionCase):
+
+    @unittest.skipUnless(
+        can_import("xlrd.xlsx") or can_import("openpyxl"), "XLRD/XLSX not available",
+    )
+    def test_import_contacts_template_xls(self):
+        if not loaded_demo_data(self.env):
+            self.skipTest('Needs demo data to be able to import those files')
+        model = "res.partner"
+        filename = "contacts_import_template.xlsx"
+
+        file_content = file_open(f"base/static/xls/{filename}", "rb").read()
+        import_wizard = self.env["base_import.import"].create(
+            {
+                "res_model": model,
+                "file": file_content,
+                "file_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            },
+        )
+
+        result = import_wizard.parse_preview(
+            {
+                "has_headers": True,
+            },
+        )
+        self.assertIsNone(result.get("error"))
+        field_names = ['/'.join(v) for v in result["matches"].values()]
+        results = import_wizard.execute_import(
+            field_names,
+            [r.lower() for r in result["headers"]],
+            {
+                "import_skip_records": [],
+                "import_set_empty_fields": [],
+                "fallback_values": {},
+                "name_create_enabled_fields": {},
+                "encoding": "",
+                "separator": "",
+                "quoting": '"',
+                "date_format": "",
+                "datetime_format": "",
+                "float_thousand_separator": ",",
+                "float_decimal_separator": ".",
+                "advanced": True,
+                "has_headers": True,
+                "keep_matches": False,
+                "limit": 2000,
+                "skip": 0,
+                "tracking_disable": True,
+            },
+        )
+        self.assertFalse(
+            results["messages"],
+            "results should be empty on successful import of ",
+        )
+
+
+@tagged('-at_install', 'post_install')
+class TestFormCreate(TransactionCase):
+    def test_create_res_partner(self):
+        # YTI: Clean that brol
+        if hasattr(self.env['res.partner'], 'property_account_payable_id'):
+            # Required for `property_account_payable_id`, `property_account_receivable_id` to be visible in the view
+            # By default, it's the `group` `group_account_readonly` which is required to see it, in the `account` module
+            # But once `account_accountant` gets installed, it becomes `account.group_account_user`
+            # https://github.com/odoo/enterprise/commit/68f6c1f9fd3ff6762c98e1a405ade035129efce0
+            self.env.user.group_ids += self.env.ref('account.group_account_readonly')
+            self.env.user.group_ids += self.env.ref('account.group_account_user')
+        partner_form = Form(self.env['res.partner'])
+        partner_form.name = 'a partner'
+        # YTI: Clean that brol
+        if hasattr(self.env['res.partner'], 'property_account_payable_id'):
+            property_account_payable_id = self.env['account.account'].create({
+                'name': 'Test Account',
+                'account_type': 'liability_payable',
+                'code': 'TestAccountPayable',
+                'reconcile': True
+            })
+            property_account_receivable_id = self.env['account.account'].create({
+                'name': 'Test Account',
+                'account_type': 'asset_receivable',
+                'code': 'TestAccountReceivable',
+                'reconcile': True
+            })
+            partner_form.property_account_payable_id = property_account_payable_id
+            partner_form.property_account_receivable_id = property_account_receivable_id
+        partner_form.save()

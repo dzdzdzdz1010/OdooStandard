@@ -144,7 +144,7 @@ export function useSquareSelection() {
 
     const selectState = useBlockSelection({
         enable: () => component.props.model.hasMultiCreate,
-        ignore: EVENT_CONTAINER_SELECTOR,
+        ignore: IGNORE_SELECTOR,
         elements: CELL_SELECTOR,
         ref,
         edgeScrolling: { speed: 40, threshold: 150 },

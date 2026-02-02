@@ -4,17 +4,47 @@ import { useService } from "@web/core/utils/hooks";
 import { formatFloatTime } from "@web/views/fields/formatters";
 import { ResourcePopover } from "../../components/resource_popover/resource_popover";
 import {serializeDate} from "@web/core/l10n/dates";
+import {usePopover} from "@web/core/popover/popover_hook";
 
 export class ResourceCalendarCommonRenderer extends CalendarCommonRenderer {
     static components = {
         ...CalendarCommonRenderer,
-        Popover: ResourcePopover,
     };
 
     setup() {
         super.setup();
+        this.popover = usePopover(ResourcePopover, {
+            position: "right",
+            onClose: () => {
+                this.fc.api.unselect();
+            },
+        });
         this.resourcePopoverService = useService("resourcePopoverService");
         this.resourcePopoverService.setup(this.props.model.meta, this.additionalFieldsToFetch);
+    }
+
+    get interactiveOptions() {
+        return {
+            ...super.interactiveOptions,
+            selectable: this.props.model.canCreate,
+        }
+    }
+
+    handleDateClick(info) {
+        if (!info.jsEvent || info.jsEvent.defaultPrevented) {
+            // The event might be fired after a touch pointerup without any jsEvent
+            return;
+        }
+        this.onDateClick(info);
+    }
+
+    onEventDragStart(info) {
+        super.onEventDragStart(...arguments);
+        if (info.event.isAllDay) {
+
+        } else {
+            debugger
+        }
     }
 
     get additionalFieldsToFetch() {
@@ -26,29 +56,59 @@ export class ResourceCalendarCommonRenderer extends CalendarCommonRenderer {
     }
 
     async onSelect(info) {
+        info.jsEvent?.preventDefault();
         const start = luxon.DateTime.fromJSDate(info.start)
         const end = luxon.DateTime.fromJSDate(info.end)
         this.popover.open(
-            info.jsEvent.toElement,
-            this.getPopoverProps({rawRecord: {
-                    date: serializeDate(start),
-                    hour_from: start.hour+start.minute/60,
-                    hour_to: end.hour+end.minute/60,
-                }}),
+            info.jsEvent?.toElement ?? info.view.calendar.el.querySelector(".fc-event-mirror"),
+            {
+                ...this.getPopoverProps(null),
+                context: {
+                    ...this.props.model.meta.context,
+                    default_date: serializeDate(start),
+                    default_hour_from: start.hour+start.minute/60,
+                    default_hour_to: end.hour+end.minute/60,
+                },
+                onClose: () => this.fc.api.unselect()
+            },
             `o_cw_popover card o_calendar_color_0`
         );
     }
 
-    /**
-     * @override
-     */
-    convertRecordToEvent(record) {
-        const event = convertRecordToEvent(record);
-        const editable = record.rawRecord.state !== "validated" && (event.editable ?? null);
-        return {
-            ...event,
-            ...(editable ? { editable: editable } : {}),
+    onDateClick(info) {
+        const date = luxon.DateTime.fromJSDate(info.date)
+        info.view.calendar.select(date.toISO(), date.plus({hours: 1}).toISO())
+    }
+
+    fcEventToRecord(event) {
+        const { id, allDay, date, start, end } = event;
+        const res = {
+            start: luxon.DateTime.fromJSDate(date || start),
+            isAllDay: allDay,
         };
+        if (end) {
+            res.end = luxon.DateTime.fromJSDate(end);
+            if (allDay) {
+                res.end = res.end.minus({ days: 1 });
+            }
+        }
+        if (id) {
+            const existingRecord = this.props.model.records[id];
+            if (this.props.model.scale === "month") {
+                res.start = res.start?.set({
+                    hour: existingRecord.start.hour,
+                    minute: existingRecord.start.minute,
+                });
+                if (existingRecord.end) {
+                    res.end = res.end?.set({
+                        hour: existingRecord.end.hour,
+                        minute: existingRecord.end.minute,
+                    });
+                }
+            }
+            res.id = existingRecord.id;
+        }
+        return res;
     }
 
     /**
@@ -67,6 +127,7 @@ export class ResourceCalendarCommonRenderer extends CalendarCommonRenderer {
                 }).replace(/(:00|:)/g, "h"),
             recordProps: this.resourcePopoverService.recordProps,
             archInfo: this.resourcePopoverService.archInfo,
+            context: this.props.model.meta.context,
         };
     }
 }

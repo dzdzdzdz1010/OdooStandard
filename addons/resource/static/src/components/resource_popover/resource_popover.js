@@ -23,6 +23,7 @@ export class ResourcePopover extends Component {
         archInfo: { type: Object },
         getSource: Function,
         getDurationStr: Function,
+        context: { type: Object },
         isSplittable: { type: Boolean, optional: true },
     };
     static defaultProps = {
@@ -50,8 +51,8 @@ export class ResourcePopover extends Component {
         return {
             ...this.props.recordProps,
             resId: this.props.originalRecord?.id,
-            ...(!this.props.originalRecord?.id ? { values: this.props.originalRecord } : {}),
             mode: this.props.readonly ? "readonly" : "edit",
+            context: this.props.context,
             hooks: {
                 onRecordChanged: (record, changes) => {
                     if (changes.duration) {
@@ -77,6 +78,7 @@ export class ResourcePopover extends Component {
                 ...this.state.newRecordValues,
                 ...(currentRecord?.data.date ? {date: serializeDate(currentRecord.data.date)} : {}),
             },
+            context: this.props.context,
             hooks: {
                 onRecordChanged: (record, changes) => {
                     this.state.newRecordValues = record.data;

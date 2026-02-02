@@ -1,5 +1,5 @@
 import { CalendarModel } from "@web/views/calendar/calendar_model";
-import { deserializeDate } from "@web/core/l10n/dates";
+import { deserializeDate, serializeDate } from "@web/core/l10n/dates";
 
 export class ResourceCalendarModel extends CalendarModel {
     _combineDate(date, floatTime) {
@@ -9,6 +9,10 @@ export class ResourceCalendarModel extends CalendarModel {
             hour: hours,
             minute: minutes,
         });
+    }
+
+    get hasMultiCreate() {
+        return !!this.meta.multiCreateView && !this.env.isSmall && ["week", "month"].includes(this.meta.scale);
     }
 
     /**
@@ -42,5 +46,18 @@ export class ResourceCalendarModel extends CalendarModel {
             duration,
             showTime: true,
         };
+    }
+
+    buildRawRecord(partialRecord, options = {}) {
+        const data = super.buildRawRecord(...arguments);
+        let start = partialRecord.start;
+        let end = partialRecord.end;
+        data[this.meta.fieldMapping.date_start] = serializeDate(start)
+        debugger
+        if (!partialRecord.isAllDay || !this.hasAllDaySlot){
+            data["hour_from"] = start?.hour+start?.minute/60
+            data["hour_to"] = end?.hour+end?.minute/60
+        }
+        return data;
     }
 }

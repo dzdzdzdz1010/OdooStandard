@@ -87,7 +87,7 @@
                         </group>
                         <field name="filtered_attendance_ids" widget="section_one2many"/>
                     </div>
-                    <field nolabel="1"  name="attendance_ids" widget="calendar_one2many" class="flex-grow-1" invisible="schedule_type != 'variable'"/>
+                    <field nolabel="1"  name="filtered_attendance_ids" widget="calendar_one2many" class="flex-grow-1" invisible="schedule_type != 'variable'"/>
                 </sheet>
             </form>
         </field>

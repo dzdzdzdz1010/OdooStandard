@@ -103,7 +103,7 @@ class ResourceCalendarAttendance(models.Model):
     def _compute_display_name(self):
         for attendance in self:
             if attendance.duration_based:
-                attendance.display_name = self.env._("%(duration)s Attendance", duration=format_time(self.env, float_to_time(attendance.duration_hours), time_format="short"))
+                attendance.display_name = self.env._("%(duration)s hours Attendance", duration=format_time(self.env, float_to_time(attendance.duration_hours), time_format="HH:mm"))
             else:
                 attendance.display_name = self.env._("%(hour_from)s - %(hour_to)s Attendance",
                                                      hour_from=format_time(self.env, float_to_time(attendance.hour_from), time_format="short"),

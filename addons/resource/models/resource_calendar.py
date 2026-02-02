@@ -51,7 +51,7 @@ class ResourceCalendar(models.Model):
     active = fields.Boolean("Active", default=True,
                             help="If the active field is set to false, it will allow you to hide the Working Time without removing it.")
     attendance_ids = fields.One2many(
-        'resource.calendar.attendance', 'calendar_id', 'Working Time',
+        'resource.calendar.attendance', 'calendar_id',
         compute='_compute_attendance_ids', store=True, readonly=False, copy=True)
     filtered_attendance_ids = fields.One2many('resource.calendar.attendance', 'calendar_id', 'Working Time',
         compute='_compute_filtered_attendance_ids', inverse='_inverse_filtered_attendance_ids', readonly=False)
@@ -84,6 +84,18 @@ class ResourceCalendar(models.Model):
         ('fixed', 'Fixed'),
         ('variable', 'Variable')],
         string='Calendar Type', default='fixed', required=True)
+
+    # --------------------------------------------------
+    # Constrains
+    # --------------------------------------------------
+
+    @api.constrains('attendance_ids')
+    def _check_attendance_ids(self):
+        for res_calendar in self:
+            # Avoid superimpose in attendance
+            attendance_ids = res_calendar.attendance_ids.filtered(
+                lambda attendance: not attendance.display_type)
+            res_calendar._check_overlap(attendance_ids)
 
     # --------------------------------------------------
     # Compute Methods
@@ -848,8 +860,8 @@ class ResourceCalendar(models.Model):
         assert self.schedule_type == 'variable'
         week_start = int(self.env["res.lang"]._lang_get(self.env.user.lang).week_start) - 1
         if option == 'WEEK':
-            source_start = date_from - timedelta(days=(date_from.weekday()-week_start)%7)
-            target_start = date_to - timedelta(days=(date_to.weekday()-week_start)%7)
+            source_start = date_from - timedelta(days=(date_from.weekday() - week_start) % 7)
+            target_start = date_to - timedelta(days=(date_to.weekday() - week_start) % 7)
             source_end = source_start + timedelta(days=6)
             target_end = target_start + timedelta(days=6)
         else:  # option == 'MONTH'

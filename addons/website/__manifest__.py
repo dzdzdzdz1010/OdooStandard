@@ -389,6 +389,7 @@
         'html_editor.assets_link_popover': [
             'html_builder/static/src/utils/utils_css.js',
             'website/static/src/js/editor/html_editor.js',
+            'website/static/src/js/editor/website_link_plugin.js',
             'website/static/src/xml/html_editor.xml',
         ],
         'website.assets_wysiwyg': [

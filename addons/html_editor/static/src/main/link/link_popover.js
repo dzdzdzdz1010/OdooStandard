@@ -91,7 +91,6 @@ export class LinkPopover extends Component {
             textContent + "/" === linkElement.getAttribute("href");
 
         const computedStyle = this.props.document.defaultView.getComputedStyle(linkElement);
-        const currentRelValues = linkElement.rel.split(" ");
         this.linkPreviewTarget =
             linkElement.hash?.length && this.isAbsoluteURLInCurrentDomain(linkElement.href)
                 ? "_self"
@@ -114,7 +113,6 @@ export class LinkPopover extends Component {
                 this.props.type ||
                 linkElement.className.match(/btn(-[a-z0-9_-]*)(primary|secondary|custom)/)?.pop() ||
                 "link",
-            linkTarget: linkElement.target === "_blank" ? "_blank" : "",
             directDownload: true,
             isDocument: false,
             buttonSize: linkElement.className.match(/btn-(sm|lg)/)?.[1] || "",
@@ -126,31 +124,6 @@ export class LinkPopover extends Component {
             showReplaceTitleBanner: this.props.showReplaceTitleBanner,
             showLabel: !linkElement.childElementCount,
             stripDomain: true,
-            showAdvancedOptions: false,
-            relAttributeOptions: {
-                nofollow: {
-                    label: "nofollow",
-                    description: _t("Tells search engines not to follow this link"),
-                    isChecked: currentRelValues.includes("nofollow"),
-                },
-                noreferrer: {
-                    label: "noreferrer",
-                    description: _t("Removes referrer information sent to the target site"),
-                    isChecked: currentRelValues.includes("noreferrer"),
-                },
-                sponsored: {
-                    label: "sponsored",
-                    description: _t("Indicates the link is sponsored or paid content"),
-                    isChecked: currentRelValues.includes("sponsored"),
-                },
-                noopener: {
-                    label: "noopener",
-                    description: _t(
-                        "Prevents the new page from accessing the original window (security)"
-                    ),
-                    isChecked: currentRelValues.includes("noopener"),
-                },
-            },
         });
 
         const getTargetedElements = () => [this.props.linkElement];
@@ -256,15 +229,6 @@ export class LinkPopover extends Component {
         }
     }
 
-    toggleAdvancedOptions() {
-        this.state.showAdvancedOptions = !this.state.showAdvancedOptions;
-    }
-
-    toggleRelAttr(attr) {
-        const option = this.state.relAttributeOptions[attr];
-        option.isChecked = !option.isChecked;
-    }
-
     /**
      * Return the default color options for the editor.
      *
@@ -308,16 +272,11 @@ export class LinkPopover extends Component {
             this.state.label,
             this.classes,
             this.customStyles,
-            this.state.linkTarget,
             this.state.attachmentId
         );
         this.updateDocumentState();
     }
     onClickApply() {
-        const relOptions = this.state.relAttributeOptions;
-        const relValue = Object.keys(relOptions)
-            .filter((key) => relOptions[key].isChecked)
-            .join(" ");
         this.state.editing = false;
         this.applyDeducedUrl();
         this.props.onApply(
@@ -325,9 +284,7 @@ export class LinkPopover extends Component {
             this.state.label,
             this.classes,
             this.customStyles,
-            this.state.linkTarget,
-            this.state.attachmentId,
-            relValue
+            this.state.attachmentId
         );
     }
     applyDeducedUrl() {
@@ -407,13 +364,6 @@ export class LinkPopover extends Component {
         this.state.url = this.state.url.replace("&download=true", "");
         if (this.state.directDownload) {
             this.state.url += "&download=true";
-        }
-    }
-
-    onClickNewWindow(checked) {
-        this.state.linkTarget = checked ? "_blank" : "";
-        if (!checked) {
-            this.state.relAttributeOptions.noopener.isChecked = false;
         }
     }
 

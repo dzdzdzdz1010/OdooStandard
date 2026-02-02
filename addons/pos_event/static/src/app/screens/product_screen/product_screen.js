@@ -152,22 +152,9 @@ patch(ProductScreen.prototype, {
             return;
         }
 
-        const { globalSimpleChoice, globalTextAnswer } = Object.entries(result.byOrder).reduce(
-            (acc, [questionId, answer]) => {
-                const question = this.pos.models["event.question"].get(parseInt(questionId));
-                if (
-                    question.question_type === "simple_choice" &&
-                    this.pos.models["event.question.answer"].get(parseInt(answer))
-                ) {
-                    acc.globalSimpleChoice[questionId] = answer;
-                } else if (answer) {
-                    acc.globalTextAnswer[questionId] = answer;
-                }
-
-                return acc;
-            },
-            { globalSimpleChoice: {}, globalTextAnswer: {} }
-        );
+        const globalAnswerVals = Object.entries(result.byOrder)
+            .map(this._prepareRegistrationAnswer.bind(this))
+            .filter(Boolean);
 
         for (const [ticketId, data] of Object.entries(result.byRegistration)) {
             const ticket = this.pos.models["event.event.ticket"].get(parseInt(ticketId));
@@ -201,24 +188,6 @@ patch(ProductScreen.prototype, {
                     }
                 }
 
-                const { simpleChoice, textAnswer } = Object.entries(registration).reduce(
-                    (acc, [questionId, answer]) => {
-                        const question = this.pos.models["event.question"].get(
-                            parseInt(questionId)
-                        );
-                        if (
-                            question.question_type === "simple_choice" &&
-                            this.pos.models["event.question.answer"].get(parseInt(answer))
-                        ) {
-                            acc.simpleChoice[questionId] = answer;
-                        } else if (answer) {
-                            acc.textAnswer[questionId] = answer;
-                        }
-
-                        return acc;
-                    },
-                    { simpleChoice: {}, textAnswer: {} }
-                );
                 // This will throw an error on creation if not possible (python constraint)
                 this.pos.models["event.registration"].create({
                     ...userData,
@@ -227,35 +196,35 @@ patch(ProductScreen.prototype, {
                     event_slot_id: slotSelected,
                     pos_order_line_id: line,
                     partner_id: this.pos.getOrder().partner_id,
-                    registration_answer_ids: Object.entries({
-                        ...textAnswer,
-                        ...globalTextAnswer,
-                    }).map(([questionId, answer]) => [
-                        "create",
-                        {
-                            question_id: this.pos.models["event.question"].get(
-                                parseInt(questionId)
-                            ),
-                            value_text_box: answer,
-                        },
-                    ]),
-                    registration_answer_choice_ids: Object.entries({
-                        ...simpleChoice,
-                        ...globalSimpleChoice,
-                    }).map(([questionId, answer]) => [
-                        "create",
-                        {
-                            question_id: this.pos.models["event.question"].get(
-                                parseInt(questionId)
-                            ),
-                            value_answer_id: this.pos.models["event.question.answer"].get(
-                                parseInt(answer)
-                            ),
-                        },
-                    ]),
+                    registration_answer_ids: [
+                        ...Object.entries(registration)
+                            .map(this._prepareRegistrationAnswer.bind(this))
+                            .filter(Boolean),
+                        ...globalAnswerVals,
+                    ],
                 });
             }
         }
+    },
+    _prepareRegistrationAnswer([questionId, answer]) {
+        if (!answer) {
+            return;
+        }
+        const answerVals = {};
+        const question = this.pos.models["event.question"].get(parseInt(questionId));
+        if (question.question_type === "simple_choice") {
+            const answerId = this.pos.models["event.question.answer"].get(parseInt(answer));
+            answerVals["value_answer_id"] = answerId;
+        } else {
+            answerVals["value_text_box"] = answer;
+        }
+        return [
+            "create",
+            {
+                question_id: this.pos.models["event.question"].get(parseInt(questionId)),
+                ...answerVals,
+            },
+        ];
     },
     onMouseDown(event, product) {
         if (product.event_id) {

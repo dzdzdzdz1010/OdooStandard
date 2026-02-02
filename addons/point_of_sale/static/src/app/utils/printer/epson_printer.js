@@ -33,6 +33,7 @@ export class EpsonPrinter extends BasePrinter {
         this.id = printer.id;
         this.name = printer.name;
         this.use_lna = printer.use_lna;
+        this.iface_cashdrawer = printer.iface_cashdrawer;
     }
 
     /**

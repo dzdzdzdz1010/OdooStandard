@@ -1,11 +1,29 @@
 import { uuidv4 } from "@point_of_sale/utils";
+<<<<<<< 8e9c2788225aa1e4b483fc082c7bd5ebd7de4b1b
 import { getService, makeDialogMockEnv, mountWithCleanup } from "@web/../tests/web_test_helpers";
 import { animationFrame, tick, waitFor, waitUntil } from "@odoo/hoot-dom";
+||||||| e74a356a2e3008f04798a4de44e746e7022f08b0
+import { getService, makeDialogMockEnv, mountWithCleanup } from "@web/../tests/web_test_helpers";
+import { tick, waitUntil } from "@odoo/hoot-dom";
+=======
+import {
+    getService,
+    makeDialogMockEnv,
+    mountWithCleanup,
+    patchWithCleanup,
+} from "@web/../tests/web_test_helpers";
+import { tick, waitUntil } from "@odoo/hoot-dom";
+>>>>>>> afd4878419c791e8a6f6951f95b5982efed3245d
 import { Deferred } from "@odoo/hoot-mock";
 import { MainComponentsContainer } from "@web/core/main_components_container";
 import { patch } from "@web/core/utils/patch";
 import { onMounted } from "@odoo/owl";
+<<<<<<< 8e9c2788225aa1e4b483fc082c7bd5ebd7de4b1b
 import { expect } from "@odoo/hoot";
+||||||| e74a356a2e3008f04798a4de44e746e7022f08b0
+=======
+import { user } from "@web/core/user";
+>>>>>>> afd4878419c791e8a6f6951f95b5982efed3245d
 
 const { DateTime } = luxon;
 
@@ -23,6 +41,11 @@ export const setupPosEnv = async () => {
     await makeDialogMockEnv();
     const store = getService("pos");
     store.setCashier(store.user);
+    patchWithCleanup(user, {
+        // Needed for the allowProductCreation method
+        checkAccessRight: (model, operation) =>
+            operation === "create" && model === "product.product",
+    });
     return store;
 };
 

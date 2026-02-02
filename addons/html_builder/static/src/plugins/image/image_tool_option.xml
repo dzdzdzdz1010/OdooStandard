@@ -4,6 +4,8 @@
 <t t-name="html_builder.ImageToolOption">
     <t t-if="!state.isSocialMediaImg">
         <ImageShapeOption />
+        <BorderConfigurator withRoundCorner="!this.state.hasImageShapeClass" label.translate="Border"/>
+        <ShadowOption/>
         <BuilderRow label.translate="Description"
             tooltip.translate="'Alt tag' specifies an alternate text for an image, if the image cannot be displayed (slow connection, missing image, screen reader ...).">
             <BuilderTextInput
@@ -30,28 +32,6 @@
         <MediaSizeOption/>
     </t>
     <ImageFormatOption />
-</t>
-
-<t t-name="html_builder.ImageAndFaOption">
-    <BuilderRow label.translate="Alignment">
-        <BuilderSelect>
-            <BuilderSelectItem classAction="''" title.translate="Unalign">None</BuilderSelectItem>
-            <BuilderSelectItem classAction="'me-auto float-start'" title.translate="Align Left">Left</BuilderSelectItem>
-            <BuilderSelectItem classAction="'mx-auto d-block'" title.translate="Align Center">Center</BuilderSelectItem>
-            <BuilderSelectItem classAction="'ms-auto float-end'" title.translate="Align Right">Right</BuilderSelectItem>
-        </BuilderSelect>
-    </BuilderRow>
-    <BuilderRow label.translate="Style">
-        <BuilderButton icon="'fa-square'" classAction="'rounded'" title.translate="Shape: Rounded"/>
-        <BuilderButton icon="'fa-circle-o'" classAction="'rounded-circle'" title.translate="Shape: Circle"/>
-        <BuilderButton icon="'fa-sun-o'" classAction="'shadow'" title.translate="Shadow"/>
-        <BuilderButton icon="'fa-picture-o'" classAction="'img-thumbnail'" title.translate="Shape: Thumbnail"/>
-    </BuilderRow>
-
-    <BuilderRow label.translate="Padding">
-        <BuilderNumberInput styleAction="'padding'" unit="'px'" composable="true"/>
-    </BuilderRow>
-
 </t>
 
 </templates>

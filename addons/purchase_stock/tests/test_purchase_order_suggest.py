@@ -595,6 +595,7 @@ class TestPurchaseOrderSuggest(PurchaseTestCommon, HttpCase):
         po_2 = self.env['purchase.order'].create({'partner_id': partner_2.id})
         self.assertEstimatedPrice(po_2, 20, based_on='one_week', days=7)  # No pricelist --> should use standard price
 
+<<<<<<< f940e54bb2ccd62659ede8bcea35eb55fb3d9099
     def test_purchase_order_suggest_search_panel_ux(self):
         """ Tests the purchase catalog suggest component, in particular:
         - Suggest component: Hidding, Estimated price, Add all, Changing warehouse, Saving defaults
@@ -646,3 +647,40 @@ class TestPurchaseOrderSuggest(PurchaseTestCommon, HttpCase):
             [(test_product, 1)], date=today - relativedelta(days=1), warehouse=other_warehouse
         )
         self.start_tour('/odoo/purchase', "test_purchase_order_suggest_search_panel_ux", login='admin')
+||||||| 02e9b3d914fe4375de869ae09bfef008c3e63e6d
+        # Generate PO line for qty demand based on one specific warehouse.
+        po_2_suggest.warehouse_id = self.warehouse_1
+        po_2_suggest.action_purchase_order_suggest()
+        self.assertRecordValues(po_2.order_line, [
+            {'product_id': product_ad.id, 'product_qty': 4},
+        ])
+=======
+        # Generate PO line for qty demand based on one specific warehouse.
+        po_2_suggest.warehouse_id = self.warehouse_1
+        po_2_suggest.action_purchase_order_suggest()
+        self.assertRecordValues(po_2.order_line, [
+            {'product_id': product_ad.id, 'product_qty': 4},
+        ])
+
+    def test_purchase_order_suggest_access_error_non_admin(self):
+        """ Test that non-admin users can use the suggest feature without access errors """
+        today = fields.Datetime.now()
+        self.env = self.env(user=self.res_users_purchase_user)
+        self.env['stock.quant']._update_available_quantity(self.product_1, self.stock_location, 15)
+        self._create_and_process_delivery_at_date(
+            [(self.product_1, 10)], today - relativedelta(months=1), warehouse=self.warehouse_1
+        )
+        po = self.env['purchase.order'].create({
+            'partner_id': self.partner_1.id,
+            'picking_type_id': self.picking_type_in.id,  # Use the same warehouse that the created quant.
+        })
+        action = po.action_display_suggest()
+        po_suggest = self.env['purchase.order.suggest'].with_context(**action['context']).create({
+            'product_ids': self.product_1.ids,
+            'number_of_days': 30,
+            'based_on': 'one_month',
+            'percent_factor': 100,
+        })
+        po_suggest.action_purchase_order_suggest()
+        self.assertEqual(po_suggest.estimated_price, 500, "estimated price should be equal to 500")
+>>>>>>> 40d2a312333859540fa794cdde656b9449f8781c

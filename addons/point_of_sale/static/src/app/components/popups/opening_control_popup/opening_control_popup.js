@@ -29,6 +29,7 @@ export class OpeningControlPopup extends Component {
                 this.pos.session.cash_register_balance_start || 0,
                 false
             ),
+            difference: 0,
         });
         this.ui = useService("ui");
     }
@@ -72,6 +73,7 @@ export class OpeningControlPopup extends Component {
                         this.state.notes = moneyDetailsNotes;
                     }
                     this.moneyDetails = moneyDetails;
+                    this.updateCashWarning();
                 }
             },
             context: "Opening",
@@ -81,8 +83,16 @@ export class OpeningControlPopup extends Component {
         if (!this.env.utils.isValidFloat(this.state.openingCash)) {
             return;
         }
+        this.updateCashWarning();
         this.state.notes = "";
     }
+
+    updateCashWarning() {
+        const expected = this.pos.session.cash_register_balance_start || 0;
+        const entered = parseFloat(this.state.openingCash);
+        this.state.difference = entered - expected;
+    }
+
     get cashMethodCount() {
         return this.pos.config.payment_method_ids.filter((pm) => pm.is_cash_count).length;
     }

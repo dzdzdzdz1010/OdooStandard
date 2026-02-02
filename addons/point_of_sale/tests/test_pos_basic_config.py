@@ -1286,7 +1286,7 @@ class TestPoSBasicConfig(TestPoSCommon):
             payments=[(self.bank_pm1, 50)]
         ))
         self.env['pos.order'].sync_from_ui(orders)
-        self.pos_session.action_pos_session_validate()
+        self.pos_session.action_pos_session_closing_control()
 
         # open new session & create orders
         self.open_new_session()
@@ -1300,7 +1300,7 @@ class TestPoSBasicConfig(TestPoSCommon):
             payments=[(self.bank_pm1, 109.96)]
         ))
         self.env['pos.order'].sync_from_ui(orders2)
-        self.pos_session.action_pos_session_validate()
+        self.pos_session.action_pos_session_closing_control()
 
         pos_orders = self.env['pos.order'].search([])
         # set customer for the orders

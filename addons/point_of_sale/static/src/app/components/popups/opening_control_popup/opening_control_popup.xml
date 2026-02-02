@@ -25,6 +25,12 @@
                         <i class="fa fa-money" role="img" title="Open the money details popup"/>
                     </div>
                 </div>
+                <div class="mt-1" t-if="state.difference &lt; 0">
+                    <small class="text-danger">
+                        Difference from last closing :
+                        <strong t-esc="env.utils.formatCurrency(state.difference)"/>
+                    </small>
+                </div>
             </div>
             <div class="opening-notes-container d-flex flex-column align-items-start">
                 <label class="form-label" for="openingNotes">Opening note</label>

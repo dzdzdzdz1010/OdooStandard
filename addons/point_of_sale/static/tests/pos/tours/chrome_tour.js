@@ -272,8 +272,14 @@ registry.category("web_tour.tours").add("test_cash_in_out", {
     steps: () =>
         [
             Chrome.startPoS(),
+            ProductScreen.enterOpeningAmount("-100.00"),
+            { trigger: "small.text-danger:contains(Difference from last closing)" },
             Dialog.confirm("Open Register"),
             Chrome.freezeDateTime(1749965940000),
+            Chrome.clickMenuButton(),
+            Chrome.clickMenuDropdownOption("Cash In/Out"),
+            { trigger: "button:contains(Details)[disabled]" },
+            Utils.selectButton("Discard"),
             Chrome.doCashMove("10", "MOBT in"),
             Chrome.doCashMove("5", "MOBT out"),
             Chrome.clickMenuOption("Close Register"),

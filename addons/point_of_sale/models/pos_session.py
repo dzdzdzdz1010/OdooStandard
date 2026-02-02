@@ -71,6 +71,8 @@ class PosSession(models.Model):
         string='Before Closing Difference',
         help="Difference between the theoretical closing balance and the real closing balance.",
         readonly=True)
+    is_opening_less_than_last_closing = fields.Boolean(
+        string='Opening Less Than Last Closing')
 
     # Total Cash In/Out
     cash_real_transaction = fields.Monetary(string='Transaction', readonly=True)
@@ -1684,6 +1686,7 @@ class PosSession(models.Model):
             difference = cashbox_value - self.cash_register_balance_start
             self._post_cash_details_message('Opening cash', self.cash_register_balance_start, difference, notes)
             self.cash_register_balance_start = cashbox_value
+            self.is_opening_less_than_last_closing = self.cash_register_balance_start < self.config_id.last_session_closing_cash
         elif notes:
             message = _('Opening control message: ')
             message += notes

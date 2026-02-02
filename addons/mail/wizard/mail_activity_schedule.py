@@ -68,7 +68,7 @@ class MailActivitySchedule(models.TransientModel):
     activity_type_id = fields.Many2one(
         'mail.activity.type', string='Activity Type',
         compute='_compute_activity_type_id', store=True, readonly=False,
-        domain="['|', ('res_model', '=', False), ('res_model', '=', res_model)]", ondelete='set null')
+        domain=lambda self: self._domain_activity_type_id(), ondelete='set null')
     activity_category = fields.Selection(related='activity_type_id.category', readonly=True)
     date_deadline = fields.Date(
         'Due Date', compute="_compute_date_deadline",
@@ -85,6 +85,13 @@ class MailActivitySchedule(models.TransientModel):
     chaining_type = fields.Selection(related='activity_type_id.chaining_type', readonly=True)
     # used in both (plan- and activity- based)
     activity_user_id_fname = fields.Char('User Field', help="Field name of the user to choose on the record")
+
+    def _domain_activity_type_id(self):
+        return [
+            '|',
+            ('res_model', '=', False),
+            ('res_model', '=', self.res_model),
+        ]
 
     @api.depends('res_model')
     def _compute_res_model_id(self):
@@ -338,7 +345,7 @@ class MailActivitySchedule(models.TransientModel):
                 else:
                     responsible = template._determine_responsible(self.plan_on_demand_user_id, self.activity_user_id_fname, record)['responsible']
                 date_deadline = template._get_date_deadline(self.plan_date)
-                record.activity_schedule(
+                activities = record.activity_schedule(
                     activity_type_id=template.activity_type_id.id,
                     activity_plan_id=template.plan_id.id,
                     automated=False,
@@ -347,6 +354,7 @@ class MailActivitySchedule(models.TransientModel):
                     note=template.note,
                     user_id=responsible.id,
                 )
+                self._activity_schedule_from_plan_post_process(activities, template)
                 activity_descriptions.append(
                     _('%(activity)s, assigned to %(name)s, due on the %(deadline)s',
                       activity=template.summary or template.activity_type_id.name,
@@ -369,6 +377,16 @@ class MailActivitySchedule(models.TransientModel):
             'target': 'current',
             'domain': [('id', 'in', applied_on.ids)],
         }
+
+    @api.model
+    def _activity_schedule_from_plan_post_process(self, activities, template):
+        """
+        Extension hook to post-process activities created from an activity plan.
+
+        :param activities: Activities created from the plan.
+        :param template: Activity plan template from which the activities were created.
+        """
+        return
 
     def _check_plan_templates_error(self, applied_on):
         self.ensure_one()

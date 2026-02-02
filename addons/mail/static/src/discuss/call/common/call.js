@@ -1,6 +1,7 @@
 import { BlurPerformanceWarning } from "@mail/discuss/call/common/blur_performance_warning";
 import { CallActionList } from "@mail/discuss/call/common/call_action_list";
 import { CallParticipantCard } from "@mail/discuss/call/common/call_participant_card";
+import { CallRecordingIndicator } from "@mail/discuss/call/common/call_recording_indicator";
 import { PttAdBanner } from "@mail/discuss/call/common/ptt_ad_banner";
 
 import { Component, onMounted, onPatched, onWillUnmount, toRaw, useRef, useState } from "@odoo/owl";
@@ -35,6 +36,7 @@ export class Call extends Component {
         BlurPerformanceWarning,
         CallActionList,
         CallParticipantCard,
+        CallRecordingIndicator,
         PttAdBanner,
     };
     static props = ["channel?", "compact?", "hasOverlay?", ...inDiscussCallViewProps];

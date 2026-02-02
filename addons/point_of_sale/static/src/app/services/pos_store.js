@@ -43,8 +43,13 @@ import { EpsonPrinter } from "@point_of_sale/app/utils/printer/epson_printer";
 import OrderPaymentValidation from "../utils/order_payment_validation";
 import { logPosMessage } from "../utils/pretty_console_log";
 import { initLNA } from "../utils/init_lna";
+<<<<<<< e5b8cd545613d23f00b7607b853e0dbe4e6aef5a
 import { uuid } from "@web/core/utils/strings";
 import { GeneratePrinterData } from "../utils/generate_printer_data";
+||||||| 1b9937a702fbeb47cd6d42d8119cead5828fd3fe
+import { uuid } from "@web/core/utils/strings";
+=======
+>>>>>>> d86c65b1e0385e827403265ab5ff0ae03b996173
 
 const { DateTime } = luxon;
 export const CONSOLE_COLOR = "#F5B427";
@@ -2116,11 +2121,10 @@ export class PosStore extends WithLazyGetterTrap {
     }
 
     async printOrderChanges(data, printer) {
-        const actionId = data.changes.data[0]?.uuid || uuid();
         const receipt = renderToElement("point_of_sale.OrderChangeReceipt", {
             data: data,
         });
-        return await printer.printReceipt(receipt, actionId);
+        return await printer.printReceipt(receipt);
     }
 
     editPartnerContext(partner) {

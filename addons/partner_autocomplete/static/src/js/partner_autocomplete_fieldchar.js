@@ -73,9 +73,10 @@ export class PartnerAutoCompleteCharField extends CharField {
             }
         });
 
-        // Save UNSPSC codes (tags)
-        const unspsc_codes = data.company.unspsc_codes
-
+        const additionalData = {
+            entity_type : data.company.entity_type,
+            unspsc_codes : data.company.unspsc_codes,
+        };
         // Delete useless fields before updating record
         data.company = this.partnerAutocomplete.removeUselessFields(data.company, Object.keys(this.props.record.fields));
 
@@ -84,11 +85,30 @@ export class PartnerAutoCompleteCharField extends CharField {
             await this.props.record.update({name: data.company.name});  // Needed otherwise name it is not saved
         }
 
+<<<<<<< a6af7df429f9cd3bfb60347e9b30cc48fb5bfaff
         // Add UNSPSC codes (tags)
         if (this.props.record.resModel === 'res.partner' && unspsc_codes && unspsc_codes.length !== 0) {
             // category id is fetched and then tags are created (many2many)
             const category_id = await this.orm.call("res.partner", "iap_partner_autocomplete_add_tags", [this.props.record.resId, unspsc_codes]);
             data.company['category_id'] = [[6, 0, category_id]];
+||||||| 382d0dc38a66273e6eda3e5adc3122032d1f1c89
+        // Add UNSPSC codes (tags)
+        if (this.props.record.resModel === 'res.partner' && unspsc_codes && unspsc_codes.length !== 0) {
+            // We must first save the record so that we can then create the tags (many2many)
+            const saved = await this.props.record.save();
+            if (saved){
+                await this.props.record.load();
+                await this.orm.call("res.partner", "iap_partner_autocomplete_add_tags", [this.props.record.resId, unspsc_codes]);
+                await this.props.record.load();
+            }
+=======
+        if (this.props.record.resModel === 'res.partner') {
+                const saved = await this.props.record.save();
+                if(saved && data.isEnrichAccessible) {
+                    await this.orm.call("res.partner", "enrich_company_message_post", [this.props.record.resId, additionalData]);
+                    this.props.record.load();
+                }
+>>>>>>> f2964928489299e7c15610229545e2fec368a562
         }
         await this.props.record.update(data.company);
         

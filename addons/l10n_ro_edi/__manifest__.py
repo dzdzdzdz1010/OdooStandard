@@ -15,6 +15,7 @@ E-invoice implementation for Romania
         'security/ir.model.access.csv',
         'views/account_move_views.xml',
         'views/res_config_settings_views.xml',
+        'wizard/account_move_fetch_invoices_wizard.xml',
     ],
     'auto_install': True,
     'uninstall_hook': 'uninstall_hook',

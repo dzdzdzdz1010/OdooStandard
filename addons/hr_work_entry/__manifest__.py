@@ -20,6 +20,7 @@
         'views/hr_contract_template_views.xml',
         'views/resource_calendar_views.xml',
         'wizard/hr_departure_wizard_views.xml',
+        'views/hr_menu.xml',
     ],
     'demo': [
         'data/hr_work_entry_demo.xml',

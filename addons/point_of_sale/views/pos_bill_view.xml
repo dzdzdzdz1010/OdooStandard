@@ -20,9 +20,9 @@
         <field name="name">pos.bill.list</field>
         <field name="model">pos.bill</field>
         <field name="arch" type="xml">
-            <list string="Bills" create="1" delete="1" editable="bottom">
-                <field name="name" />
-                <field name="value" />
+            <list string="Bills" create="1" delete="1" editable="bottom" >
+                <field name="name" decoration-danger="not name"/>
+                <field name="value" decoration-danger="value &lt;= 0"/>
                 <field name="pos_config_ids" widget="many2many_tags_placeholder_list_view" placeholder="For all point of sale."/>
             </list>
         </field>

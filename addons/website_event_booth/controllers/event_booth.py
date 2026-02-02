@@ -113,7 +113,7 @@ class WebsiteEventBoothController(WebsiteEventController):
             partner = request.env['res.partner'].sudo().search([
                 ('email_normalized', '=', email_normalized)
             ], limit=1)
-            if partner:
+            if partner and partner.user_ids:
                 return 'existingPartnerError'
 
         return False

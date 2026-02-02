@@ -84,3 +84,36 @@
         width: 75%;
     }
 }
+
+// Rounded arrows (default selected)
+.s_dynamic_snippet_arrows {
+    .carousel-control-prev,
+    .carousel-control-next {
+        width: $-o-carousel-controllers-size;
+        height: $-o-carousel-controllers-size;
+        background: $carousel-dark-indicator-active-bg;
+        border-radius: $border-radius-pill
+    }
+}
+
+.arrows_default {
+    .carousel-control-prev,
+    .carousel-control-next {
+        background: none;
+        filter: invert(1);
+    }
+}
+
+.arrows_boxed {
+    .carousel-control-prev,
+    .carousel-control-next {
+        border-radius: $border-radius;
+    }
+}
+
+.arrows_hidden {
+    .carousel-control-prev,
+    .carousel-control-next {
+        display: none;
+    }
+}

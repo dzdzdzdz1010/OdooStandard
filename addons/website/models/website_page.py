@@ -22,7 +22,7 @@ class PageCannotBeCached(Exception):
     def __init__(self, result):
         self.result = result
 
-
+# this is the main model to which the relevant data is associated
 class WebsitePage(models.Model):
     _name = 'website.page'
     _inherits = {'ir.ui.view': 'view_id'}
@@ -53,6 +53,8 @@ class WebsitePage(models.Model):
     is_new_page_template = fields.Boolean(string="New Page Template", help='Add this page to the "+New" page templates. It will be added to the "Custom" category.')
     parent_id = fields.Many2one('website.page', string="Parent Page")
     parent_ids = fields.Many2many('website.page', compute='_compute_parent_ids')
+    # title = fields.Char('Page Title', related='name')
+    title = fields.Char('Page Title', related='name', store=True, translate=True)
 
     # don't use mixin website_id but use website_id on ir.ui.view instead
     website_id = fields.Many2one(related='view_id.website_id', store=True, readonly=False, ondelete='cascade')
@@ -229,10 +231,10 @@ class WebsitePage(models.Model):
                 [('group_ids', '=', False)], [('group_ids', 'in', self.env.user.group_ids.ids)]
             ]))
 
-        search_fields = ['name', 'url']
-        fetch_fields = ['id', 'name', 'url']
+        search_fields = ['title', 'url']
+        fetch_fields = ['id', 'title', 'url']
         mapping = {
-            'name': {'name': 'name', 'type': 'text', 'match': True},
+            'name': {'name': 'title', 'type': 'text', 'match': True},
             'website_url': {'name': 'url', 'type': 'text', 'truncate': False},
         }
         if with_description:

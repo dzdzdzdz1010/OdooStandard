@@ -12,7 +12,7 @@ class TestVariableResourceCalendar(TransactionCase):
         super().setUpClass()
         cls.calendar = cls.env['resource.calendar'].create({
             'name': 'Test Variable Calendar',
-            'resource_type': 'variable',
+            'schedule_type': 'variable',
         })
 
     def test_attendance_intervals_batch_variable_calendar(self):

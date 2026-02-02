@@ -80,7 +80,7 @@ class ResourceCalendar(models.Model):
     work_resources_count = fields.Integer("Work Resources count", compute='_compute_work_resources_count')
     work_time_rate = fields.Float(string='Work Time Rate', compute='_compute_work_time_rate', search='_search_work_time_rate',
         help='Work time rate versus full time working schedule, should be between 0 and 100 %.')
-    resource_type = fields.Selection([
+    schedule_type = fields.Selection([
         ('fixed', 'Fixed'),
         ('variable', 'Variable')],
         string='Calendar Type', default='fixed', required=True)
@@ -103,17 +103,17 @@ class ResourceCalendar(models.Model):
                     (0, 0, attendance._copy_attendance_vals()) for attendance in company_calendar.attendance_ids],
             })
 
-    @api.depends("resource_type")
+    @api.depends("schedule_type")
     def _compute_filtered_attendance_ids(self):
         for calendar in self:
-            if calendar.resource_type == 'fixed':
+            if calendar.schedule_type == 'fixed':
                 calendar.filtered_attendance_ids = calendar.attendance_ids.filtered(lambda a: not a.date)
             else:
                 calendar.filtered_attendance_ids = calendar.attendance_ids.filtered(lambda a: a.date)
 
     def _inverse_filtered_attendance_ids(self):
         for calendar in self:
-            if calendar.resource_type == 'fixed':
+            if calendar.schedule_type == 'fixed':
                 fixed_attendance_ids = calendar.attendance_ids.filtered(lambda a: not a.date)
                 calendar.attendance_ids |= calendar.filtered_attendance_ids.filtered(lambda a: a not in fixed_attendance_ids)
                 fixed_attendance_ids.filtered(lambda a: a not in calendar.filtered_attendance_ids).unlink()
@@ -233,7 +233,7 @@ class ResourceCalendar(models.Model):
         days = rrule(DAILY, start.date(), until=end.date())
         base_result = []
         for day in days:
-            if self.resource_type == 'variable':
+            if self.schedule_type == 'variable':
                 attendances = attendances_per_day[day.date()]
             else:
                 attendances = attendances_per_day[day.weekday()]
@@ -504,7 +504,7 @@ class ResourceCalendar(models.Model):
         hours_based_weekdays = set()
         duration_based_weekdays = set()
         for attendance in attendance_ids:
-            if (attendance.duration_based and attendance.calendar_id.resource_type == "fixed" and attendance.dayofweek in hours_based_weekdays
+            if (attendance.duration_based and attendance.calendar_id.schedule_type == "fixed" and attendance.dayofweek in hours_based_weekdays
                     or not attendance.duration_based and attendance.dayofweek in duration_based_weekdays):
                 raise ValidationError(self.env._("You cannot define hours and duration based attendances for the same day."))
             if attendance.duration_based:
@@ -595,7 +595,7 @@ class ResourceCalendar(models.Model):
         # If the employee didn't work a full day, it is still counted, i.e. 19h / week (M/T/W(half day)) -> 3 days
         self.ensure_one()
         attendances = self._get_global_attendances()
-        if self.resource_type == 'variable' and attendances:
+        if self.schedule_type == 'variable' and attendances:
             return len(set(attendances.mapped('date'))) / len({(att.date.toordinal() - 1) // 7 for att in attendances})
         return len(set(attendances.mapped('dayofweek')))
 
@@ -610,7 +610,7 @@ class ResourceCalendar(models.Model):
             else:
                 hour_count += attendance.hour_to - attendance.hour_from
 
-        if self.resource_type == 'variable' and attendances:
+        if self.schedule_type == 'variable' and attendances:
             hour_count /= len({(att.date.isocalendar().year, att.date.isocalendar().week) for att in attendances})
         return hour_count
 
@@ -622,7 +622,7 @@ class ResourceCalendar(models.Model):
 
     def _get_global_attendances(self):
         return self.attendance_ids.filtered(lambda attendance: not attendance.display_type
-            and (attendance.date if self.resource_type == 'variable' else not attendance.date))
+            and (attendance.date if self.schedule_type == 'variable' else not attendance.date))
 
     def _get_unusual_days(self, start_dt, end_dt, company_id=False, resource=None):
         if self:
@@ -828,7 +828,7 @@ class ResourceCalendar(models.Model):
         if not (attendances := self._get_global_attendances()):
             return result
 
-        if self.resource_type == 'variable':
+        if self.schedule_type == 'variable':
             result.update(attendances.filtered(lambda att: att.date and date_from <= att.date <= date_to).grouped('date'))
         else:
             grouped_attendances = attendances.grouped('dayofweek')
@@ -845,7 +845,7 @@ class ResourceCalendar(models.Model):
         assert option in ['WEEK', 'MONTH']
         if option == 'MONTH':
             assert copy_type in ['WEEKDAY', 'DATE']
-        assert self.resource_type == 'variable'
+        assert self.schedule_type == 'variable'
         week_start = int(self.env["res.lang"]._lang_get(self.env.user.lang).week_start) - 1
         if option == 'WEEK':
             source_start = date_from - timedelta(days=(date_from.weekday()-week_start)%7)

@@ -48,8 +48,8 @@
                         <h1><field name="name"/></h1>
                     </div>
                     <group name="resource_details">
-                        <group name="resource_type">
-                            <field name="resource_type" widget="radio" options="{'horizontal': true}"/>
+                        <group name="schedule_type">
+                            <field name="schedule_type" widget="radio" options="{'horizontal': true}"/>
                         </group>
                         <group name="resource_company">
                             <field name="company_id" placeholder="Visible to all"/>
@@ -68,7 +68,7 @@
                             </div>
                         </group>
                     </group>
-                    <div invisible="resource_type != 'fixed'">
+                    <div invisible="schedule_type != 'fixed'">
                         <group>
                             <group>
                                 <label for="hours_per_day" string="Avg"/>
@@ -87,7 +87,7 @@
                         </group>
                         <field name="filtered_attendance_ids" widget="section_one2many"/>
                     </div>
-                    <field nolabel="1"  name="attendance_ids" widget="calendar_one2many" class="flex-grow-1" invisible="resource_type != 'variable'"/>
+                    <field nolabel="1"  name="attendance_ids" widget="calendar_one2many" class="flex-grow-1" invisible="schedule_type != 'variable'"/>
                 </sheet>
             </form>
         </field>

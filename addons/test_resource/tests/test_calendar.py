@@ -431,7 +431,7 @@ class TestCalendar(TestResourceCommon):
         resource_calendar = self.env['resource.calendar'].create({
             'name': 'Calendar Mid-Time',
             'full_time_required_hours': 40,
-            'resource_type': 'variable',
+            'schedule_type': 'variable',
             'attendance_ids': create_attendance_ids([0, 1, 7, 8], (8, 16)) + create_attendance_ids([2, 9], (8, 12)),
         })
         self.assertAlmostEqual(resource_calendar.work_time_rate, 50, 2)

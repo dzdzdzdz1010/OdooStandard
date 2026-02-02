@@ -46,7 +46,7 @@ class TestResourceCommon(TransactionCase):
         return cls.env["resource.calendar"].create(
             {
                 "name": name,
-                'resource_type': 'variable',
+                'schedule_type': 'variable',
                 "attendance_ids": [
                     (5, 0, 0),
                     *[(0, 0, {"hour_from": att[0], "hour_to": att[1], "date": att[2]}) for att in attendances],

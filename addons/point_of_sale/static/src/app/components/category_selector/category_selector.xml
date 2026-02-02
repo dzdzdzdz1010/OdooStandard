@@ -6,6 +6,7 @@
                 <button t-on-click="() => this.pos.setSelectedCategory(category.id)"
                     t-attf-class="o_colorlist_item_color_{{!category.isSelected and !category.isChildren ? 'transparent_': ''}}{{category.color or 'none'}}"
                     t-att-class="{'opacity-50': !category.isChildren and !category.isSelected, 'justify-content-center': ui.isSmall}"
+<<<<<<< 7a60471da0bf762c943dccd8e8765a4cf104d870:addons/point_of_sale/static/src/app/components/category_selector/category_selector.xml
                     class="category-button p-1 btn btn-light d-flex justify-content-center align-items-center rounded-3">
                     <img t-if="category.imgSrc and !ui.isSmall" t-att-src="category.imgSrc"
                         class="category-img-thumb h-100 rounded-3 object-fit-cover"
@@ -14,6 +15,25 @@
                     <span t-if="category.name"
                           t-att-class="{'px-2': category.imgSrc, 'px-3': !category.imgSrc and this.pos.config.show_category_images}"
                           class="text-center text-wrap-categ fs-5" t-esc="category.name" />
+||||||| 1519e22086e0764aa4e14fe816eb42414b2ffa8a:addons/point_of_sale/static/src/app/generic_components/category_selector/category_selector.xml
+                    class="category-button px-1 btn btn-light d-flex align-items-center rounded-3"
+                    style="height: 4rem;"
+                >
+                    <img t-if="category.imgSrc and !ui.isSmall" t-att-src="category.imgSrc"
+                        class="category-img-thumb h-100 rounded-3 object-fit-cover me-1"
+                        alt="Category"
+                    />
+                    <span t-if="category.name" class="text-wrap-categ text-center fs-5" t-esc="category.name" />
+=======
+                    class="category-button p-1 btn btn-light d-flex align-items-center rounded-3 gap-2"
+                    style="height: 4rem;">
+                    <div t-if="showCategoryImg(category)" class="overflow-hidden flex-shrink-0 ratio ratio-1x1" style="width:33%;">
+                        <img class="object-fit-cover h-100 w-100" t-att-src="category.imgSrc" alt="Category" />
+                    </div>
+                    <div class="line-clamp-3" t-att-class="{'w-100': !showCategoryImg(category)}" t-att-style="{'width: 67%;': showCategoryImg(category)}">
+                        <span t-if="category.name" class="text-center" t-esc="category.name" />
+                    </div>
+>>>>>>> 7f3e8f5f3df0f1f8287b18523fb209320a0b0296:addons/point_of_sale/static/src/app/generic_components/category_selector/category_selector.xml
                 </button>
             </t>
         </div>

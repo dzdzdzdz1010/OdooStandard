@@ -18,6 +18,7 @@
     color: #017e84 !important;
 }
 
+<<<<<<< 7a60471da0bf762c943dccd8e8765a4cf104d870
 .text-wrap-categ {
     box-sizing: border-box;
     display: -webkit-box;
@@ -26,6 +27,17 @@
     overflow: hidden;
 }
 
+||||||| 1519e22086e0764aa4e14fe816eb42414b2ffa8a
+.text-wrap-categ {
+    box-sizing: border-box;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+=======
+>>>>>>> 7f3e8f5f3df0f1f8287b18523fb209320a0b0296
 .btn-switchpane, .pay-order-button {
     min-height: 70px;
 }

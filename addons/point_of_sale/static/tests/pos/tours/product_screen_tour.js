@@ -584,21 +584,61 @@ registry.category("web_tour.tours").add("PosCategoriesOrder", {
         [
             Chrome.startPoS(),
             Dialog.confirm("Open Register"),
+<<<<<<< 7a60471da0bf762c943dccd8e8765a4cf104d870:addons/point_of_sale/static/tests/pos/tours/product_screen_tour.js
             ProductScreen.verifyCategorySequence(["AAA", "AAB", "AAC"]),
+||||||| 1519e22086e0764aa4e14fe816eb42414b2ffa8a:addons/point_of_sale/static/tests/tours/product_screen_tour.js
+            {
+                trigger: '.category-button:eq(0) > span:contains("AAA")',
+            },
             {
                 trigger: '.category-button:eq(1) > span:contains("AAB")',
+            },
+            {
+                trigger: '.category-button:eq(2) > span:contains("AAC")',
+            },
+=======
+            {
+                trigger: '.category-button:eq(0) > div span:contains("AAA")',
+            },
+            {
+                trigger: '.category-button:eq(1) > div span:contains("AAB")',
+            },
+            {
+                trigger: '.category-button:eq(2) > div span:contains("AAC")',
+            },
+>>>>>>> 7f3e8f5f3df0f1f8287b18523fb209320a0b0296:addons/point_of_sale/static/tests/tours/product_screen_tour.js
+            {
+                trigger: '.category-button:eq(1) > div span:contains("AAB")',
                 run: "click",
             },
             ProductScreen.productIsDisplayed("Product in AAB and AAX", 0),
             {
+<<<<<<< 7a60471da0bf762c943dccd8e8765a4cf104d870:addons/point_of_sale/static/tests/pos/tours/product_screen_tour.js
                 trigger: '.category-button:eq(-1) > span:contains("AAX")',
+||||||| 1519e22086e0764aa4e14fe816eb42414b2ffa8a:addons/point_of_sale/static/tests/tours/product_screen_tour.js
+                trigger: '.category-button:eq(2) > span:contains("AAX")',
+=======
+                trigger: '.category-button:eq(2) > div span:contains("AAX")',
+>>>>>>> 7f3e8f5f3df0f1f8287b18523fb209320a0b0296:addons/point_of_sale/static/tests/tours/product_screen_tour.js
             },
             {
+<<<<<<< 7a60471da0bf762c943dccd8e8765a4cf104d870:addons/point_of_sale/static/tests/pos/tours/product_screen_tour.js
                 trigger: '.category-button:eq(-1) > span:contains("AAX")',
+||||||| 1519e22086e0764aa4e14fe816eb42414b2ffa8a:addons/point_of_sale/static/tests/tours/product_screen_tour.js
+                trigger: '.category-button:eq(2) > span:contains("AAX")',
+=======
+                trigger: '.category-button:eq(2) > div span:contains("AAX")',
+>>>>>>> 7f3e8f5f3df0f1f8287b18523fb209320a0b0296:addons/point_of_sale/static/tests/tours/product_screen_tour.js
                 run: "click",
             },
             {
+<<<<<<< 7a60471da0bf762c943dccd8e8765a4cf104d870:addons/point_of_sale/static/tests/pos/tours/product_screen_tour.js
                 trigger: '.category-button:eq(-1) > span:contains("AAY")',
+||||||| 1519e22086e0764aa4e14fe816eb42414b2ffa8a:addons/point_of_sale/static/tests/tours/product_screen_tour.js
+                trigger: '.category-button:eq(3) > span:contains("AAY")',
+=======
+                trigger: '.category-button:eq(3) > div span:contains("AAY")',
+>>>>>>> 7f3e8f5f3df0f1f8287b18523fb209320a0b0296:addons/point_of_sale/static/tests/tours/product_screen_tour.js
             },
         ].flat(),
 });

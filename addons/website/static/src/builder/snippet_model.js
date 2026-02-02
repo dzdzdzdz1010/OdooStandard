@@ -1,19 +1,7 @@
-import { applyTextHighlight } from "@website/js/highlight_utils";
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 
 export const websiteSnippetModelPatch = {
-    /**
-     * @override
-     */
-    updateSnippetContent(snippetEl) {
-        super.updateSnippetContent(...arguments);
-        // Build the highlighted text content for new added snippets.
-        for (const textEl of snippetEl?.querySelectorAll(".o_text_highlight") || []) {
-            applyTextHighlight(textEl);
-        }
-    },
-
     /**
      * @override
      */

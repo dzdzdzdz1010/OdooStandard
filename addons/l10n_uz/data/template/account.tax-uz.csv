@@ -1,0 +1,5 @@
+"id","name","type_tax_use","amount_type","amount","tax_group_id","active"
+"l10n_uz_tax_sale_12","VAT 12%","sale","percent","12","l10n_uz_tax_group_12","True"
+"l10n_uz_tax_purchase_12","VAT 12%","purchase","percent","12","l10n_uz_tax_group_12","True"
+"l10n_uz_tax_sale_zero_rated","0% Export","sale","percent","0","l10n_uz_tax_group_zero_rated","True"
+"l10n_uz_tax_sale_exempt","0% Exempt","sale","percent","0","l10n_uz_tax_group_exempt","True"

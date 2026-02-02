@@ -289,7 +289,7 @@ class ProductProduct(models.Model):
             order='date, id'
         )
         # TODO convert to company UoM
-        product_value_domain = Domain([('product_id', '=', self.id), ('move_id', '=', False)])
+        product_value_domain = Domain([('product_id', '=', self.id), ('move_id', '=', False)]) + Domain(self._check_company_domain(self.env.companies))
         if lot:
             product_value_domain &= Domain(['|', ('lot_id', '=', lot.id), ('lot_id', '=', False)])
         else:
@@ -301,11 +301,11 @@ class ProductProduct(models.Model):
 
         # If the last value was defined by the user just return it
         if product_values and not moves_in:
-            quantity = self._with_valuation_context().with_context(to_date=at_date, lot_id=lot.id if lot else None, warehouse_id=False).qty_available
+            quantity = self.sudo(False)._with_valuation_context().with_context(to_date=at_date, lot_id=lot.id if lot else None, warehouse_id=False).qty_available
             last_value = product_values[-1]
             return last_value.value, last_value.value * quantity
         if product_values and moves_in and product_values[-1].date > moves_in[-1].date:
-            quantity = self._with_valuation_context().with_context(to_date=at_date, lot_id=lot.id if lot else None, warehouse_id=False).qty_available
+            quantity = self.sudo(False)._with_valuation_context().with_context(to_date=at_date, lot_id=lot.id if lot else None, warehouse_id=False).qty_available
             avco_value = product_values[-1].value
             return avco_value, avco_value * quantity
 

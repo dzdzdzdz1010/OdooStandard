@@ -1,7 +1,12 @@
 import { patch } from "@web/core/utils/patch";
 import { OrderSummary } from "@point_of_sale/app/screens/product_screen/order_summary/order_summary";
+import { useTrackedAsync } from "@point_of_sale/app/hooks/hooks";
 
 patch(OrderSummary.prototype, {
+    setup() {
+        super.setup(...arguments);
+        this.doUnbookTable = useTrackedAsync(() => this._unbookTable());
+    },
     bookTable() {
         this.pos.getOrder().setBooked(true);
         this.pos.navigate("FloorScreen");
@@ -32,8 +37,9 @@ patch(OrderSummary.prototype, {
 
         return result;
     },
-    async unbookTable() {
+    async _unbookTable() {
         const order = this.pos.getOrder();
+        this.pos.showDefault();
         await this.pos.deleteOrders([order]);
     },
     showUnbookButton() {

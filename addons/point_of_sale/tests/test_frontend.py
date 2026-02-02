@@ -3776,6 +3776,10 @@ class TestUi(TestPointOfSaleHttpCommon):
         })
         self.start_tour("/pos/ui?config_id=%d" % self.main_pos_config.id, 'test_product_configurator_price', login="pos_user")
 
+    def test_pos_open_ui_button(self):
+        """ Test the Open Register button click behavior in the dashboard. """
+        self.start_tour("/odoo/point-of-sale", 'test_pos_open_ui_button', login="pos_user")
+
 
 # This class just runs the same tests as above but with mobile emulation
 class MobileTestUi(TestUi):

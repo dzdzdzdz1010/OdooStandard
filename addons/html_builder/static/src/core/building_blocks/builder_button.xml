@@ -18,12 +18,33 @@
             t-on-click="() => this.onClick()"
             t-on-pointerenter="() => this.onPointerEnter(props.id)"
             t-on-pointerleave="() => this.onPointerLeave(props.id)">
-            <Image t-if="props.iconImg" src="props.iconImg" attrs="{alt:props.iconImgAlt}"/>
+            <Image t-if="props.iconImg" src="props.iconImg" attrs="{ alt: props.iconImgAlt, ...props.iconImgAttrs }"/>
             <i t-if="props.icon" t-att-class="iconClassName" role="img"/>
             <t t-if="props.label"  t-out="props.label"/>
             <t t-slot="default"/>
         </button>
     </BuilderComponent>
+</t>
+
+<t t-name="html_builder.BuilderButtonLtrRtl">
+    <t t-set="areFrontendBackendSame" t-value="this.langDir.frontend === this.langDir.backend"/>
+    <BuilderButton
+        title="this.title"
+        id="this.props.id"
+        actionParam="areFrontendBackendSame ? this.actionParam.primary : this.actionParam.secondary"
+        actionValue="areFrontendBackendSame ? this.actionValue.primary : this.actionValue.secondary"
+        classAction="areFrontendBackendSame ? this.classAction.primary : this.classAction.secondary"
+        styleAction="areFrontendBackendSame ? this.styleAction.primary : this.styleAction.secondary"
+        styleActionValue="areFrontendBackendSame ? this.styleActionValue.primary : this.styleActionValue.secondary"
+        attributeAction="areFrontendBackendSame ? this.attributeAction.primary : this.attributeAction.secondary"
+        attributeActionValue="areFrontendBackendSame ? this.attributeActionValue.primary : this.attributeActionValue.secondary"
+        dataAttributeAction="areFrontendBackendSame ? this.dataAttributeAction.primary : this.dataAttributeAction.secondary"
+        className="areFrontendBackendSame ? this.className.primary : this.className.secondary"
+        icon="this.props.icon"
+        iconImg="this.props.iconImg"
+        iconImgAttrs="this.iconImgAttrs">
+        <t t-slot="default"/>
+    </BuilderButton>
 </t>
 
 </templates>

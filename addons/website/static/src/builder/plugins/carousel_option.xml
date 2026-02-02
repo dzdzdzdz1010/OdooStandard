@@ -5,7 +5,7 @@
     <BuilderRow label.translate="Slide">
         <BuilderButton type="'success'" title.translate="Add Slide"  action="'addSlide'">Add Slide</BuilderButton>
     </BuilderRow>
-    
+
     <BuilderRow label.translate="Style">
         <BuilderSelect>
             <BuilderSelectItem classAction="''">Regular</BuilderSelectItem>
@@ -70,20 +70,38 @@
 </t>
 
 <t t-name="website.CarouselItemHeaderMiddleButtons">
-    <button class="btn btn-primary ms-0 py-0 px-1 me-1"
-            title="Move Backward"
-            aria-label="Move Backward"
-            t-att-class="{ disabled: !state.hasMultiItems }"
-            t-on-click="() => this.slide('prev')">
-        <span class="fa fa-fw fa-angle-left"/>
-    </button>
-    <button class="btn btn-primary py-0 px-1 me-2"
-            title="Move Forward"
-            aria-label="Move Forward"
-            t-att-class="{ disabled: !state.hasMultiItems }"
-            t-on-click="() => this.slide('next')">
-        <span class="fa fa-fw fa-angle-right"/>
-    </button>
+    <t t-if="this.langDir.frontend === this.langDir.backend">
+        <button class="btn btn-primary ms-0 py-0 px-1 me-1"
+                title="Move Backward"
+                aria-label="Move Backward"
+                t-att-class="{ disabled: !state.hasMultiItems }"
+                t-on-click="() => this.slide('prev')">
+            <span class="fa fa-fw fa-angle-left"/>
+        </button>
+        <button class="btn btn-primary py-0 px-1 me-2"
+                title="Move Forward"
+                aria-label="Move Forward"
+                t-att-class="{ disabled: !state.hasMultiItems }"
+                t-on-click="() => this.slide('next')">
+            <span class="fa fa-fw fa-angle-right"/>
+        </button>
+    </t>
+    <t t-else="">
+        <button class="btn btn-primary ms-0 py-0 px-1 me-1"
+                title="Move Forward"
+                aria-label="Move Forward"
+                t-att-class="{ disabled: !state.hasMultiItems }"
+                t-on-click="() => this.slide('next')">
+            <span class="fa fa-fw fa-angle-left"/>
+        </button>
+        <button class="btn btn-primary py-0 px-1 me-2"
+                title="Move Backward"
+                aria-label="Move Backward"
+                t-att-class="{ disabled: !state.hasMultiItems }"
+                t-on-click="() => this.slide('prev')">
+            <span class="fa fa-fw fa-angle-right"/>
+        </button>
+    </t>
     <button class="btn btn-success ms-0 py-0 px-1 me-1"
             title="Add Slide"
             aria-label="Add Slide"

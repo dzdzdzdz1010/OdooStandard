@@ -5,9 +5,16 @@
         </BuilderRow>
         <BuilderRow label.translate="Author Alignment" applyTo="'.s_blockquote_infos'">
             <BuilderSelect>
-                <BuilderSelectItem classAction="'flex-row align-items-start justify-content-start text-start'">Left</BuilderSelectItem>
-                <BuilderSelectItem classAction="'flex-column align-items-center text-center'">Center</BuilderSelectItem>
-                <BuilderSelectItem classAction="'flex-row-reverse align-items-start justify-content-start text-end'">Right</BuilderSelectItem>
+                <t t-if="this.langDir.frontend === 'ltr'">
+                    <BuilderSelectItem classAction="'flex-row align-items-start justify-content-start text-start'">Left</BuilderSelectItem>
+                    <BuilderSelectItem classAction="'flex-column align-items-center text-center'">Center</BuilderSelectItem>
+                    <BuilderSelectItem classAction="'flex-row-reverse align-items-start justify-content-start text-end'">Right</BuilderSelectItem>
+                </t>
+                <t t-else="">
+                    <BuilderSelectItem classAction="'flex-row align-items-start justify-content-start text-start'">Right</BuilderSelectItem>
+                    <BuilderSelectItem classAction="'flex-column align-items-center text-center'">Center</BuilderSelectItem>
+                    <BuilderSelectItem classAction="'flex-row-reverse align-items-start justify-content-start text-end'">Left</BuilderSelectItem>
+                </t>
             </BuilderSelect>
         </BuilderRow>
         <t t-call="mass_mailing.BorderOption"/>

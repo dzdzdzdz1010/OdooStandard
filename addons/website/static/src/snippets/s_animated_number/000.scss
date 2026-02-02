@@ -1,0 +1,17 @@
+.s_animated_number {
+    &.flex-row, &.flex-row-reverse {
+        gap: 10px;
+    }
+
+    .s_animated_number_label {
+        > * {
+            margin: 0;
+            padding: 0;
+        }
+    }
+
+    .s_animated_number_display {
+        font-size: 50px;
+        font-weight: bold;
+    }
+}

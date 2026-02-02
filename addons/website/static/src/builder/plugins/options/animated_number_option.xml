@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="website.AnimatedNumberOption">
+    <BuilderRow label.translate="Start Value">
+        <BuilderNumberInput dataAttributeAction="'startValue'"/>
+    </BuilderRow>
+    <BuilderRow label.translate="End Value">
+        <BuilderNumberInput dataAttributeAction="'endValue'"/>
+    </BuilderRow>
+    <BuilderRow label.translate="Duration">
+        <BuilderNumberInput dataAttributeAction="'duration'" min="100" max="10000" step="100" unit="'ms'" saveUnit="'ms'"/>
+    </BuilderRow>
+    <BuilderRow label.translate="Prefix">
+        <BuilderTextInput dataAttributeAction="'prefix'" default="''"/>
+    </BuilderRow>
+    <BuilderRow label.translate="Postfix">
+        <BuilderTextInput dataAttributeAction="'postfix'" default="''"/>
+    </BuilderRow>
+    <BuilderRow label.translate="Title">
+        <BuilderCheckbox id="'animated_number_title_opt'" action="'toggleTitleAnimatedNumber'" />
+    </BuilderRow>
+    <BuilderRow t-if="this.isActiveItem('animated_number_title_opt')" label.translate="Position" level="1">
+        <BuilderButtonGroup>
+            <BuilderButton
+                classAction="'flex-column'"
+                iconImg="'/website/static/src/img/snippets_options/pos_top.svg'"
+                title.translate="Top"/>
+            <BuilderButton
+                classAction="'flex-row'"
+                iconImg="'/website/static/src/img/snippets_options/pos_left.svg'"
+                title.translate="Left"/>
+            <BuilderButton
+                classAction="'flex-row-reverse'"
+                iconImg="'/website/static/src/img/snippets_options/pos_right.svg'"
+                title.translate="Right"/>
+            <BuilderButton
+                classAction="'flex-column-reverse'"
+                iconImg="'/website/static/src/img/snippets_options/pos_bottom.svg'"
+                title.translate="Bottom"/>
+        </BuilderButtonGroup>
+    </BuilderRow>
+</t>
+
+</templates>

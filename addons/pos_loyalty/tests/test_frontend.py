@@ -638,8 +638,7 @@ class TestUi(TestPointOfSaleHttpCommon):
         self.assertEqual(len(ewallet_1_bbb), 1)
         self.assertAlmostEqual(ewallet_1_bbb.points, 50, places=2)
         ewallet_2_bbb = self.env['loyalty.card'].search([('partner_id', '=', partner_bbb.id), ('program_id', '=', programs['ewallet_2'].id)])
-        self.assertEqual(len(ewallet_2_bbb), 1)
-        self.assertAlmostEqual(ewallet_2_bbb.points, 0, places=2)
+        self.assertEqual(len(ewallet_2_bbb), 0)
 
     def test_coupon_change_pricelist(self):
         """Test coupon program with different pricelists."""

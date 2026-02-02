@@ -94,7 +94,7 @@ export class DiscussChannel extends Record {
     get allowDescriptionTypes() {
         return ["channel", "group"];
     }
-    get allowDescription() {
+    get allowTopic() {
         return this.allowDescriptionTypes.includes(this.channel_type);
     }
     get allowedToLeaveChannelTypes() {

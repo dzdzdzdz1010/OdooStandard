@@ -85,14 +85,14 @@ const discussChannelPatch = {
     get autoOpenChatWindowOnNewMessage() {
         return false;
     },
-    /** @param {string} description */
-    async notifyDescriptionToServer(description) {
-        this.description = description;
+    /** @param {string} topic */
+    async notifyTopicToServer(topic) {
+        this.topic = topic;
         return this.store.env.services.orm.call(
             "discuss.channel",
-            "channel_change_description",
+            "channel_change_topic",
             [[this.id]],
-            { description }
+            { topic }
         );
     },
     /**

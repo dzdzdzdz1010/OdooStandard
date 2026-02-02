@@ -30,6 +30,9 @@ class DiscussChannelMember(models.Model):
     # identity
     partner_id = fields.Many2one("res.partner", "Partner", ondelete="cascade", index=True)
     guest_id = fields.Many2one("mail.guest", "Guest", ondelete="cascade", index=True)
+    member_ref = fields.Reference(
+        [("res.partner", "Partner"), ("mail.guest", "Guest")], "Member", compute="_compute_member_ref", readonly=False
+    )
     is_self = fields.Boolean(compute="_compute_is_self", search="_search_is_self")
     # channel
     channel_id = fields.Many2one("discuss.channel", "Channel", ondelete="cascade", required=True, bypass_search_access=True)
@@ -196,6 +199,16 @@ class DiscussChannelMember(models.Model):
                 channel_name=member.channel_id.display_name,
             )
 
+    @api.depends("partner_id", "guest_id")
+    def _compute_member_ref(self):
+        for member in self:
+            if member.partner_id:
+                member.member_ref = f"res.partner,{member.partner_id.id}"
+            elif member.guest_id:
+                member.member_ref = f"mail.guest,{member.guest_id.id}"
+            else:
+                member.member_ref = False
+
     @api.depends("last_interest_dt", "unpin_dt", "channel_id.last_interest_dt")
     def _compute_is_pinned(self):
         for member in self:
@@ -235,6 +248,15 @@ class DiscussChannelMember(models.Model):
                 raise UserError(
                     _("Adding more members to this chat isn't possible; it's designed for just two people.")
                 )
+            if vals.get("member_ref"):
+                model, id_str = vals["member_ref"].split(",")
+                id = int(id_str)
+                if model == "res.partner":
+                    vals["partner_id"] = id
+                    vals["guest_id"] = False
+                elif model == "mail.guest":
+                    vals["guest_id"] = id
+                    vals["partner_id"] = False
         name_members_by_channel = {
             channel: channel.channel_name_member_ids
             for channel in self.env["discuss.channel"].browse(
@@ -261,7 +283,7 @@ class DiscussChannelMember(models.Model):
 
     def write(self, vals):
         for channel_member in self:
-            for field_name in ['channel_id', 'partner_id', 'guest_id']:
+            for field_name in ["channel_id", "partner_id", "guest_id", "member_ref"]:
                 if field_name in vals and vals[field_name] != channel_member[field_name].id:
                     raise AccessError(_('You can not write on %(field_name)s.', field_name=field_name))
         res = super().write(vals)

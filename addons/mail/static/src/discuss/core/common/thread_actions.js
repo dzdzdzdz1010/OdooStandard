@@ -109,7 +109,7 @@ registerThreadAction("notification-settings", {
     },
     actionPanelOuterClass: "bg-100 border border-secondary",
     condition: ({ channel, owner, store }) =>
-        channel && store.self_user && (!owner.props.chatWindow || owner.props.chatWindow.isOpen),
+        channel && !owner.isDiscussSidebarChannelActions && store.self_user && (!owner.props.chatWindow || owner.props.chatWindow.isOpen),
     setup({ owner }) {
         if (!owner.props.chatWindow) {
             this.popover = usePopover(NotificationSettings, {
@@ -148,17 +148,7 @@ registerThreadAction("invite-people", {
         channel,
     }),
     actionPanelOpen({ owner, store, channel }) {
-        if (owner.isDiscussSidebarChannelActions) {
-            store.env.services.dialog?.add(ChannelActionDialog, {
-                title: channel.displayName,
-                contentComponent: ChannelInvitation,
-                contentProps: {
-                    autofocus: true,
-                    channel,
-                    close: () => store.env.services.dialog.closeAll(),
-                },
-            });
-        } else if (!owner.env.inMeetingView) {
+        if (!owner.env.inMeetingView) {
             this.popover?.open(owner.root.el.querySelector(`[name="${this.id}"]`), {
                 hasSizeConstraints: true,
                 channel,
@@ -171,6 +161,7 @@ registerThreadAction("invite-people", {
         } bg-100 border border-secondary`,
     condition: ({ channel, owner }) =>
         channel &&
+        !owner.isDiscussSidebarChannelActions &&
         (!owner.props.chatWindow || owner.props.chatWindow.isOpen) &&
         !(owner.isDiscussContent && channel?.hasMemberList),
     icon: "oi oi-fw oi-user-plus",

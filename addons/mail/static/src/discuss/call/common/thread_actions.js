@@ -5,7 +5,7 @@ import { CallSettings } from "@mail/discuss/call/common/call_settings";
 import { _t } from "@web/core/l10n/translation";
 
 registerThreadAction("call", {
-    condition: ({ channel, store }) => channel?.allowCalls && !channel?.eq(store.rtc.channel),
+    condition: ({ channel, store, owner }) => !owner.isDiscussSidebarChannelActions && channel?.allowCalls && !channel?.eq(store.rtc.channel),
     icon: "fa fa-fw fa-phone",
     name: ({ channel }) => (channel.hasRtcSessionActive ? _t("Join the Call") : _t("Start Call")),
     onSelected: ({ channel, store }) => store.rtc.toggleCall(channel),
@@ -14,7 +14,7 @@ registerThreadAction("call", {
     tags: [ACTION_TAGS.SUCCESS, ACTION_TAGS.JOIN_LEAVE_CALL],
 });
 registerThreadAction("camera-call", {
-    condition: ({ channel, store }) => channel?.allowCalls && !channel?.eq(store.rtc.channel),
+    condition: ({ channel, store, owner }) => !owner.isDiscussSidebarChannelActions && channel?.allowCalls && !channel?.eq(store.rtc.channel),
     icon: "fa fa-fw fa-video-camera",
     name: ({ channel }) =>
         channel.hasRtcSessionActive ? _t("Join the Call with Camera") : _t("Start Video Call"),

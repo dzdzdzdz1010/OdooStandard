@@ -87,9 +87,9 @@ export class DiscussContent extends Component {
         );
     }
 
-    get threadDescriptionAttClass() {
+    get threadTopicAttClass() {
         return {
-            "o-mail-DiscussContent-threadDescription flex-shrink-1 small pt-1": true,
+            "o-mail-DiscussContent-threadTopic flex-shrink-1 small pt-1": true,
         };
     }
 
@@ -109,13 +109,13 @@ export class DiscussContent extends Component {
         await this.thread.channel.rename(name);
     }
 
-    async updateThreadDescription(description) {
-        const newDescription = description.trim();
-        if (!newDescription && !this.thread.channel.description) {
+    async updateThreadTopic(topic) {
+        const newTopic = topic.trim();
+        if (!newTopic && !this.thread.channel.topic) {
             return;
         }
-        if (newDescription !== this.thread.channel.description) {
-            await this.thread.channel.notifyDescriptionToServer(newDescription);
+        if (newTopic !== this.thread.channel.topic) {
+            await this.thread.channel.notifyTopicToServer(newTopic);
         }
     }
 }

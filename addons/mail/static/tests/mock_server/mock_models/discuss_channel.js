@@ -198,16 +198,16 @@ export class DiscussChannel extends models.ServerModel {
 
     /**
      * @param {number[]} ids
-     * @param {string} description
+     * @param {string} topic
      */
-    channel_change_description(ids, description) {
-        const kwargs = getKwArgs(arguments, "ids", "description");
+    channel_change_topic(ids, topic) {
+        const kwargs = getKwArgs(arguments, "ids", "topic");
         ids = kwargs.ids;
         delete kwargs.ids;
-        description = kwargs.description || "";
+        topic = kwargs.topic || "";
 
         const [channel] = this.browse(ids);
-        this.write([channel.id], { description });
+        this.write([channel.id], { topic });
     }
 
     unlink(ids) {
@@ -260,7 +260,7 @@ export class DiscussChannel extends models.ServerModel {
             "channel_type",
             "create_uid",
             "default_display_mode",
-            "description",
+            "topic",
             "group_public_id",
             "last_interest_dt",
             "name",

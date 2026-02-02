@@ -2,6 +2,18 @@
 <odoo>
     <data>
 
+        <record id="discuss_channel_view_form_im_livechat_inherited" model="ir.ui.view">
+            <field name="name">discuss.channel.form.im_livechat_inherited</field>
+            <field name="model">discuss.channel</field>
+            <field name="inherit_id" ref="mail.discuss_channel_view_form"/>
+            <field name="mode">extension</field>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='topic']" position='attributes'>
+                    <attribute name="invisible">channel_type not in ('channel', 'group', 'livechat')</attribute>
+                </xpath>
+            </field>
+        </record>
+
         <record id="discuss_channel_view_search" model="ir.ui.view">
             <field name="name">discuss.channel.search</field>
             <field name="model">discuss.channel</field>

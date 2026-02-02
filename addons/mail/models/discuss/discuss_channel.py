@@ -69,14 +69,17 @@ class DiscussChannel(models.Model):
     active = fields.Boolean(default=True, help="Set active to false to hide the channel without removing it.")
     can_join = fields.Boolean("Can Join", compute="_compute_can_join")
     can_leave = fields.Boolean("Can Leave", compute="_compute_can_leave")
-    channel_type = fields.Selection([
-        ('chat', 'Chat'),
-        ('channel', 'Channel'),
-        ('group', 'Group')],
-        string='Channel Type', required=True, default='channel', readonly=True, help="Chat is private and unique between 2 persons. Group is private among invited persons. Channel can be freely joined (depending on its configuration).")
+    channel_type = fields.Selection(
+        [("chat", "Chat"), ("channel", "Channel"), ("group", "Group Chat")],
+        string="Conversation Type",
+        required=True,
+        default="channel",
+        readonly=True,
+        help="Chat is private and unique between 2 persons. Group is private among invited persons. Channel can be freely joined (depending on its configuration).",
+    )
     is_editable = fields.Boolean('Is Editable', compute='_compute_is_editable')
     default_display_mode = fields.Selection(string="Default Display Mode", selection=[('video_full_screen', "Full screen video")], help="Determines how the channel will be displayed by default when opening it from its invitation link. No value means display text (no voice/video).")
-    description = fields.Text('Description')
+    topic = fields.Text("Topic")
     image_128 = fields.Image("Image", max_width=128, max_height=128)
     avatar_128 = fields.Image("Avatar", max_width=128, max_height=128, compute='_compute_avatar_128')
     avatar_cache_key = fields.Char(compute="_compute_avatar_cache_key")
@@ -393,7 +396,7 @@ class DiscussChannel(models.Model):
 
     @api.model
     def _get_allowed_channel_member_create_params(self):
-        return ["channel_role", "partner_id", "guest_id", "unpin_dt", "last_interest_dt"]
+        return ["channel_role", "partner_id", "guest_id", "member_ref", "unpin_dt", "last_interest_dt"]
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -516,7 +519,7 @@ class DiscussChannel(models.Model):
         # sudo: discuss.category - guests can read categories of accessible channels
         res[None].one("discuss_category_id", "_store_category_fields", sudo=True)
         res[None].extend(["channel_type", "create_uid", "default_display_mode"])
-        res[None].attr("description", predicate=is_channel_or_group)
+        res[None].attr("topic", predicate=is_channel_or_group)
         res[None].many("group_ids", [], predicate=is_channel)
         res[None].one("group_public_id", ["full_name"], predicate=is_channel)
         res[None].extend(["last_interest_dt", "member_count", "name", "uuid"])
@@ -1220,7 +1223,7 @@ class DiscussChannel(models.Model):
             predicate=lambda channel: channel in channels_with_all_members,
         )
         res.attr("default_display_mode")
-        res.attr("description", predicate=is_channel_or_group)
+        res.attr("topic", predicate=is_channel_or_group)
         res.one("from_message_id", "_store_message_fields", predicate=is_channel_or_group)
         # sudo: we are reading only the ids (comodel is inaccessible)
         res.many("group_ids", [], predicate=is_channel, sudo=True)
@@ -1378,9 +1381,9 @@ class DiscussChannel(models.Model):
         body = Markup('<div data-oe-type="channel_rename" class="o_mail_notification">%s</div>') % name
         self.message_post(body=body, message_type="notification", subtype_xmlid="mail.mt_comment")
 
-    def channel_change_description(self, description):
+    def channel_change_topic(self, topic):
         self.ensure_one()
-        self.write({'description': description})
+        self.write({"topic": topic})
 
     def channel_join(self):
         """Shortcut to add the current user as member of self channels.

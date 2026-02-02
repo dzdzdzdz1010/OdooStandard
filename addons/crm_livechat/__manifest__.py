@@ -10,7 +10,6 @@
         'views/chatbot_script_views.xml',
         'views/chatbot_script_step_views.xml',
         "views/crm_lead_views.xml",
-        "views/discuss_channel_views.xml",
         "security/crm_livechat_security.xml",
     ],
     'depends': [

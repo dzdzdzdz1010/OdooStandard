@@ -18,7 +18,7 @@ import { toRawValue } from "@mail/utils/common/local_storage";
 import { DiscussApp } from "@mail/core/public_web/discuss_app/discuss_app_model";
 import { makeRecordFieldLocalId } from "@mail/model/misc";
 import { describe, expect, test, waitFor } from "@odoo/hoot";
-import { animationFrame, drag, press, queryFirst } from "@odoo/hoot-dom";
+import { drag, press, queryFirst } from "@odoo/hoot-dom";
 import { Deferred, mockDate } from "@odoo/hoot-mock";
 import { Command, getService, onRpc, serverState } from "@web/../tests/web_test_helpers";
 import { browser } from "@web/core/browser/browser";
@@ -302,20 +302,13 @@ test("sidebar: basic chat rendering", async () => {
     await contains(".o-mail-DiscussSidebarChannel-itemName:text('Demo')");
     await contains(".o-mail-DiscussSidebarChannel img[alt='Thread Image']");
     await click("[title='Chat Actions']");
-    await waitFor(".o-dropdown-item:count(7)", { timeout: 3000 });
-    await waitFor(".o-mail-ActionList-group:count(4)");
-    const group = range(0, 4).map((i) => `.o-mail-ActionList-group:eq(${i})`);
-    await waitFor(`${group[0]} .o-dropdown-item:count(2)`);
-    await waitFor(`${group[0]} .o-dropdown-item:eq(0):text('Start Video Call')`);
-    await waitFor(`${group[0]} .o-dropdown-item:eq(1):text('Start Call')`);
-    await waitFor(`${group[1]} .o-dropdown-item:count(2)`);
-    await waitFor(`${group[1]} .o-dropdown-item:eq(0):text('Invite People')`);
-    await waitFor(`${group[1]} .o-dropdown-item:eq(1):text('Add to Favorites')`);
-    await waitFor(`${group[2]} .o-dropdown-item:count(2)`);
-    await waitFor(`${group[2]} .o-dropdown-item:eq(0):text('Notification Settings')`);
-    await waitFor(`${group[2]} .o-dropdown-item:eq(1):text('Advanced Settings')`);
-    await waitFor(`${group[3]} .o-dropdown-item:count(1)`);
-    await waitFor(`${group[3]} .o-dropdown-item:text('Hide Until New Message')`);
+    await waitFor(".o-dropdown-item:count(2)", { timeout: 3000 });
+    await waitFor(".o-mail-ActionList-group:count(2)");
+    const group = range(0, 2).map((i) => `.o-mail-ActionList-group:eq(${i})`);
+    await waitFor(`${group[0]} .o-dropdown-item:count(1)`);
+    await waitFor(`${group[0]} .o-dropdown-item:text('Add to Favorites')`);
+    await waitFor(`${group[1]} .o-dropdown-item:count(1)`);
+    await waitFor(`${group[1]} .o-dropdown-item:text('Hide Until New Message')`);
     await contains(".o-mail-DiscussSidebarChannel .badge", { count: 0 });
 });
 
@@ -885,7 +878,7 @@ test("No 'Hide Until New Message' on conversation with self in call", async () =
     await click("button[title='Join Call']");
     await contains(".o-discuss-Call.o-selfInCall");
     await click("[title='Chat Actions']");
-    await contains(".o-dropdown-item:text('Invite People')");
+    await contains(".o-dropdown-item:text('Add to Favorites')");
     await contains(".o-dropdown-item:text('Hide Until New Message')", { count: 0 });
     await click("button[title='Disconnect']");
     await contains(".o-discuss-Call.o-selfInCall", { count: 0 });
@@ -960,30 +953,6 @@ test("Can leave channel", async () => {
     await click(".o-dropdown-item:contains('Leave Channel')");
     await click("button:text('Leave Conversation')");
     await contains(".o-mail-DiscussSidebarChannel-itemName:text('General')", { count: 0 });
-});
-
-test("Do no channel_info after unpin", async () => {
-    const pyEnv = await startServer();
-    const channelId = pyEnv["discuss.channel"].create({ name: "General", channel_type: "chat" });
-    listenStoreFetch("discuss.channel");
-    setupChatHub({ opened: [channelId] });
-    await start();
-    // ensure onRpc is at least set up properly (because then it is asserted negatively)
-    await waitStoreFetch("discuss.channel");
-    await openDiscuss(channelId);
-    await click("[title='Chat Actions']");
-    await click(".o-dropdown-item:contains('Advanced Settings')");
-    rpc("/mail/message/post", {
-        thread_id: channelId,
-        thread_model: "discuss.channel",
-        post_data: {
-            body: "Hello world",
-            message_type: "comment",
-        },
-    });
-    // weak test, no guarantee that we waited long enough for the potential rpc to be done
-    await animationFrame();
-    await waitStoreFetch();
 });
 
 test.tags("focus required");

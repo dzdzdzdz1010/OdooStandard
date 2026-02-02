@@ -95,7 +95,7 @@ export class Thread extends Record {
     counter = 0;
     counter_bus_id = 0;
     /** @type {string} */
-    description;
+    topic;
     /** @type {string} */
     display_name;
     followers = fields.Many("mail.followers", {

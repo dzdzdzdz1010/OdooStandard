@@ -58,7 +58,6 @@ import { shouldEditableMediaBeEditable } from "@html_builder/utils/utils_css";
 
 /**
  * @typedef {((containers: BuilderOptionContainer[]) => void)[]} change_current_options_containers_listeners
- * @typedef {((newTargetEl: HTMLElement) => void)[]} on_restore_containers_handlers
  *
  * @typedef {((el: HTMLElement) => [] | BuilderButtonDescriptor[])[]} get_options_container_top_buttons
  *
@@ -85,6 +84,8 @@ import { shouldEditableMediaBeEditable } from "@html_builder/utils/utils_css";
  * }[]} has_overlay_options
  * @typedef {CSSSelector[]} no_parent_containers
  * @typedef {((el: HTMLElement) => boolean)[]} keep_overlay_options
+ * @typedef {((scrollDestination: HTMLElement) => HTMLElement)[]} reveal_target_destination_processors
+ * @typedef {((targetEl: HTMLElement) => void)[]} reveal_target_handlers
  */
 /**
  * @typedef {((arg: { el: HTMLElement, reasons: [] }) => void)[]} clone_disabled_reason_providers
@@ -138,6 +139,17 @@ export class BuilderOptionsPlugin extends Plugin {
             if (this.config.initialTarget) {
                 const el = this.editable.querySelector(this.config.initialTarget);
                 this.updateContainers(el);
+            }
+        },
+        reveal_target_handlers: (targetEl) => {
+            this.updateContainers(targetEl, { forceUpdate: true });
+            let scrollDestination = targetEl;
+            for (const p of this.getResource("reveal_target_destination_processors")) {
+                scrollDestination = p(scrollDestination);
+            }
+            if (!isElementInViewport(scrollDestination)) {
+                // Firefox mis-scrolls with block "center" on tall snippets; keep "start".
+                scrollDestination.scrollIntoView({ behavior: "smooth", block: "start" });
             }
         },
     };
@@ -486,13 +498,7 @@ export class BuilderOptionsPlugin extends Plugin {
                 targetEl = nextTarget;
             }
             if (targetEl) {
-                this.dispatchTo("on_restore_containers_handlers", targetEl);
-                this.updateContainers(targetEl, { forceUpdate: true });
-                // Scroll to the target if not visible.
-                if (!isElementInViewport(targetEl)) {
-                    // Firefox mis-scrolls with block "center" on tall snippets; keep "start".
-                    targetEl.scrollIntoView({ behavior: "smooth", block: "start" });
-                }
+                this.dispatchTo("reveal_target_handlers", targetEl);
             } else {
                 this.deactivateContainers();
             }

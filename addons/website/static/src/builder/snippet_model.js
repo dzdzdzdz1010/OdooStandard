@@ -31,12 +31,6 @@ export const websiteSnippetModelPatch = {
         }
         return label;
     },
-    cleanSnippetForSave(snippetCopyEl, cleanForSaveHandlers) {
-        const rootEl = snippetCopyEl.matches(".s_popup")
-            ? snippetCopyEl.firstElementChild
-            : snippetCopyEl;
-        super.cleanSnippetForSave(rootEl, cleanForSaveHandlers);
-    },
     getContext(snippetEl) {
         const context = super.getContext(...arguments);
         const editableParentEl = snippetEl.closest("[data-oe-model][data-oe-field][data-oe-id]");

@@ -303,5 +303,34 @@ test("Social Media snippet options are correct", async () => {
 });
 
 test("Share snippet options are correct", async () => {
+    const INITIAL_SHARE_ICON_COUNT = 6;
+    const iconOptionSelector = "[data-container-title='Icon'] .options-container-header";
+    const mediaListRowSelector = (index) =>
+        `[data-container-title='Share'] .o_share_media_list tr:nth-of-type(${index})`;
+    const checkboxSelector = (index) =>
+        `${mediaListRowSelector(index)} div[data-action-id="toggleRecordedSocialMediaLink"] input`;
+    const shareMediaSelector = ":iframe .s_share a";
+
     await testSocialSnippetOptions("s_share", "Share", "facebook");
+    expect(`${iconOptionSelector} .fa-clone`).toHaveCount(0);
+    expect(`${iconOptionSelector} .fa-trash`).toHaveCount(0);
+    expect(":iframe .s_share.o_not_editable").toHaveCount(1);
+    expect(shareMediaSelector).toHaveCount(INITIAL_SHARE_ICON_COUNT);
+
+    await contains(checkboxSelector(1)).click();
+    expect(shareMediaSelector).toHaveCount(INITIAL_SHARE_ICON_COUNT - 1);
+
+    await contains(checkboxSelector(1)).click();
+    expect(shareMediaSelector).toHaveCount(INITIAL_SHARE_ICON_COUNT);
+
+    for (let i = 1; i < INITIAL_SHARE_ICON_COUNT; i++) {
+        await contains(checkboxSelector(i)).click();
+    }
+    expect(checkboxSelector(INITIAL_SHARE_ICON_COUNT)).toHaveAttribute("disabled");
+    await contains(checkboxSelector(INITIAL_SHARE_ICON_COUNT)).hover();
+    // No effect of hover should be applicable when checkbox is disabled.
+    expect(shareMediaSelector).toHaveCount(1);
+    await contains(checkboxSelector(1)).click();
+    expect(shareMediaSelector).toHaveCount(2);
+    expect(checkboxSelector(INITIAL_SHARE_ICON_COUNT)).not.toHaveAttribute("disabled");
 });

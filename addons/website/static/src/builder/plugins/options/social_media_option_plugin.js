@@ -4,8 +4,8 @@ import { ICON_SELECTOR } from "@html_editor/utils/dom_info";
 import { fonts } from "@html_editor/utils/fonts";
 import { _t } from "@web/core/l10n/translation";
 import { registry } from "@web/core/registry";
-import { renderToFragment } from "@web/core/utils/render";
 import { SocialMediaLinks } from "./social_media_links";
+import { ShareMediaLinks } from "./share_media_links";
 import { selectElements } from "@html_editor/utils/dom_traversal";
 import { SNIPPET_SPECIFIC, TITLE_LAYOUT_SIZE, ANIMATE } from "@html_builder/utils/option_sequence";
 import { BuilderAction } from "@html_builder/core/builder_action";
@@ -24,6 +24,7 @@ import { socialMediaElementsSelector } from "@html_builder/plugins/image/replace
  * @property { SocialMediaOptionPlugin['removeIconClasses'] } removeIconClasses
  * @property { SocialMediaOptionPlugin['getRecordedSocialMediaNames'] } getRecordedSocialMediaNames
  * @property { SocialMediaOptionPlugin['reorderSocialMediaLink'] } reorderSocialMediaLink
+ * @property { SocialMediaOptionPlugin['getRecordedShareMediaNames'] } getRecordedShareMediaNames
  */
 
 /**
@@ -120,6 +121,50 @@ const socialMediaInfo = new Map(
     })
 );
 
+/**
+ * @typedef { Object } ShareMediaInfo
+ * @property { string|Markup|LazyTranslatedString } label
+ * @property { string } name - the name of the social media
+ * @property { string } iconClass - the icon class to use for the social media
+ * @property { string } link - the sharer url
+ */
+
+/** @type { Map<string, ShareMediaInfo> } */
+const shareMediaInfo = new Map(
+    Object.entries({
+        Facebook: {
+            name: "facebook",
+            iconClass: "fa-facebook",
+            link: "https://www.facebook.com/sharer/sharer.php?u={url}",
+        },
+        X: {
+            name: "twitter",
+            iconClass: "fa-twitter",
+            link: "https://twitter.com/intent/tweet?text={title}&url={url}",
+        },
+        LinkedIn: {
+            name: "linkedin",
+            iconClass: "fa-linkedin",
+            link: "https://www.linkedin.com/sharing/share-offsite/?url={url}",
+        },
+        WhatsApp: {
+            name: "whatsapp",
+            iconClass: "fa-whatsapp",
+            link: "https://wa.me/?text={title}",
+        },
+        Pinterest: {
+            name: "pinterest",
+            iconClass: "fa-pinterest",
+            link: "https://pinterest.com/pin/create/button/?url={url}&media={media}&description={title}",
+        },
+        Email: {
+            name: "email",
+            iconClass: "fa-envelope",
+            link: "mailto:?body={url}&subject={title}",
+        },
+    })
+);
+
 const defaultAriaLabel = _t("Other social network");
 
 export class SocialMediaOption extends BaseOptionComponent {
@@ -145,12 +190,14 @@ class SocialMediaOptionPlugin extends Plugin {
         "removeIconClasses",
         "getRecordedSocialMediaNames",
         "reorderSocialMediaLink",
+        "getRecordedShareMediaNames",
     ];
     /** @type {import("plugins").WebsiteResources} */
     resources = {
         builder_options: [
             withSequence(TITLE_LAYOUT_SIZE, SocialMediaOption),
             withSequence(SNIPPET_SPECIFIC, SocialMediaLinks),
+            withSequence(SNIPPET_SPECIFIC, ShareMediaLinks),
             withSequence(ANIMATE, SocialMediaAnimateOption),
         ],
         so_content_addition_selector: [".s_share", ".s_social_media"],
@@ -187,6 +234,9 @@ class SocialMediaOptionPlugin extends Plugin {
 
     getRecordedSocialMedia(key) {
         return this.recordedSocialMedia.get(key);
+    }
+    getRecordedShareMediaNames() {
+        return shareMediaInfo.keys();
     }
     setRecordedSocialMedia(key, value) {
         this.recordedSocialMedia.set(key, value);
@@ -253,7 +303,7 @@ class SocialMediaOptionPlugin extends Plugin {
         }
 
         // ensure one '\n' between each element + before and after
-        for (const element of selectElements(root, ".s_social_media > *")) {
+        for (const element of selectElements(root, ".s_social_media > *, .s_share > *")) {
             if (element.nextSibling?.nodeType === Node.TEXT_NODE) {
                 while (element.nextSibling.nextSibling?.nodeType === Node.TEXT_NODE) {
                     element.parentNode.removeChild(element.nextSibling);
@@ -289,16 +339,21 @@ class SocialMediaOptionPlugin extends Plugin {
      * @param { String } [socialMediaName] the name of the social media to use if any
      * @returns { HTMLElement } a new link element
      */
-    newLinkElement(other, socialMediaName) {
-        const el =
-            other?.cloneNode(true) ||
-            renderToFragment("website.example_social_media_link").children[0];
+    newLinkElement(other, socialMediaName, isShareSnippet) {
+        // No need to render a template; at least one social media element will
+        // always exist, so clone it directly.
+        const el = other?.cloneNode(true);
         this.removeSocialMediaClasses(el);
         this.removeIconClasses(el);
+        const mediaInfo = isShareSnippet ? shareMediaInfo : socialMediaInfo;
         el.querySelector(ICON_SELECTOR)?.classList.add(
-            socialMediaInfo.get(socialMediaName)?.iconClass || "fa-pencil"
+            mediaInfo.get(socialMediaName)?.iconClass || "fa-pencil"
         );
-        if (socialMediaName) {
+        if (isShareSnippet) {
+            el.href = shareMediaInfo.get(socialMediaName)?.link;
+            el.classList.add(`s_share_${mediaInfo.get(socialMediaName)?.name}`);
+            el.setAttribute("aria-label", socialMediaName || defaultAriaLabel);
+        } else if (socialMediaName) {
             el.href = `/website/social/${encodeURIComponent(socialMediaName)}`;
             el.classList.add(`s_social_media_${socialMediaName}`);
             el.setAttribute(
@@ -318,7 +373,7 @@ class SocialMediaOptionPlugin extends Plugin {
      */
     removeSocialMediaClasses(el) {
         for (const c of el.classList) {
-            if (c.startsWith("s_social_media_")) {
+            if (c.startsWith("s_social_media_") || c.startsWith("s_share_")) {
                 el.classList.remove(c);
             }
         }
@@ -408,9 +463,11 @@ export class ToggleRecordedSocialMediaLinkAction extends BuilderAction {
         return !!domPosition;
     }
     apply({ editingElement, params: { media, elementAfter } }) {
+        const isShareSnippet = editingElement.classList.contains("s_share");
         const el = this.dependencies.socialMediaOptionPlugin.newLinkElement(
             editingElement.querySelector(":scope > a"),
-            media
+            media,
+            isShareSnippet
         );
         if (elementAfter) {
             elementAfter.before(el);

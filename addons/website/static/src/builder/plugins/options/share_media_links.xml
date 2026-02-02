@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="website.ShareMediaLinks">
+    <div class="p-1 px-2 ps-3">
+        <table t-ref="root" class="o_share_media_list">
+            <tbody>
+                <tr t-foreach="this.computeItems()" t-as="item" t-key="item.fabricatedKey" t-att-data-id="item.id">
+                    <td>
+                        <button class="btn o_drag_handle ps-0">
+                            <i class="oi oi-draggable"/>
+                        </button>
+                    </td>
+                    <td width="100%">
+                        <div>
+                            <span t-out="item.media"/>
+                        </div>
+                    </td>
+                    <td style="'min-width: 2.5em'">
+                        <BuilderCheckbox
+                            action="'toggleRecordedSocialMediaLink'"
+                            actionParam="item.domPosition ? { domPosition: item.domPosition } : { media: item.media, elementAfter: item.nextLink }"
+                            disabled="item.disableToggle"
+                        />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</t>
+
+</templates>

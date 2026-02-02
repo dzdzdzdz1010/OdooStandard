@@ -28,6 +28,7 @@ class HrEmployeePublic(models.Model):
     mobile_phone = fields.Char(readonly=True)
     work_phone = fields.Char(readonly=True)
     work_email = fields.Char(readonly=True)
+    first_contract_in_company = fields.Date(readonly=True)
     share = fields.Boolean(related='employee_id.share')
     phone = fields.Char(related='employee_id.phone')
     im_status = fields.Char(related='employee_id.im_status')

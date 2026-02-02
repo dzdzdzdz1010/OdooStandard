@@ -210,6 +210,7 @@ class HrEmployee(models.Model):
     # All version fields needing a specific group to be accessible should also have `inherited=True` set on its definition to make sure those fields are linked to `_inherits` on `hr.version`
     contract_date_start = fields.Date(readonly=False, related="version_id.contract_date_start", inherited=True, groups="hr.group_hr_manager")
     contract_date_end = fields.Date(readonly=False, related="version_id.contract_date_end", inherited=True, groups="hr.group_hr_manager")
+    first_contract_in_company = fields.Date(compute='_compute_first_contract_in_company', store=True)
     trial_date_end = fields.Date(readonly=False, related="version_id.trial_date_end", inherited=True, groups="hr.group_hr_manager")
     date_start = fields.Date(related='version_id.date_start', inherited=True, groups="hr.group_hr_manager")
     date_end = fields.Date(related='version_id.date_end', inherited=True, groups="hr.group_hr_manager")
@@ -534,6 +535,13 @@ class HrEmployee(models.Model):
             ('doctor', self.env._('Doctor')),
             ('other', self.env._('Other')),
         ]
+
+    @api.depends('version_ids.contract_date_start')
+    def _compute_first_contract_in_company(self):
+        for employee in self:
+            dates = employee.version_ids.mapped('contract_date_start')
+            valid_dates = [d for d in dates if d]
+            employee.first_contract_in_company = min(valid_dates) if valid_dates else False
 
     def _get_first_versions(self):
         self.ensure_one()

@@ -76,6 +76,7 @@ class IrAttachment(models.Model):
             )
         self.unlink()
 
+<<<<<<< dfcd5e63547c75b8eec60f6937e25e67cbf31455
     def _to_store_defaults(self):
         return [
             "checksum",
@@ -87,3 +88,79 @@ class IrAttachment(models.Model):
             "type",
             "url",
         ]
+||||||| f95bcc097fd7e70af8d28a66c010ae9b9490f439
+    def _to_store(self, store: Store, /, *, fields=None, extra_fields=None):
+        if fields is None:
+            fields = [
+                "checksum",
+                "create_date",
+                "filename",
+                "mimetype",
+                "name",
+                "res_name",
+                "size",
+                "thread",
+                "type",
+                "url",
+            ]
+        if extra_fields:
+            fields.extend(extra_fields)
+        for attachment in self:
+            data = attachment._read_format(
+                [field for field in fields if field not in ["filename", "size", "thread"]],
+                load=False,
+            )[0]
+            if "filename" in fields:
+                data["filename"] = attachment.name
+            if "size" in fields:
+                data["size"] = attachment.file_size
+            if "thread" in fields:
+                data["thread"] = (
+                    Store.one(
+                        self.env[attachment.res_model].browse(attachment.res_id),
+                        as_thread=True,
+                        only_id=True,
+                    )
+                    if attachment.res_model != "mail.compose.message" and attachment.res_id
+                    else False
+                )
+            store.add(attachment, data)
+=======
+    def _to_store(self, store: Store, /, *, fields=None, extra_fields=None):
+        if fields is None:
+            fields = [
+                "checksum",
+                "create_date",
+                "filename",
+                "mimetype",
+                "name",
+                "res_model",
+                "res_name",
+                "size",
+                "thread",
+                "type",
+                "url",
+            ]
+        if extra_fields:
+            fields.extend(extra_fields)
+        for attachment in self:
+            data = attachment._read_format(
+                [field for field in fields if field not in ["filename", "size", "thread"]],
+                load=False,
+            )[0]
+            if "filename" in fields:
+                data["filename"] = attachment.name
+            if "size" in fields:
+                data["size"] = attachment.file_size
+            if "thread" in fields:
+                data["thread"] = (
+                    Store.one(
+                        self.env[attachment.res_model].browse(attachment.res_id),
+                        as_thread=True,
+                        only_id=True,
+                    )
+                    if attachment.res_model != "mail.compose.message" and attachment.res_id
+                    else False
+                )
+            store.add(attachment, data)
+>>>>>>> ab0dba58afd69bf5e4ed622d4f9cdecca0ac0790

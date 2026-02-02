@@ -37,9 +37,9 @@ export class FormStatusIndicator extends Component {
     }
 
     get indicatorMode() {
-        const { isNew, isValid } = this.props.model.root;
+        const { isNew, isValid, offlineId } = this.props.model.root;
         const isDirty = this.props.model.root.dirty || this.state.fieldIsDirty;
-        if (isNew || isDirty) {
+        if ((isNew && !offlineId) || isDirty) {
             return isValid ? "dirty" : "invalid";
         }
         return "saved";

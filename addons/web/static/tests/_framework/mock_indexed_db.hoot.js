@@ -17,6 +17,21 @@ export function mockIndexedDB(_name, { fn }) {
                 this.mockIndexedDB = dbs[name];
             }
 
+            async read(table, key) {
+                return this.mockIndexedDB[table]?.[key];
+            }
+
+            async getAllEntries(table) {
+                return Object.entries(this.mockIndexedDB[table] || {}).map(([key, value]) => ({
+                    key,
+                    value,
+                }));
+            }
+
+            async getAllKeys(table) {
+                return Object.keys(this.mockIndexedDB[table] || {});
+            }
+
             async write(table, key, value) {
                 if (!(table in this.mockIndexedDB)) {
                     this.mockIndexedDB[table] = {};
@@ -24,12 +39,8 @@ export function mockIndexedDB(_name, { fn }) {
                 this.mockIndexedDB[table][key] = value;
             }
 
-            async read(table, key) {
-                return this.mockIndexedDB[table]?.[key];
-            }
-
-            async getAllKeys(table) {
-                return Object.keys(this.mockIndexedDB[table] || {});
+            async delete(table, key) {
+                delete this.mockIndexedDB[table][key];
             }
 
             async invalidate(tables = null) {
@@ -43,6 +54,10 @@ export function mockIndexedDB(_name, { fn }) {
                 } else {
                     this.mockIndexedDB = {};
                 }
+            }
+
+            async deleteDatabase() {
+                this.mockIndexedDB = {};
             }
         }
 

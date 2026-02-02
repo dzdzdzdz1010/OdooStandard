@@ -2343,12 +2343,4 @@ export class ListRenderer extends Component {
             this.toggleRecordSelection(record);
         }
     }
-
-    onOptionalColumnsDropdownOpened() {
-        this.optionalColumnsDropdownRef.el
-            .querySelectorAll(".o-dropdown-item input[type='checkbox']")
-            .forEach((checkbox) => {
-                checkbox.setAttribute("data-available-offline", "");
-            });
-    }
 }

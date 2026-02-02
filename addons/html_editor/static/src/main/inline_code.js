@@ -19,6 +19,17 @@ export class InlineCodePlugin extends Plugin {
             selectElements(root, ".o_inline_code").flatMap((code) =>
                 this.dependencies.feff.surroundWithFeffs(code, cursors)
             ),
+        format_are_similar_overrides: ({ node, nodeStyle, node2Style }) => {
+            if (node.matches("code.o_inline_code")) {
+                if (
+                    nodeStyle.padding === node2Style.padding &&
+                    nodeStyle.margin === node2Style.margin
+                ) {
+                    return true;
+                }
+            }
+        },
+        format_mergeable_feff_predicates: (node) => node.matches("code.o_inline_code"),
     };
 
     setup() {

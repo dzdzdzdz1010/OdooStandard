@@ -816,7 +816,7 @@ function hasPseudoElementContent(node, pseudoSelector) {
 
 const NOT_A_NUMBER = /[^\d]/g;
 
-export function areSimilarElements(node, node2) {
+export function areSimilarElements(node, node2, override) {
     if (![node, node2].every((n) => n?.nodeType === Node.ELEMENT_NODE)) {
         return false; // The nodes don't both exist or aren't both elements.
     }
@@ -848,10 +848,9 @@ export function areSimilarElements(node, node2) {
     }
     const nodeStyle = getComputedStyle(node);
     const node2Style = getComputedStyle(node2);
-    if (node.matches("code.o_inline_code")) {
-        if (nodeStyle.padding === node2Style.padding && nodeStyle.margin === node2Style.margin) {
-            return true;
-        }
+    const overriddenResult = override?.({ node, nodeStyle, node2, node2Style });
+    if (overriddenResult !== undefined) {
+        return overriddenResult;
     }
     return (
         !+nodeStyle.padding.replace(NOT_A_NUMBER, "") &&

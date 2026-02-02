@@ -57,6 +57,14 @@ function isFormatted(formatPlugin, format) {
  *
  * @typedef {((className: string) => boolean)[]} format_class_predicates
  * @typedef {((node: Node) => boolean)[]} has_format_predicates
+ * @typedef {((node: Node) => boolean)[]} format_mergeable_feff_predicates
+ *
+ * @typedef {(({
+ *      node: Node,
+ *      nodeStyle: CSSStyleProperties,
+ *      node2: Node,
+ *      node2Style: CSSStyleProperties,
+ * }) => void | true)[]} format_are_similar_overrides
  */
 
 export class FormatPlugin extends Plugin {
@@ -672,7 +680,11 @@ export class FormatPlugin extends Plugin {
                     selectionToRestore ??= this.dependencies.selection.preserveSelection();
                     selectionToRestore.update(callbacksForCursorUpdate.merge(node));
                 }
-                if (node.matches("code.o_inline_code")) {
+                if (
+                    this.getResource("format_mergeable_feff_predicates").some((predicate) =>
+                        predicate(node)
+                    )
+                ) {
                     while (
                         node.previousSibling?.nodeType === Node.TEXT_NODE &&
                         /^\uFEFF*$/.test(node.previousSibling.nodeValue)
@@ -692,7 +704,11 @@ export class FormatPlugin extends Plugin {
             FORMATTABLE_TAGS.includes(node.nodeName) &&
             !this.getResource("unsplittable_node_predicates").some((predicate) => predicate(node));
         let previousSibling = node.previousSibling;
-        if (node.matches("code.o_inline_code")) {
+        if (
+            this.getResource("format_mergeable_feff_predicates").some((predicate) =>
+                predicate(node)
+            )
+        ) {
             while (
                 previousSibling?.nodeType === Node.TEXT_NODE &&
                 /^\uFEFF*$/.test(previousSibling.nodeValue)
@@ -702,9 +718,18 @@ export class FormatPlugin extends Plugin {
         }
         return (
             !isSelfClosingElement(node) &&
-            areSimilarElements(node, previousSibling) &&
+            this.areSimilarElements(node, previousSibling) &&
             isMergeable(node)
         );
+    }
+
+    areSimilarElements(node, node2) {
+        const override = (params) => {
+            if (this.delegateTo("format_are_similar_overrides", params)) {
+                return true;
+            }
+        };
+        return areSimilarElements(node, node2, override);
     }
 
     canFormatContent(selection) {

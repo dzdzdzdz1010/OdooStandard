@@ -70,6 +70,7 @@ export class SurveyForm extends Interaction {
             scoringType: optionsData.scoringType,
             answerToken: optionsData.answerToken,
             surveyToken: optionsData.surveyToken,
+            isCertification: optionsData.certification,
             usersCanGoBack: !!optionsData.usersCanGoBack,
             sessionInProgress: !!optionsData.sessionInProgress,
             isStartScreen: !!optionsData.isStartScreen,
@@ -413,8 +414,8 @@ export class SurveyForm extends Interaction {
             this.submitForm({ previousPageId: parseInt(targetEl.dataset.previousPageId) });
         } else if (targetEl.value === "next_post_submit") {
             this.submitForm({ showNextPostSubmitPage: true });
-        } else if (targetEl.value === "finish" && !this.options.sessionInProgress) {
-            // Adding pop-up before the survey is submitted when not in live session
+        } else if (targetEl.value === "finish" && !this.options.sessionInProgress && this.options.isCertification) {
+            // Show a confirmation dialog before submitting a certification survey (if not a live session)
             this.dialog.add(ConfirmationDialog, {
                 title: _t("Submit survey"),
                 body: _t("Submit your survey? Once it's out, it is like a letter in the mail: it cannot be recalled."),

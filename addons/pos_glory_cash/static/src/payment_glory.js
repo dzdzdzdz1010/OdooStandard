@@ -21,6 +21,7 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { sortBy } from "@web/core/utils/arrays";
 import { browser } from "@web/core/browser/browser";
+import { registry } from "@web/core/registry";
 import { ask } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { Logger } from "@bus/workers/bus_worker_utils";
 
@@ -30,7 +31,7 @@ const WEBSOCKET_PORT = browser.location.protocol === "https:" ? 3001 : 3000;
 const WEBSOCKET_PROTOCOL = browser.location.protocol === "https:" ? "wss:" : "ws:";
 const WEBSOCKET_URL = "/socket.io/?transport=websocket&EIO=3";
 
-export class GloryService extends PaymentInterface {
+export class PaymentGlory extends PaymentInterface {
     setup() {
         super.setup(...arguments);
         this.dialog = this.env.services.dialog;
@@ -639,3 +640,5 @@ export class GloryService extends PaymentInterface {
         });
     }
 }
+
+registry.category("electronic_payment_interfaces").add("glory", PaymentGlory);

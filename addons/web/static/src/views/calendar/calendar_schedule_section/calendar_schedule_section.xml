@@ -4,7 +4,7 @@
     <t t-name="web.CalendarScheduleSection">
         <h5>To Schedule</h5>
         <div t-if="!props.model.data.eventsToSchedule.records.length" class="text-muted">Good job, everything is scheduled!</div>
-        <div t-ref="eventsToSchedule" class="d-flex flex-column">
+        <div t-custom-ref="eventsToSchedule" class="d-flex flex-column">
             <div 
                 class="align-items-center cursor-pointer o_event_to_schedule_draggable py-1"
                 t-foreach="props.model.data.eventsToSchedule.records"

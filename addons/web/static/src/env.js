@@ -191,6 +191,25 @@ export const customDirectives = {
         node.setAttribute(`t-on-click${mods}`, handlerFunction);
         node.setAttribute(`t-on-auxclick${mods}`, handlerFunction);
     },
+    /**
+     * @param {HTMLElement} node
+     * @param {string} value
+     * @param {string[]} modifiers
+     */
+    model: (node, value, modifiers) => {
+        let attribute = "t-model";
+        for (const modifier of modifiers) {
+            attribute += `.${modifier}`;
+        }
+        node.setAttribute(attribute, value);
+    },
+    /**
+     * @param {HTMLElement} node
+     * @param {string} value
+     */
+    ref: (node, value) => {
+        node.setAttribute("t-ref", value); 
+    }
 };
 
 export const globalValues = {

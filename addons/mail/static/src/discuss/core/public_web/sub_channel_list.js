@@ -53,6 +53,10 @@ export class SubChannelList extends Component {
         return _t(`No thread named "%(thread_name)s"`, { thread_name: this.state.lastSearchTerm });
     }
 
+    get canCreateSubChannels() {
+        return this.store.self_user?.share === false && this.props.channel?.canCreateSubChannels;
+    }
+
     /**
      * @param {import("models").DiscussChannel} subChannel
      */

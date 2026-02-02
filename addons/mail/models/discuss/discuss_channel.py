@@ -74,6 +74,7 @@ class DiscussChannel(models.Model):
         ('channel', 'Channel'),
         ('group', 'Group')],
         string='Channel Type', required=True, default='channel', readonly=True, help="Chat is private and unique between 2 persons. Group is private among invited persons. Channel can be freely joined (depending on its configuration).")
+    is_readonly = fields.Boolean('Is Readonly', help="Only admins are allowed to post messages in a readonly channel.")
     is_editable = fields.Boolean('Is Editable', compute='_compute_is_editable')
     default_display_mode = fields.Selection(string="Default Display Mode", selection=[('video_full_screen', "Full screen video")], help="Determines how the channel will be displayed by default when opening it from its invitation link. No value means display text (no voice/video).")
     description = fields.Text('Description')
@@ -98,6 +99,7 @@ class DiscussChannel(models.Model):
     is_member = fields.Boolean("Is Member", compute="_compute_is_member", search="_search_is_member", compute_sudo=True)
     # sudo: discuss.channel - sudo for performance, self member can be accessed on accessible channel
     self_member_id = fields.Many2one("discuss.channel.member", compute="_compute_self_member_id", search="_search_self_member_id", compute_sudo=True)
+    can_self_edit_readonly_channel = fields.Boolean(compute="_compute_can_self_edit_readonly_channel")
     # sudo: discuss.channel - sudo for performance, invited members can be accessed on accessible channel
     invited_member_ids = fields.One2many("discuss.channel.member", compute="_compute_invited_member_ids", compute_sudo=True)
     member_count = fields.Integer(string="Member Count", compute='_compute_member_count', compute_sudo=True)
@@ -133,6 +135,10 @@ class DiscussChannel(models.Model):
     _group_public_id_check = models.Constraint(
         "CHECK (channel_type = 'channel' OR group_public_id IS NULL)",
         'Group authorization and group auto-subscription are only supported on channels.',
+    )
+    _readonly_channel_type_check = models.Constraint(
+        "CHECK (is_readonly IS NOT TRUE OR channel_type = 'channel')",
+        'Only channels can be readonly.',
     )
 
     # CONSTRAINTS
@@ -339,6 +345,15 @@ class DiscussChannel(models.Model):
             return Domain('channel_member_ids', operator, Domain('is_self', '=', True) & operand)
         return NotImplemented
 
+    @api.depends_context("uid", "guest")
+    @api.depends("is_readonly", "self_member_id.channel_role")
+    def _compute_can_self_edit_readonly_channel(self):
+        for channel in self:
+            channel.can_self_edit_readonly_channel = (
+                channel.sudo().self_member_id.channel_role in ("admin", "owner")
+                or self.env.is_admin()
+            )
+
     @api.depends("channel_member_ids.rtc_inviting_session_id")
     def _compute_invited_member_ids(self):
         members_by_channel = {
@@ -474,6 +489,20 @@ class DiscussChannel(models.Model):
             failing_channels = self.filtered(lambda channel: channel.channel_type != vals.get('channel_type'))
             if failing_channels:
                 raise UserError(_('Cannot change the channel type of: %(channel_names)s', channel_names=', '.join(failing_channels.mapped('name'))))
+
+        if "is_readonly" in vals:
+            if not self.env.is_admin() and (
+                failing_channels := self.filtered(
+                    lambda channel: not channel.sudo().self_member_id.channel_role
+                    in ("admin", "owner")
+                )
+            ):
+                raise UserError(
+                    self.env._(
+                        "You do not have the rights to change the readonly state of: %(channels)s.",
+                        channels=failing_channels.mapped("name"),
+                    )
+                )
         if {"from_message_id", "parent_channel_id"} & set(vals):
             raise UserError(
                 _(
@@ -1008,6 +1037,8 @@ class DiscussChannel(models.Model):
             partner_ids = list(OrderedSet((partner_ids or []) + self.channel_member_ids.partner_id.ids))
         if partner_ids:
             kwargs["partner_ids"] = self._get_allowed_message_partner_ids(partner_ids)
+        # if self._check_has_message_access("create", docid_msgs={self.id: [{'message_type': message_type}]}):
+        #     raise UserError(self.env._("You cannot post messages in a read-only channel."))
         # mail_post_autofollow=False is necessary to prevent adding followers
         # when using mentions in channels. Followers should not be added to
         # channels, and especially not automatically (because channel membership
@@ -1036,6 +1067,27 @@ class DiscussChannel(models.Model):
         # Don't call super in this override as we want to ignore the mail.thread behavior completely
         if not message.message_type == 'comment':
             raise UserError(_("Only messages type comment can have their content updated on model 'discuss.channel'"))
+
+    def _check_has_message_access(self, operation, docid_msgids=None):
+        if not docid_msgids:
+            return None
+        if operation == "read":
+            return None
+        message_ids = [msg_id for msg_ids in docid_msgids.values() for msg_id in msg_ids]
+        messages = self.env["mail.message"].search_fetch(
+            [("id", "in", message_ids)], ["message_type"]
+        )
+        docid_msgs = {
+            doc_id: messages.filtered(lambda msg: msg.id in msg_ids).mapped(
+                lambda msg: {"message_type": msg.message_type}
+            )
+            for doc_id, msg_ids in docid_msgids.items()
+        }
+        return self.filtered(
+            lambda channel: channel.is_readonly
+            and not channel.can_self_edit_readonly_channel
+            and any(msg.get("message_type") == "comment" for msg in docid_msgs[channel.id])
+        )
 
     def _create_attachments_for_post(self, values_list, extra_list):
         # Create voice metadata from meta information
@@ -1099,6 +1151,8 @@ class DiscussChannel(models.Model):
     # ------------------------------------------------------------
 
     def set_message_pin(self, message_id, pinned):
+        if not self.can_self_edit_readonly_channel and self.is_readonly:
+            raise UserError(self.env._("You cannot pin messages in a read-only channel."))
         result = super().set_message_pin(message_id, pinned)
         if pinned and result:
             notification_text = '''
@@ -1226,6 +1280,7 @@ class DiscussChannel(models.Model):
         res.many("group_ids", [], predicate=is_channel, sudo=True)
         res.one("group_public_id", ["full_name"], predicate=is_channel)
         res.many("invited_member_ids", "_store_avatar_card_fields", mode="ADD")
+        res.attr("is_readonly", predicate=is_channel)
         res.attr("last_interest_dt")
         res.attr("member_count")
         res.attr("message_count", predicate=lambda c: c.parent_channel_id)
@@ -1396,7 +1451,7 @@ class DiscussChannel(models.Model):
         return Store().add(self, "_store_open_chat_window_fields").get_client_action()
 
     @api.model
-    def _create_channel(self, name, group_id):
+    def _create_channel(self, name, group_id, is_readonly=False):
         """ Create a channel and add the current partner, broadcast it (to make the user directly
             listen to it when polling)
             :param name : the name of the channel to create
@@ -1407,6 +1462,7 @@ class DiscussChannel(models.Model):
         vals = {
             'channel_type': 'channel',
             'name': name,
+            'is_readonly': is_readonly,
         }
         new_channel = self.create(vals)
         group = self.env['res.groups'].search([('id', '=', group_id)]) if group_id else None

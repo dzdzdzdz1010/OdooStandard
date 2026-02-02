@@ -81,6 +81,7 @@ class DiscussChannelWebclientController(WebclientController):
             resolve_channel = request.env["discuss.channel"]._create_channel(
                 params["name"],
                 params["group_id"],
+                params["readonly"],
             )
         if name == "/discuss/create_group":
             resolve_channel = request.env["discuss.channel"]._create_group(
@@ -219,6 +220,12 @@ class ChannelController(http.Controller):
         channel = request.env["discuss.channel"].search([("id", "=", parent_channel_id)])
         if not channel:
             raise NotFound()
+        if channel.is_readonly and not channel.can_self_edit_readonly_channel:
+            raise AccessError(
+                self.env._(
+                    "Only channel owners and admins can create sub-channels in a readonly channel."
+                )
+            )
         sub_channel = channel._create_sub_channel(from_message_id, name)
         store = Store().add(sub_channel, "_store_channel_fields")
         return {"store_data": store.get_result(), "sub_channel": sub_channel.id}

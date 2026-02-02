@@ -63,7 +63,6 @@ declare module "models" {
         "im_livechat.expertise": StaticMailRecord<LivechatExpertise, typeof LivechatExpertiseClass>;
     }
     export interface Thread {
-        composerHidden: Readonly<boolean>;
         livechat_end_dt: import("luxon").DateTime;
         livechatVisitorMember: ChannelMember;
         transcriptUrl: Readonly<string>;

@@ -3,7 +3,7 @@ import { useService, useBus } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { patch } from "@web/core/utils/patch";
 import { UserMenu } from "@web/webclient/user_menu/user_menu";
-import { useEffect } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
 
 const websiteSystrayRegistry = registry.category("website_systray");
 websiteSystrayRegistry.add("UserMenu", { Component: UserMenu }, { sequence: 14 });
@@ -34,7 +34,7 @@ patch(NavBar.prototype, {
             this.render(true);
             adaptCounter++;
         };
-        useEffect(
+        useLayoutEffect(
             (adaptCounter) => {
                 // We do not want to adapt on the first render
                 // as the super class already does it.

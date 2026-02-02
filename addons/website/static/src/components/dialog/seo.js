@@ -9,12 +9,12 @@ import { isVisible } from "@web/core/utils/ui";
 import { CheckBox } from "@web/core/checkbox/checkbox";
 import { MediaDialog } from "@html_editor/main/media/media_dialog/media_dialog";
 import { WebsiteDialog } from "./dialog";
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onMounted,
     onWillStart,
     reactive,
-    useEffect,
     useState,
     useRef,
 } from "@odoo/owl";
@@ -578,7 +578,7 @@ export class TitleDescription extends Component {
         );
 
         // Update the title when its input value changes
-        useEffect(
+        useLayoutEffect(
             () => {
                 document.title = this.title;
             },
@@ -586,7 +586,7 @@ export class TitleDescription extends Component {
         );
 
         // Restore the original title when unmounting the component
-        useEffect(
+        useLayoutEffect(
             () => {
                 const initialTitle = document.title;
                 return () => (document.title = initialTitle);
@@ -685,7 +685,7 @@ export class BrokenLink extends Component {
             checkingLink: false,
         });
 
-        useEffect(
+        useLayoutEffect(
             (input) => {
                 if (!input) {
                     return;

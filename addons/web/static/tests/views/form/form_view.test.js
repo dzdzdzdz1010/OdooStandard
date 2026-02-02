@@ -19,6 +19,7 @@ import {
     runAllTimers,
     tick,
 } from "@odoo/hoot-mock";
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     EventBus,
@@ -26,7 +27,6 @@ import {
     onPatched,
     onWillStart,
     onWillUpdateProps,
-    useEffect,
     useRef,
     useState,
     xml,
@@ -9879,7 +9879,7 @@ test(`basic support for widgets: onchange update`, async () => {
             this.state = useState({
                 dataToDisplay: this.props.record.data.foo,
             });
-            useEffect(() => {
+            useLayoutEffect(() => {
                 this.state.dataToDisplay = this.props.record.data.foo + "!";
             });
         }

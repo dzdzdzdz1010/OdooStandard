@@ -15,11 +15,11 @@ import { FormCompiler } from "./form_compiler";
 import { FormLabel } from "./form_label";
 import { StatusBarButtons } from "./status_bar_buttons/status_bar_buttons";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onMounted,
     onWillUnmount,
-    useEffect,
     useSubEnv,
     useRef,
     useState,
@@ -75,7 +75,7 @@ export class FormRenderer extends Component {
         const { autofocusFieldIds } = archInfo;
         const rootRef = useRef("compiled_view_root");
         if (this.shouldAutoFocus) {
-            useEffect(
+            useLayoutEffect(
                 (record, rootEl) => {
                     if (!rootEl) {
                         return;

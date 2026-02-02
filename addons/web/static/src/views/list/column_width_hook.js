@@ -10,12 +10,12 @@ import {
 } from "@web/core/l10n/dates";
 import { localization } from "@web/core/l10n/localization";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     onMounted,
     onWillUnmount,
     status,
     useComponent,
-    useEffect,
     useExternalListener,
     xml,
 } from "@odoo/owl";
@@ -564,7 +564,7 @@ export function useMagicColumnWidths(tableRef, getState) {
 
     // Side effects
     if (renderer.constructor.useMagicColumnWidths) {
-        useEffect(forceColumnWidths);
+        useLayoutEffect(forceColumnWidths);
         // Forget computed widths (and potential manual column resize) on window resize
         useExternalListener(window, "resize", unsetWidths);
         // Listen to width changes on the parent node of the table, to recompute ideal widths

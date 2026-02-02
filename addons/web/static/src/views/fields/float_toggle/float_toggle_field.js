@@ -21,7 +21,7 @@ export class FloatToggleField extends Component {
     };
 
     // TODO perf issue (because of update round trip)
-    // we probably want to have a state and a useEffect or onWillUpateProps
+    // we probably want to have a state and a useLayoutEffect or onWillUpateProps
     onChange() {
         let currentIndex = this.props.range.indexOf(
             this.props.record.data[this.props.name] * this.factor

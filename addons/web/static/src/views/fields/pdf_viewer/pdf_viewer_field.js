@@ -5,7 +5,8 @@ import { url } from "@web/core/utils/urls";
 import { standardFieldProps } from "../standard_field_props";
 import { FileUploader } from "../file_handler";
 
-import { Component, onWillUpdateProps, useEffect, useRef, useState } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, onWillUpdateProps, useRef, useState } from "@odoo/owl";
 import { hidePDFJSButtons } from "@web/core/utils/pdfjs";
 
 export class PdfViewerField extends Component {
@@ -30,7 +31,7 @@ export class PdfViewerField extends Component {
                 this.state.objectUrl = "";
             }
         });
-        useEffect(
+        useLayoutEffect(
             (el) => {
                 if (el) {
                     hidePDFJSButtons(this.iframeViewerPdfRef.el, {

@@ -116,7 +116,7 @@ test("chat window: basic rendering", async () => {
     await contains("[title='Fold']");
     await contains("[title*='Close Chat Window']");
     await contains(".o-mail-ChatWindow .o-mail-Thread:has(:text('Welcome to #General!'))");
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains("[title='Open Actions Menu']");
     await click("[title='Open Actions Menu']");
     await contains(".o-dropdown-item", { count: 13 });
@@ -315,7 +315,7 @@ test("Close active thread action in chatwindow on ESCAPE", async () => {
     setupChatHub({ opened: [channelId] });
     await start();
     await contains(".o-mail-ChatWindow");
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains(".o-mail-ChatWindow-moreActions:text('General')");
     await click(".o-mail-ChatWindow-moreActions:text('General')");
     await click(".o-dropdown-item:text('Invite People')");
@@ -330,7 +330,7 @@ test("ESC cancels thread rename", async () => {
     const channelId = pyEnv["discuss.channel"].create({ name: "General" });
     setupChatHub({ opened: [channelId] });
     await start();
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains(".o-mail-ChatWindow-moreActions:text('General')");
     await click(".o-mail-ChatWindow-moreActions:text('General')");
     await click(".o-dropdown-item:text('Rename Thread')");
@@ -706,7 +706,7 @@ test("folded chat window should hide member-list and settings buttons", async ()
     // Open Thread
     await click("button i[aria-label='Messages']");
     await click(".o-mail-NotificationItem");
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains("[title='Open Actions Menu']");
     await click("[title='Open Actions Menu']");
     await contains(".o-dropdown-item:text('Members')");
@@ -720,7 +720,7 @@ test("folded chat window should hide member-list and settings buttons", async ()
     await contains(".o-dropdown-item:text('Call Settings')", { count: 0 });
     // Unfold chat window
     await click(".o-mail-ChatBubble");
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains("[title='Open Actions Menu']");
     await click("[title='Open Actions Menu']");
     await contains(".o-dropdown-item:text('Members')");
@@ -758,7 +758,7 @@ test("chat window of channels should not have 'Open in Discuss' (mobile)", async
     patchUiSize({ size: SIZES.SM });
     await start();
     await openDiscuss(channelId);
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains("[title='Open Actions Menu']");
     await click("[title='Open Actions Menu']");
     await contains(".o-dropdown-item:text('Open in Discuss')", { count: 0 });
@@ -870,14 +870,14 @@ test("Notification settings rendering in chatwindow", async () => {
     await click(".o_menu_systray i[aria-label='Messages']");
     await click(".o-mail-NotificationItem:text('general')");
     await contains(".o-mail-ChatWindow", { count: 1 });
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains("[title='Open Actions Menu']");
     await click("[title='Open Actions Menu']");
     await click(".o-dropdown-item:text('Notification Settings')");
     await contains("button:has(:text('All Messages'))");
     await contains("button:has(:text('Mentions Only'))", { count: 2 }); // the extra is in the Use Default as subtitle
     await contains("button:has(:text('Nothing'))");
-    // dropdown requires an extra delay before click (because handler is registered in useEffect)
+    // dropdown requires an extra delay before click (because handler is registered in useLayoutEffect)
     await contains("button:has(:text('Mute Conversation'))");
     await click("button:has(:text('Mute Conversation'))");
     await contains("button:text('For 15 minutes')");

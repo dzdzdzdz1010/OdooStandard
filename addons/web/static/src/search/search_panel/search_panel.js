@@ -1,13 +1,13 @@
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { useBus } from "@web/core/utils/hooks";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onMounted,
     onWillStart,
     onWillUpdateProps,
     reactive,
-    useEffect,
     useRef,
     useState,
 } from "@odoo/owl";
@@ -82,7 +82,7 @@ export class SearchPanel extends Component {
             this.render();
         });
 
-        useEffect(
+        useLayoutEffect(
             (el) => {
                 if (el && this.hasImportedState) {
                     el.style["min-width"] = this.width;

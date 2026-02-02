@@ -1,7 +1,8 @@
 import { ThreadIcon } from "@mail/core/common/thread_icon";
 import { MessageSeenIndicator } from "@mail/discuss/core/common/message_seen_indicator";
 
-import { Component, useEffect, useRef, useState, useSubEnv } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, useRef, useState, useSubEnv } from "@odoo/owl";
 
 import { useChildRef, useService } from "@web/core/utils/hooks";
 import { useHover } from "@mail/utils/common/hooks";
@@ -66,7 +67,7 @@ export class ChatBubble extends Component {
         });
         this.rootRef = useRef("root");
         this.state = useState({ bouncing: false, isPopoverOpen: false });
-        useEffect(
+        useLayoutEffect(
             (importantCounter) => {
                 this.state.bouncing = Boolean(importantCounter);
             },

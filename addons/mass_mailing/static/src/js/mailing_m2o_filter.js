@@ -10,13 +10,14 @@ import {
     m2oSupportedOptions,
     Many2OneField,
 } from "@web/views/fields/many2one/many2one_field";
-import { Component, useState, useEffect } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, useState } from "@odoo/owl";
 import { exprToBoolean } from "@web/core/utils/strings";
 
 export class MailingFilterDropdown extends Dropdown {
     setup() {
         super.setup();
-        useEffect((inputFilterEl) => {
+        useLayoutEffect((inputFilterEl) => {
             if (inputFilterEl) {
                 inputFilterEl.focus();
             }
@@ -58,7 +59,7 @@ export class FieldMany2OneMailingFilter extends Component {
         this.filter = useState({
             canSaveFilter: false,
         });
-        useEffect(() => this._updateFilterIcons());
+        useLayoutEffect(() => this._updateFilterIcons());
     }
 
     get m2oProps() {

@@ -7,11 +7,11 @@ import { registry } from "@web/core/registry";
 import { debounce } from "@web/core/utils/timing";
 import { ErrorHandler } from "@web/core/utils/components";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onWillDestroy,
     useExternalListener,
-    useEffect,
     useRef,
     useState,
     onWillUnmount,
@@ -66,7 +66,7 @@ export class NavBar extends Component {
 
         // We don't want to adapt every time we are patched
         // rather, we adapt only when menus or systrays have changed.
-        useEffect(
+        useLayoutEffect(
             () => {
                 this.adapt();
             },

@@ -1,4 +1,5 @@
-import { Component, useEffect, useRef, useState } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, useRef, useState } from "@odoo/owl";
 
 import { useThreadActions } from "@mail/core/common/thread_actions";
 import { AutoresizeInput } from "@mail/core/common/autoresize_input";
@@ -38,7 +39,7 @@ export class DiscussContent extends Component {
         this.state = useState({ jumpThreadPresent: 0 });
         this.isDiscussContent = true;
         this.attClassObjectToString = attClassObjectToString;
-        useEffect(
+        useLayoutEffect(
             () => this.actionPanelAutoOpenFn(),
             () => [this.thread]
         );

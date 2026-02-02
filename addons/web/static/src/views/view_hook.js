@@ -10,7 +10,8 @@ import {
     ConfirmationDialog,
 } from "@web/core/confirmation_dialog/confirmation_dialog";
 
-import { useComponent, useEffect } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { useComponent } from "@odoo/owl";
 import { DynamicList } from "@web/model/relational_model/dynamic_list";
 
 /**
@@ -101,7 +102,7 @@ export function useActionLinks({ resModel, reload }) {
 export function useBounceButton(containerRef, shouldBounce) {
     let timeout;
     const ui = useService("ui");
-    useEffect(
+    useLayoutEffect(
         (containerEl) => {
             if (!containerEl) {
                 return;

@@ -1,6 +1,7 @@
 /** @odoo-module */
 
-import { Component, onWillRender, useEffect, useRef, useState, xml } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, onWillRender, useRef, useState, xml } from "@odoo/owl";
 import { getColorHex } from "../../hoot-dom/hoot_dom_utils";
 import { Test } from "../core/test";
 import { formatTime } from "../hoot_utils";
@@ -249,7 +250,7 @@ export class HootStatusPanel extends Component {
             runner.afterPostTest(this.stopTimer.bind(this));
         }
 
-        useEffect(setupCanvas, () => [this.canvasRef.el]);
+        useLayoutEffect(setupCanvas, () => [this.canvasRef.el]);
 
         onColorSchemeChange(this.onColorSchemeChange.bind(this));
         onWillRender(this.updateProgressBar.bind(this));

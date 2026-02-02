@@ -24,12 +24,12 @@ import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { SelectionBox } from "@web/views/view_components/selection_box";
 import { useExportRecords, useDeleteRecords } from "@web/views/view_hook";
 
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     Component,
     onWillPatch,
     onWillRender,
     onWillStart,
-    useEffect,
     useRef,
     useState,
     useSubEnv,
@@ -133,7 +133,7 @@ export class ListController extends Component {
             getOrderBy: () => this.model.root.orderBy,
         });
 
-        useEffect(
+        useLayoutEffect(
             (isReady) => {
                 if (isReady) {
                     if (this.env.isSmall) {
@@ -176,7 +176,7 @@ export class ListController extends Component {
             };
         });
 
-        useEffect(
+        useLayoutEffect(
             () => {
                 this.onSelectionChanged();
             },

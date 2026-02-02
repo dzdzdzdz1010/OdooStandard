@@ -1,6 +1,7 @@
 /** @odoo-module */
 
-import { Component, onWillRender, useEffect, useRef, useState, xml } from "@odoo/owl";
+import { useLayoutEffect } from "@web/owl2/utils";
+import { Component, onWillRender, useRef, useState, xml } from "@odoo/owl";
 import { Suite } from "../core/suite";
 import { createUrlFromId } from "../core/url";
 import { lookup, parseQuery } from "../hoot_utils";
@@ -75,7 +76,7 @@ export class HootSideBarSuite extends Component {
     setup() {
         const rootRef = useRef("root");
         let wasSelected = false;
-        useEffect(
+        useLayoutEffect(
             (selected) => {
                 if (selected && !wasSelected) {
                     rootRef.el.scrollIntoView({

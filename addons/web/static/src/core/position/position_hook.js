@@ -1,12 +1,12 @@
 import { reposition } from "@web/core/position/utils";
 import { omit } from "@web/core/utils/objects";
 import { useThrottleForAnimation } from "@web/core/utils/timing";
+import { useLayoutEffect } from "@web/owl2/utils";
 import {
     EventBus,
     onWillDestroy,
     useChildSubEnv,
     useComponent,
-    useEffect,
     useRef,
 } from "@odoo/owl";
 
@@ -84,7 +84,7 @@ export function usePosition(refName, getTarget, options = {}) {
     }
 
     const throttledUpdate = useThrottleForAnimation(() => bus.trigger("update"));
-    useEffect(() => {
+    useLayoutEffect(() => {
         // Reposition
         bus.trigger("update");
 

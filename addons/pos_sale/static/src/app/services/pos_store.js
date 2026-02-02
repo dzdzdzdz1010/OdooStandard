@@ -167,6 +167,10 @@ patch(PosStore.prototype, {
                 }
             }
             newLine.setQuantityFromSOL(converted_line);
+            if (newLine.qty === 0) {
+                newLine.delete();
+                continue;
+            }
             newLine.setUnitPrice(converted_line.price_unit);
             newLine.setDiscount(line.discount);
 

@@ -177,4 +177,22 @@ describe("onClickSaleOrder", () => {
         expect(cell(2, 2)).toHaveText("TEST 2");
         expect(cell(2, 4)).toHaveText(`$ 150.00 (tax incl.)`);
     });
+
+    test("sale order: ignore lines with zero quantity", async () => {
+        const store = await setupPosEnv();
+        const order = await getFilledOrder(store);
+        await mountWithCleanup(ProductScreen, { props: { orderUuid: order.uuid } });
+
+        const promiseResult = store.onClickSaleOrder(2);
+        const button = ".modal-body button:contains('Settle the order')";
+        await waitFor(button);
+        await click(button);
+        await promiseResult;
+
+        expect(order.lines.length).toBe(3);
+        expect(order.lines[2].product_id.id).toBe(5);
+        expect(order.lines[2].qty).toBe(5);
+        expect(order.lines[2].price_unit).toBe(100);
+        expect(order.lines[2].prices.total_excluded).toBe(500);
+    });
 });

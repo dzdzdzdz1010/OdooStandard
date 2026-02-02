@@ -1314,6 +1314,14 @@ class CrmLead(models.Model):
     # VIEWS
     # ------------------------------------------------------------
 
+    def _get_access_action(self, access_uid=None, force_website=False):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_url",
+            "url": f"/odoo/crm/{self.id}",
+            "target": "self",
+        }
+
     def redirect_lead_opportunity_view(self):
         self.ensure_one()
         return {

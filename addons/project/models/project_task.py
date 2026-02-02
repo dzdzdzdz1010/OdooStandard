@@ -2078,6 +2078,14 @@ class ProjectTask(models.Model):
             child_tasks.action_archive()
         return super().action_archive()
 
+    def _get_access_action(self, access_uid=None, force_website=False):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_url",
+            "url": f'/odoo/all-tasks/{self.id}',
+            "target": "self",
+        }
+
     # ---------------------------------------------------
     # Rating business
     # ---------------------------------------------------

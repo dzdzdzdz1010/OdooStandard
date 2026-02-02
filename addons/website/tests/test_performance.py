@@ -5,6 +5,7 @@ from odoo.addons.base.tests.common import HttpCaseWithUserPortal, HttpCaseWithUs
 
 from contextlib import nullcontext
 
+import odoo.http.root import session_store
 from odoo.sql_db import categorize_query
 from odoo.tools import mute_logger
 from odoo.tests.common import HttpCase, tagged
@@ -110,9 +111,20 @@ class TestStandardPerformance(UtilPerf):
         super().setUpClass()
         cls.env['res.users'].browse(2).image_1920 = b'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGNgYGAAAAAEAAH2FzhVAAAAAElFTkSuQmCC'
 
+    def _authenticate_without_trace(self, login, password):
+        # In these tests, tracing must be disabled to avoid skewing the query count,
+        # because save_session is disabled for the /web/image route,
+        # which causes unnecessary logs in the tests.
+        # In production, a user must be logged in for device_log to be used.
+        # However, in these tests, we only go through /web/image, which does not reflect reality.
+        session = self.authenticate(login, password)
+        session._trace_disable = True
+        session_store.save(session)
+        return session
+
     @mute_logger('odoo.http')
     def test_10_perf_sql_img_controller(self):
-        self.authenticate('demo', 'demo')
+        self.authenticate_without_trace('demo', 'demo')
         # not published user, get the not found image placeholder
         self.assertEqual(self.env['res.users'].sudo().browse(2).website_published, False)
         url = '/web/image/res.users/2/image_256'
@@ -121,7 +133,7 @@ class TestStandardPerformance(UtilPerf):
 
     @mute_logger('odoo.http')
     def test_11_perf_sql_img_controller(self):
-        self.authenticate('demo', 'demo')
+        self.authenticate_without_trace('demo', 'demo')
         self.env['res.users'].sudo().browse(2).website_published = True
         url = '/web/image/res.users/2/image_256'
         select_tables_perf = {
@@ -150,7 +162,7 @@ class TestStandardPerformance(UtilPerf):
         self._check_url_hot_query(url, 5, select_tables_perf)
         self.assertEqual(self._get_url_hot_query(url, cache=False), 5)
 
-        self.authenticate('portal', 'portal')
+        self.authenticate_without_trace('portal', 'portal')
         self._check_url_hot_query(url, 5, select_tables_perf)
         self.assertEqual(self._get_url_hot_query(url, cache=False), 5)
 

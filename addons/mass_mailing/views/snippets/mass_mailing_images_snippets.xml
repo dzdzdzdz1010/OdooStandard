@@ -19,7 +19,7 @@
             <div class="row align-items-center">
                 <div class="col-md-6 pt16 pb16 col-12">
                     <div class="o_not_editable">
-                        <img src="/web/image/mass_mailing.s_image_text_default_image" class="img o_editable_media img-fluid w-100" />
+                        <img src="/web/image/mass_mailing.s_image_text_default_image" class="img o_editable_media img-fluid d-block w-100" />
                     </div>
                 </div>
                 <div class="col-md-5 o_cc offset-md-1 pt16 pb16 col-12">
@@ -45,7 +45,7 @@
                 </div>
                 <div class="col-md-6 offset-md-1 col-12 pt16 pb16">
                     <div class="o_not_editable">
-                        <img src="/web/image/mass_mailing.s_text_image_default_image" class="img o_editable_media img-fluid mx-auto rounded" alt="" data-mimetype="image/webp"/>
+                        <img src="/web/image/mass_mailing.s_text_image_default_image" class="img o_editable_media img-fluid mx-auto d-block rounded" alt="" data-mimetype="image/webp"/>
                     </div>
                 </div>
             </div>

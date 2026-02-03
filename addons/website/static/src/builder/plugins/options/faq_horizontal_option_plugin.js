@@ -14,6 +14,10 @@ class FaqHorizontalOptionPlugin extends Plugin {
     /** @type {import("plugins").WebsiteResources} */
     resources = {
         builder_options: [withSequence(BEGIN, FaqHorizontalOption)],
+        dropzone_selector: {
+            selector: ".s_faq_horizontal",
+            excludeAncestor: ".s_popup, .s_tabs, .s_table_of_content, .s_tabs_common",
+        },
     };
 }
 registry.category("website-plugins").add(FaqHorizontalOptionPlugin.id, FaqHorizontalOptionPlugin);

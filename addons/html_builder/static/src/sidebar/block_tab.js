@@ -74,43 +74,51 @@ export class BlockTab extends Component {
                 const baseSectionEl = snippet.content.cloneNode(true);
                 this.state.ongoingInsertion = true;
                 await new Promise((resolve) => {
+                    // Add the dropzones corresponding to a section and
+                    // make them invisible.
+                    const selectors = this.shared.dropzone.getSelectors(baseSectionEl);
+                    const dropzoneEls = this.shared.dropzone.activateDropzones(selectors);
+                    this.editable
+                        .querySelectorAll(".oe_drop_zone")
+                        .forEach((dropzoneEl) => dropzoneEl.classList.add("invisible"));
+
+                    // Find the dropzone closest to the center of the
+                    // viewport and not located in the top quarter of
+                    // the viewport.
+                    const iframeWindow = this.document.defaultView;
+                    const viewPortCenterPoint = {
+                        x: iframeWindow.innerWidth / 2,
+                        y: iframeWindow.innerHeight / 2,
+                    };
+                    const validDropzoneEls = dropzoneEls.filter(
+                        (el) => el.getBoundingClientRect().top >= viewPortCenterPoint.y / 2
+                    );
+                    const closestDropzoneEl =
+                        closest(validDropzoneEls, viewPortCenterPoint) || dropzoneEls.at(-1);
+                    // exclude the snippets that can't be dropped in that dropzone
+                    this.snippetModel.snippetStructures.forEach((snippet) => {
+                        const { selectorChildren } = this.shared.dropzone.getSelectors(
+                            snippet.content
+                        );
+                        snippet.isExcluded = ![...selectorChildren].some(
+                            (el) => el === closestDropzoneEl.parentElement
+                        );
+                    });
                     this.snippetModel.openSnippetDialog(
                         snippet,
                         {
                             onSelect: (snippet) => {
                                 snippetEl = snippet.content.cloneNode(true);
 
-                                // Add the dropzones corresponding to a section and
-                                // make them invisible.
-                                const selectors = this.shared.dropzone.getSelectors(baseSectionEl);
-                                const dropzoneEls =
-                                    this.shared.dropzone.activateDropzones(selectors);
-                                this.editable
-                                    .querySelectorAll(".oe_drop_zone")
-                                    .forEach((dropzoneEl) => dropzoneEl.classList.add("invisible"));
-
-                                // Find the dropzone closest to the center of the
-                                // viewport and not located in the top quarter of
-                                // the viewport.
-                                const iframeWindow = this.document.defaultView;
-                                const viewPortCenterPoint = {
-                                    x: iframeWindow.innerWidth / 2,
-                                    y: iframeWindow.innerHeight / 2,
-                                };
-                                const validDropzoneEls = dropzoneEls.filter(
-                                    (el) =>
-                                        el.getBoundingClientRect().top >= viewPortCenterPoint.y / 2
-                                );
-                                const closestDropzoneEl =
-                                    closest(validDropzoneEls, viewPortCenterPoint) ||
-                                    dropzoneEls.at(-1);
-
                                 // Insert the selected snippet.
                                 closestDropzoneEl.after(snippetEl);
-                                this.shared.dropzone.removeDropzones();
                                 return snippetEl;
                             },
                             onClose: () => {
+                                this.snippetModel.snippetStructures.forEach(
+                                    (snippet) => delete snippet.isExcluded
+                                );
+                                this.shared.dropzone.removeDropzones();
                                 resolve();
                             },
                         },

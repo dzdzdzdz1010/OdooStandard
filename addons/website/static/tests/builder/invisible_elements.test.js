@@ -61,6 +61,7 @@ test("Add an element on the invisible elements tab", async () => {
 
     addDropZoneSelector({
         selector: "*",
+        dropIn: "*",
         dropNear: "section",
     });
     await setupWebsiteBuilder(`${invisibleEl} <section><p>Text</p></section>`, {

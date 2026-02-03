@@ -300,7 +300,7 @@ export const ICON_SELECTOR = iconTags
     .map((tag) => iconClasses.map((cls) => `${tag}.${cls}`).join(", "))
     .join(", ");
 
-export const MEDIA_SELECTOR = `${ICON_SELECTOR} , .o_image, .media_iframe_video`;
+export const MEDIA_SELECTOR = `${ICON_SELECTOR} , .o_image, .media_iframe_video, .o_file_box`;
 
 export const EDITABLE_MEDIA_CLASS = "o_editable_media";
 

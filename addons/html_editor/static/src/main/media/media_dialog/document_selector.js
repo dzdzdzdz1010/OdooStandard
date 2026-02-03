@@ -7,7 +7,7 @@ export class DocumentAttachment extends Attachment {
 }
 
 export class DocumentSelector extends FileSelector {
-    static mediaSpecificClasses = ["o_image"];
+    static mediaSpecificClasses = ["o_image", "o_file_box"];
     static mediaSpecificStyles = [];
     static mediaExtraClasses = [];
     static tagNames = ["A"];

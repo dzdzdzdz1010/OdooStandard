@@ -1,14 +1,23 @@
+<<<<<<< 7c8de60b9eb243dcbd41bb439c6a98240f4ecade
 import { Component, onWillStart, useChildSubEnv, useState } from "@odoo/owl";
+||||||| c4b1ca0d3948f830b78193df9a4d95c2b68b8a72
+/** @odoo-module **/
+
+import { Component, onWillStart, useChildSubEnv, useState } from "@odoo/owl";
+=======
+/** @odoo-module **/
+
+import { Component, onWillStart, useState } from "@odoo/owl";
+>>>>>>> 9df2f8890384481775a258a1d7c7f09ec613506e
 import { useService } from "@web/core/utils/hooks";
-import { download } from "@web/core/network/download";
 
 import { useSpreadsheetNotificationStore } from "@spreadsheet/hooks";
 
 import * as spreadsheet from "@odoo/o-spreadsheet";
-import { Spreadsheet, Model, registries } from "@odoo/o-spreadsheet";
-import { _t } from "@web/core/l10n/translation";
+import { Spreadsheet, Model } from "@odoo/o-spreadsheet";
 import { useSpreadsheetPrint } from "../hooks";
 
+<<<<<<< 7c8de60b9eb243dcbd41bb439c6a98240f4ecade
 registries.topbarMenuRegistry.addChild("download_public_excel", ["file"], {
     name: _t("Download"),
     execute: (env) => env.downloadExcel(),
@@ -17,6 +26,17 @@ registries.topbarMenuRegistry.addChild("download_public_excel", ["file"], {
     isVisible: (env) => env.canDownloadExcel?.(),
 });
 
+||||||| c4b1ca0d3948f830b78193df9a4d95c2b68b8a72
+registries.topbarMenuRegistry.addChild("download_public_excel", ["file"], {
+    name: _t("Download"),
+    execute: (env) => env.downloadExcel(),
+    isReadonlyAllowed: true,
+    icon: "o-spreadsheet-Icon.DOWNLOAD",
+    isVisible: (env) => env.canDownloadExcel(),
+});
+
+=======
+>>>>>>> 9df2f8890384481775a258a1d7c7f09ec613506e
 export class PublicReadonlySpreadsheet extends Component {
     static template = "spreadsheet.PublicReadonlySpreadsheet";
     static components = { Spreadsheet };
@@ -31,14 +51,6 @@ export class PublicReadonlySpreadsheet extends Component {
         this.http = useService("http");
         this.state = useState({
             isFilterShown: false,
-        });
-        useChildSubEnv({
-            downloadExcel: () =>
-                download({
-                    url: this.props.downloadExcelUrl,
-                    data: {},
-                }),
-            canDownloadExcel: () => Boolean(this.props.downloadExcelUrl),
         });
         useSpreadsheetPrint(() => this.model);
         onWillStart(this.createModel.bind(this));

@@ -204,7 +204,8 @@ class ProjectTask(models.Model):
     )
     # Tracking of this field is done in the write function
     user_ids = fields.Many2many('res.users', relation='project_task_user_rel', column1='task_id', column2='user_id',
-        string='Assignees', context={'active_test': False}, tracking=True, default=_default_user_ids, domain="[('share', '=', False), ('active', '=', True)]", falsy_value_label=_lt("👤 Unassigned"))
+        string='Assignees', context={'active_test': False}, tracking=True, default=_default_user_ids,
+        domain="['|', ('share', '=', False), '&', ('share', '=', True), ('project_follower_ids', '=', project_id), ('active', '=', True)]", falsy_value_label=_lt("👤 Unassigned"))
     # User names displayed in project sharing views
     portal_user_names = fields.Char(compute='_compute_portal_user_names', compute_sudo=True, search='_search_portal_user_names', export_string_translation=False)
     # Second Many2many containing the actual personal stage for the current user
@@ -1307,6 +1308,10 @@ class ProjectTask(models.Model):
                         if not project_link:
                             project_link = link_per_project_id[task.project_id.id] = task.project_id._get_html_link(title=task.project_id.display_name)
                         project_link_per_task_id[task.id] = project_link
+            for task in self:
+                if portal_assignees := task.user_ids.filtered(lambda u: u.share):
+                    if users_to_remove := portal_assignees.filtered(lambda u: u.partner_id.id not in project.message_follower_ids.partner_id.ids):
+                        task.user_ids -= users_to_remove
         if vals.get('parent_id') is False:
             additional_vals['display_in_project'] = True
         if 'description' in vals:

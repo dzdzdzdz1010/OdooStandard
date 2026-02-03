@@ -22,7 +22,7 @@
             <hr style="border: none; border-top: 4px dashed black;"/>
 
             <!-- Receipt Body -->
-            <div class="pos-receipt-body pb-5">
+            <div class="pos-receipt-body">
                 <t t-set="hasDataChanges" t-value="data.changes.data?.length or data.changes.groupedData or data.changes.title" />
                 <div t-if="hasDataChanges" class="new-changes w-100">
                     <div class="pos-receipt-title text-center w-100">
@@ -33,7 +33,7 @@
                     </div>
                     <t t-if="data.changes.groupedData">
                         <div t-foreach="data.changes.groupedData" t-as="group" t-key="group_index">
-                            <div style="border-bottom: 1px dashed black;" class="mb-2 pb-1 fw-bold " t-att-class="{'mt-1': !group_first}" t-esc="group.name" />
+                            <div style="border-bottom: 1px dashed black;" class="pb-1 fw-bold" t-att-class="{'mt-1': !group_first}" t-esc="group.name" />
                             <div t-foreach="group.data" t-as="line" class="ps-2" t-key="change_index">
                                 <t t-call="point_of_sale.OrderChangeReceiptLine" />
                             </div>
@@ -66,7 +66,7 @@
             <div class="d-flex medium">
                 <span class="me-3" t-esc="line.quantity"/> <span class="product-name" t-esc="line.basic_name"/>
             </div>
-            <div t-if="line.attribute_value_names?.length" class="ms-5" style="font-size: 91%;">
+            <div t-if="line.attribute_value_names?.length" class="ms-5" style="font-size: 75%;">
                 <t t-foreach="line.attribute_value_names" t-as="name" t-key="name_index">
                     <p class="p-0 m-0">
                         - <t t-esc="name" />

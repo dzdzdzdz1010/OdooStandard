@@ -524,9 +524,21 @@ export class SelfOrder extends Reactive {
                 order,
                 Object.values(printer.config.product_categories_ids)
             );
+
             if (orderlines.length > 0) {
+                const formattedLines = orderlines.map((orderline) => {
+                    const product = this.models["product.product"].get(orderline.product_id.id);
+                    return {
+                        basic_name: product.display_name,
+                        attribute_value_names: orderline.attribute_value_ids
+                            ? orderline.attribute_value_ids.map((attr) => attr.name)
+                            : [],
+                        qty: orderline.qty,
+                        combo_parent_id: orderline.combo_parent_id,
+                    };
+                });
                 const printingChanges = {
-                    new: orderlines,
+                    new: formattedLines,
                     tracker: order.table_stand_number,
                     trackingNumber: order.tracking_number || "unknown number",
                     name: order.pos_reference || "unknown order",

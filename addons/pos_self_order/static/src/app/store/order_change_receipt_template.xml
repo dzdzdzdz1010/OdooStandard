@@ -26,23 +26,27 @@
                 NEW
             </div>
             <br />
-            <t t-foreach="changes.new" t-as="change" t-key="change_index">
-                <div class="product-details d-flex" t-att-class="{'ms-5': change.combo_parent_id}">
-                    <span class="product-quantity me-3 mb-1" t-esc="change.qty"/>
-                    <span class="product-name" t-esc="change.full_product_name"/>
-                </div>
-                <t t-if="change.customer_note">
-                    <div>
-                        NOTE
-                        <span class="pos-receipt-right-align">...</span>
-                    </div>
-                    <div><span class="pos-receipt-left-padding">--- <t t-esc="change.customer_note" /></span></div>
-                    <br/>
-                </t>
+            <t t-foreach="changes.new" t-as="line" t-key="line_index">
+                <t t-call="pos_self_order.OrderChangeReceiptLine"/>
             </t>
             <br />
             <br />
     </div>
+    </t>
+
+        <t t-name="pos_self_order.OrderChangeReceiptLine">
+        <div t-attf-class="orderline #{line.combo_parent_uuid ? 'ms-5 px-2' : 'mx-1'}" style="font-size: 150%;">
+            <div class="d-flex medium">
+                <span class="me-3" t-esc="line.qty"/> <span class="product-name" t-esc="line.basic_name"/>
+            </div>
+            <div t-if="line.attribute_value_names?.length" class="ms-5" style="font-size: 75%;">
+                <t t-foreach="line.attribute_value_names" t-as="name" t-key="name_index">
+                    <p class="p-0 m-0">
+                        - <t t-esc="name" />
+                    </p>
+                </t>
+            </div>
+        </div>
     </t>
 
 </templates>

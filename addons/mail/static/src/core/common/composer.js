@@ -591,12 +591,13 @@ export class Composer extends Component {
                 }
             }
         }
+        const composer = toRaw(this.props.composer);
+        composer.shouldAddEmailSignature ??= true;
         const attachmentIds = this.props.composer.attachments.map((attachment) => attachment.id);
         let default_body = this.props.composer.composerHtml;
         if (isHtmlEmpty(default_body)) {
-            const composer = toRaw(this.props.composer);
             // Reset signature when recovering an empty body.
-            composer.emailAddSignature = true;
+            composer.shouldAddEmailSignature = true;
         }
         let signature = this.thread.effectiveSelf.main_user_id?.signature;
         if (signature) {
@@ -612,8 +613,11 @@ export class Composer extends Component {
         }
         default_body = this.formatDefaultBodyForFullComposer(
             default_body,
-            this.props.composer.emailAddSignature ? signature : ""
+            this.props.composer.shouldAddEmailSignature ? signature : ""
         );
+        this.props.composer.addEmailSignature =
+            this.props.composer.shouldAddEmailSignature || false;
+        this.props.composer.shouldAddEmailSignature = false;
         const context = {
             default_attachment_ids: attachmentIds,
             default_body,
@@ -797,6 +801,7 @@ export class Composer extends Component {
         this.suggestion?.clearRawMentions();
         this.suggestion?.clearCannedResponses();
         this.props.composer.replyToMessage = undefined;
+        this.props.composer.shouldAddEmailSignature = undefined;
         this.props.composer.emailAddSignature = true;
         this.props.composer.thread.additionalRecipients = [];
         return message;
@@ -913,19 +918,21 @@ export class Composer extends Component {
 
     saveContent() {
         const composer = toRaw(this.props.composer);
-        const saveContentToLocalStorage = ({
-            composerHtml,
-            emailAddSignature,
-            replyToMessageId,
-        }) => {
-            browser.localStorage.setItem(
-                composer.localId,
-                JSON.stringify({
-                    emailAddSignature,
-                    replyToMessageId,
-                    composerHtml: isMarkup(composerHtml) ? ["markup", composerHtml] : composerHtml,
-                })
-            );
+        const saveContentToLocalStorage = ({ composerHtml, replyToMessageId }) => {
+            if (isHtmlEmpty(composerHtml)) {
+                browser.localStorage.removeItem(composer.localId);
+            } else {
+                browser.localStorage.setItem(
+                    composer.localId,
+                    JSON.stringify({
+                        shouldAddEmailSignature: composer.shouldAddEmailSignature,
+                        replyToMessageId,
+                        composerHtml: isMarkup(composerHtml)
+                            ? ["markup", composerHtml]
+                            : composerHtml,
+                    })
+                );
+            }
         };
         if (this.state.isFullComposerOpen) {
             this.fullComposerBus.trigger("SAVE_CONTENT", {
@@ -934,7 +941,6 @@ export class Composer extends Component {
         } else {
             saveContentToLocalStorage({
                 composerHtml: composer.composerHtml,
-                emailAddSignature: true,
                 replyToMessageId: composer.replyToMessage?.id,
             });
         }
@@ -952,7 +958,7 @@ export class Composer extends Component {
             return;
         }
         if (!isHtmlEmpty(config.composerHtml)) {
-            composer.emailAddSignature = config.emailAddSignature;
+            composer.shouldAddEmailSignature = config.shouldAddEmailSignature;
             composer.composerHtml = config.composerHtml;
         }
         if (Number.isInteger(config.replyToMessageId)) {

@@ -426,14 +426,13 @@ class TestTimesheetGlobalTimeOff(common.TransactionCase):
 
         self.env = self.env(context=dict(self.env.context, allowed_company_ids=self.test_company.ids))
 
-        internal_project = self.test_company.internal_project_id
-        internal_task_leaves = self.test_company.leave_timesheet_task_id
-
         hr_work_entry_type_with_ts = self.env['hr.work.entry.type'].create({
             'name': 'Leave Type with timesheet generation',
+            'code': 'Leave Type with timesheet generation',
             'requires_allocation': False,
             'request_unit': 'day',
             'unit_of_measure': 'day',
+            'count_as': 'absence',
         })
 
         # create and validate a leave for full time employee

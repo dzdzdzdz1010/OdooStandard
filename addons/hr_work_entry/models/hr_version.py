@@ -96,7 +96,7 @@ class HrVersion(models.Model):
             fully_flex_versions = versions.filtered('is_fully_flexible')
             for version in fully_flex_versions:
                 result.update({version.employee_id.resource_id.id: Intervals([(start_dt, end_dt, self.env['resource.calendar.attendance'])])})
-            remaining_versions = versions - fully_flex_versions
+            remaining_versions = self.env['hr.version'].browse((versions - fully_flex_versions).ids)
             resources_per_tz = remaining_versions._get_resources_per_tz()
             if remaining_versions:
                 result.update(calendar._attendance_intervals_batch(

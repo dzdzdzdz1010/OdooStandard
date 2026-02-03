@@ -4568,7 +4568,7 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
         work_entry_type_hour = self.env['hr.work.entry.type'].create({
             'name': 'Hourly Leave Type',
             'code': 'Hourly Leave Type',
-            'time_type': 'leave',
+            'count_as': 'absence',
             'requires_allocation': True,
             'allocation_validation_type': 'hr',
             'request_unit': 'day',
@@ -4596,7 +4596,7 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
         work_entry_type = self.env['hr.work.entry.type'].create({
             'name': 'Test Accrual',
             'code': 'Test Accrual',
-            'time_type': 'leave',
+            'count_as': 'absence',
             'requires_allocation': 'yes',
             'allocation_validation_type': 'no_validation',
             'leave_validation_type': 'no_validation',

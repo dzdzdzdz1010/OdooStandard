@@ -20,7 +20,6 @@
                         <i t-elif="persona.im_status === 'busy'" class="fa fa-minus-circle text-danger" title="Busy" role="img" aria-label="User is busy"/>
                         <i t-elif="persona.im_status === 'offline'" class="fa fa-circle-o text-700 opacity-75" title="Offline" role="img" aria-label="User is offline"/>
                         <i t-elif="persona.im_status === 'bot'" class="fa fa-heart text-success" title="Bot" role="img" aria-label="User is a bot"/>
-                        <i t-else="" class="fa fa-question-circle opacity-75" title="No IM status available"/>
                     </t>
                     <div t-if="showTypingIndicator" class="rounded-pill" style="padding: 1px;" t-att-class="{ 'bg-300': env.inChatBubble, 'bg-inherit': !env.inChatBubble }">
                         <div class="bg-success rounded-pill" style="padding: 3px;">

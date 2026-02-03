@@ -37,7 +37,7 @@ class AccountEdiDocument(models.Model):
     # == Not stored fields ==
     name = fields.Char(related='attachment_id.name')
     edi_format_name = fields.Char(string='Format Name', related='edi_format_id.name')
-    edi_content = fields.Binary(compute='_compute_edi_content', compute_sudo=True)
+    edi_content = fields.Binary(compute='_compute_edi_content')
 
     _sql_constraints = [
         (

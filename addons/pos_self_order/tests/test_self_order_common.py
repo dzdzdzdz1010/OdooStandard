@@ -104,3 +104,29 @@ class TestSelfOrderCommon(SelfOrderCommonTest):
             'self_ordering_mode': 'mobile',
         })
         self.start_tour(self.pos_config._get_self_order_route(floor.table_ids[0].id), "test_self_order_product_availability")
+
+    def test_self_order_optional_product(self):
+        """Test optional product and ui behavior for kiosk and mobile self-ordering modes."""
+        setup_product_combo_items(self)
+
+        # Add optional products
+        optional_product_ids = (self.fanta | self.office_combo).product_tmpl_id.ids
+        self.cola.product_tmpl_id.write({
+            'pos_optional_product_ids': [Command.set(optional_product_ids)],
+        })
+        self.desk_organizer.product_tmpl_id.write({
+            'pos_optional_product_ids': [Command.set(optional_product_ids)],
+        })
+        self.pos_config.write({
+            'self_ordering_mode': 'kiosk',
+            'self_ordering_pay_after': 'each',
+            'self_ordering_service_mode': 'table',
+            'use_presets': False,
+        })
+        self.pos_config.with_user(self.pos_user).open_ui()
+        self.pos_config.current_session_id.set_opening_control(0, '')
+        self.start_tour(self.pos_config._get_self_order_route(), 'test_self_order_optional_product')
+
+        orders = self.pos_config.current_session_id.order_ids
+        self.assertEqual(len(orders), 1)
+        self.assertEqual(len(orders[0].lines), 7)

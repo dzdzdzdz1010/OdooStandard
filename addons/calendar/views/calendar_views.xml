@@ -375,7 +375,7 @@
                     <field name="partner_ids" nolabel="1"
                         widget="many2many_tags"
                         placeholder="Participants"
-                        class="w-75 mb-0"
+                        class="w-100 mb-0"
                     />
                 </div>
                 <div class="d-flex align-items-center pt-1 pb-2" colspan="2">

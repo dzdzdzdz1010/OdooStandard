@@ -8,14 +8,17 @@
                 </t>
             </xpath>
             <xpath expr="//div[@t-out='message.body']" position="replace">
+                <t t-set="body" t-value="message.body.split('\n')"/>
                 <div style="font-size:13px;">
                     <div>
-                        <t t-out='message.author_id.name'/> (<t t-out='message.author_id.email'/>) added you as a follower of this <t t-out="model_description"/>.
+                        <t t-out="body[0]"/>
                     </div>
-                    <br t-if="len(message.body) > 0"/>
-                    <div style="color:grey;">
-                        <t t-out="message.body"/>
-                    </div>
+                    <t t-if="len(body) > 1">
+                        <br/>
+                        <div style="color:grey;">
+                            <t t-out="body[1]"/>
+                        </div>
+                    </t>
                 </div>
             </xpath>
             <xpath expr="//span[@id='mail_unfollow']" position="replace"/>

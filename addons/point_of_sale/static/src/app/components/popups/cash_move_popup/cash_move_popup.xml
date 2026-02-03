@@ -13,14 +13,21 @@
                     </button>
                 </div>
                 <div t-attf-class="{{this.ui.isSmall ? 'mw-50 h-50' : 'w-25'}}">
-                    <Input tModel="[state, 'amount']"
-                        icon="{type: 'string', value: pos.currency.symbol}"
-                        iconOnLeftSide="pos.currency.position === 'before'"
-                        isValid.bind="env.utils.isValidFloat"
-                        autofocus="true"
-                        getRef="(ref) => this.inputRef = ref"
-                        t-on-click="openNumpadDialog"
-                        readonly="ui.isSmall ? true : false" />
+                    <div class="form-control form-control-lg input-container d-flex align-items-center bg-view"
+                        t-att-class="{'is-invalid': !env.utils.isValidFloat(state.amount)}">
+                        <span t-if="pos.currency.position === 'before'" class="mx-2" t-esc="pos.currency.symbol"/>
+                        <input class="o_input border-0 mx-2 text-body w-100"
+                            type="text"
+                            t-att-value="state.amount"
+                            t-on-input="(ev) => state.amount = ev.target.value"
+                            t-on-blur="handleAmountBlur"
+                            t-on-focus="(ev) => ev.target.select()"
+                            t-on-click="openNumpadDialog"
+                            t-ref="inputRef"
+                            autofocus="true"
+                            t-att-readonly="ui.isSmall ? true : false" />
+                        <span t-if="pos.currency.position === 'after'" class="mx-2" t-esc="pos.currency.symbol"/>
+                    </div>
                 </div>
             </div>
             <div class="form-floating">

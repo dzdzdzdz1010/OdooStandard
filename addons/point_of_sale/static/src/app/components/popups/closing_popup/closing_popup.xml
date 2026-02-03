@@ -62,12 +62,15 @@
                     <div class="col-12" t-if="pos.config.cash_control" t-att-class="{'col-md-6': !this.isOnePmUsed()}">
                         <label class="form-label">Cash Count</label>
                         <div class="d-flex w-100 gap-2 mt-1">
-                            <Input
-                                tModel="[state.payments[props.default_cash_details.id], 'counted']"
-                                callback.bind="(value) => this.setManualCashInput(value)"
-                                isValid.bind="env.utils.isValidFloat"
-                                class="'cash-input w-100'"
-                            />
+                            <div class="form-control form-control-lg input-container d-flex align-items-center bg-view cash-input w-100"
+                                t-att-class="{'is-invalid': !env.utils.isValidFloat(state.payments[props.default_cash_details.id].counted)}">
+                                <input class="o_input border-0 mx-2 text-body w-100"
+                                    type="text"
+                                    t-att-value="state.payments[props.default_cash_details.id].counted"
+                                    t-on-input="(ev) => state.payments[props.default_cash_details.id].counted = ev.target.value"
+                                    t-on-blur="handleCashCountBlur"
+                                    t-on-focus="(ev) => ev.target.select()" />
+                            </div>
                             <button
                                 class="icon fa fa-money btn btn-secondary"
                                 t-on-click="openDetailsPopup"
@@ -80,11 +83,15 @@
                                 <t t-esc="pm.name" /> Count
                             </label>
                             <div class="d-flex w-100 gap-2 mt-1">
-                                <Input
-                                    tModel="[state.payments[pm.id], 'counted']"
-                                    isValid.bind="env.utils.isValidFloat"
-                                    class="'w-100'"
-                                />
+                                <div class="form-control form-control-lg input-container d-flex align-items-center bg-view w-100"
+                                    t-att-class="{'is-invalid': !env.utils.isValidFloat(state.payments[pm.id].counted)}">
+                                    <input class="o_input border-0 mx-2 text-body w-100"
+                                        type="text"
+                                        t-att-value="state.payments[pm.id].counted"
+                                        t-on-input="(ev) => state.payments[pm.id].counted = ev.target.value"
+                                        t-on-blur="handlePaymentCountBlur.bind(this, pm.id)"
+                                        t-on-focus="(ev) => ev.target.select()" />
+                                </div>
                                 <t t-if="pm.type == 'cash'">
                                     <button
                                         class="icon fa fa-money btn btn-secondary"

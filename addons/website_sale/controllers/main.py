@@ -25,6 +25,7 @@ from odoo.addons.website.controllers.main import QueryURL
 from odoo.addons.website.models.ir_http import sitemap_qs2dom
 from odoo.addons.website_sale.const import SHOP_PATH
 from odoo.addons.website_sale.models.website import (
+    COUNTRY_SESSION_CACHE_KEY,
     PRICELIST_SELECTED_SESSION_CACHE_KEY,
     PRICELIST_SESSION_CACHE_KEY,
 )
@@ -936,6 +937,36 @@ class WebsiteSale(payment_portal.PaymentPortal):
             redirect_url = decoded_url.replace(query=url_encode(args)).to_url()
 
         return request.redirect(redirect_url or self._get_shop_path())
+
+    @route(
+        '/shop/change_country/<model("res.country"):country>',
+        type='http',
+        auth='public',
+        website=True,
+        sitemap=False,
+    )
+    def country_change(self, country, **post):
+        website = request.env['website'].get_current_website()
+        redirect_url = request.httprequest.referrer
+        if country not in website.get_available_countries():
+            return request.redirect(redirect_url or self._get_shop_path())
+
+        request.session[COUNTRY_SESSION_CACHE_KEY] = country.id
+        country_group, pricelist = website._get_country_group_and_pricelist(country.code)
+
+        self._apply_pricelist(pricelist=pricelist)
+
+        # TODO-PDA adapt languages when changing the country
+        lang = website._get_available_languages(country_group)[0]
+        # redirect url with the previous lang removed if any and the new one set
+        lang_code = request.env['res.lang']._get_data(url_code=lang.url_code).code or lang
+        previous_lang = request.env['res.lang'].search([('code','=',request.env.lang)]).url_code
+        if redirect_url.endswith(f'/{previous_lang}'):
+            redirect_url = redirect_url.replace(f'/{previous_lang}', f'/{lang.url_code}')
+        return request.redirect(
+            f'/website/lang/{lang.url_code}?{url_encode({"r": redirect_url})}'
+        )
+        # TODO-PDA restrictions based on delivery address. If I first update the address, then the pricelist, NOK.
 
     @route('/shop/pricelist', type='http', auth='public', website=True, sitemap=False)
     def pricelist(self, promo, **post):

@@ -586,7 +586,7 @@ class Task(models.Model):
 
             if task.date_assign:
                 dt_date_assign = fields.Datetime.from_string(task.date_assign)
-                duration_data = task.project_id.resource_calendar_id.get_work_duration_data(dt_create_date, dt_date_assign, compute_leaves=True)
+                duration_data = task.project_id.resource_calendar_id.get_work_duration_data(dt_create_date, dt_date_assign, compute_leaves=True, domain=[('company_id', '=', self.env.company.id)])
                 task.working_hours_open = duration_data['hours']
                 task.working_days_open = duration_data['days']
             else:

@@ -431,19 +431,12 @@ test("theme background image is properly set", async () => {
         "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYIIA" +
         "A".repeat(1000);
 
-    // Using historyImageSrc to avoid mocking the gallery dialog
     patchWithCleanup(CustomizeBodyBgTypeAction.prototype, {
-        async load(editingElement) {
-            editingElement.historyImageSrc = { src: base64Image };
-            super.load(editingElement);
-        },
-        apply(params) {
-            params.loadResult = {
-                imageSrc: base64Image,
-                oldImageSrc: "",
-                oldValue: "'image'",
-            };
-            super.apply(params);
+        async apply(params) {
+            await this.saveImageAndAddHistoryMutation({
+                imageType: 'image',
+                imageSrc: base64Image
+            });
         },
     });
 

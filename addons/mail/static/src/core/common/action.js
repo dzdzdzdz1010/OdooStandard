@@ -400,6 +400,7 @@ export class Action {
         );
     }
 
+
     /** @param {Action} action @returns {string|undefined} */
     _inlineName(action) {}
     /** If set, when action is used in inline, shows action name in addition to icon. */

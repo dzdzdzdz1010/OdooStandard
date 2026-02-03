@@ -276,6 +276,7 @@ export class Store extends BaseStore {
             default_display_mode: "video_full_screen",
             partners_to: [this.self.id],
         });
+        channel.isNewMeeting = true;
         await this.chatHub.initPromise;
         channel.chatWindow?.update({ autofocus: 0 });
         await this.env.services["discuss.rtc"].toggleCall(channel, { camera: true });

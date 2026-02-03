@@ -1,5 +1,6 @@
 import { DateSection } from "@mail/core/common/date_section";
 import { Message } from "@mail/core/common/message";
+import { MessageCardList } from "@mail/core/common/message_card_list";
 import { NotificationMessage } from "./notification_message";
 import { Record } from "@mail/model/export";
 import { useChildRefs, useMessageSelection, useVisible } from "@mail/utils/common/hooks";
@@ -38,7 +39,7 @@ export const PRESENT_VIEWPORT_THRESHOLD = 1;
  * @extends {Component<Props, Env>}
  */
 export class Thread extends Component {
-    static components = { Message, NotificationMessage, Transition, DateSection };
+    static components = { Message, MessageCardList, NotificationMessage, Transition, DateSection };
     static props = [
         "autofocus?",
         "showDates?",
@@ -253,6 +254,14 @@ export class Thread extends Component {
 
     get channel() {
         return this.props.thread.channel;
+    }
+
+    get pinnedMessagesTitle() {
+        return _t("Pinned Messages");
+    }
+
+    get isNewMeeting() {
+        return Boolean(this.props.thread.channel?.isNewMeeting);
     }
 
     computeJumpPresentPosition() {

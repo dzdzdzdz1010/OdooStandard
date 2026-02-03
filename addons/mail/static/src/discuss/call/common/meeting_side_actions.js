@@ -25,8 +25,15 @@ export class MeetingSideActions extends Component {
     }
 
     computeActions() {
-        const quickThreadActionIds = this.props.isSmall ? [] : ["invite-people", "meeting-chat"];
         const threadActions = this.props.threadActions;
+        if (this.store.rtc.channel.isNewMeeting) {
+            const quickThreadActionIds = ["member-list", "meeting-chat"];
+            this.actions = threadActions.actions.filter((action) =>
+                quickThreadActionIds.includes(action.id)
+            );
+            return;
+        }
+        const quickThreadActionIds = ["invite-people", "meeting-chat"];
         const { quick, other, group } = threadActions.partition;
         const partitionedActions = {
             quick: quick.filter((action) => !quickThreadActionIds.includes(action.id)),

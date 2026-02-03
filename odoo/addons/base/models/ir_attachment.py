@@ -23,7 +23,6 @@ from odoo.http import request
 from odoo.http.router import root
 from odoo.http.stream import Stream
 from odoo.tools import (
-    BinaryValue,
     OrderedSet,
     config,
     consteq,
@@ -31,6 +30,7 @@ from odoo.tools import (
     split_every,
     str2bool,
 )
+from odoo.tools.binary import BinaryValue, BinaryFile
 from odoo.tools.constants import PREFETCH_MAX
 from odoo.tools.mimetypes import (
     MIMETYPE_HEAD_SIZE,
@@ -294,9 +294,18 @@ class IrAttachment(models.Model):
 
     @api.depends('store_fname', 'db_datas')
     def _compute_raw(self):
+        files = []
         for attach in self:
             if attach.store_fname:
-                attach.raw = attach._file_read(attach.store_fname)
+                file = attach._file_read(attach.store_fname)
+                if isinstance(file, BinaryFile):
+                    files.append(file)
+                    if len(files) == 10:
+                        for file in files:
+                            file.content
+                    elif len(files) > 10:
+                        file.content
+                attach.raw = file
             else:
                 attach.raw = attach.db_datas
 

@@ -21,7 +21,7 @@ export class PaymentForm extends Interaction {
         // Load the payment context from the payment form dataset.
         this.paymentContext = {};
         Object.assign(this.paymentContext, this.el.dataset);
-
+        
         this.defaultSubmitButtonLabel = document.querySelector(
             'button[name="o_payment_submit_button"]'
         )?.textContent;
@@ -34,6 +34,12 @@ export class PaymentForm extends Interaction {
             await this.waitFor(this._expandInlineForm(checkedRadio));
             this._enableButton(false);
         } else {
+            const firstRadio = this.el.querySelector('input[name="o_payment_radio"]');
+            if (firstRadio) {
+                const firstPaymentMethodCode = this._getPaymentMethodCode(firstRadio);
+                this._adaptSubmitButtonLabel(firstPaymentMethodCode);
+            }
+
             this._setPaymentFlow(); // Initialize the payment flow to let providers overwrite it.
         }
     }
@@ -283,19 +289,17 @@ export class PaymentForm extends Interaction {
      * @return {void}
      */
     _adaptSubmitButtonLabel(paymentMethodCode) {
-    const isPayLater = this._isPayLaterPaymentMethod(paymentMethodCode);
-    const buttons = document.querySelectorAll('button[name="o_payment_submit_button"]');
-    
-    buttons.forEach(btn => {
-        const directLabel = btn.querySelector('.o_payment_label_direct');
-        const delayedLabel = btn.querySelector('.o_payment_label_delayed');
-
-        if (directLabel && delayedLabel) {
-            directLabel.classList.toggle('d-none', isPayLater);
-            delayedLabel.classList.toggle('d-none', !isPayLater);
-        }
-    });
-}
+        const isPayLaterMethod = this._isPayLaterPaymentMethod(paymentMethodCode);
+        const submitButtons = document.querySelectorAll('button[name="o_payment_submit_button"]');
+        submitButtons.forEach(btn => {
+            const payNowLabel = btn.querySelector('[name="o_pay_now_label"]');
+            const payLaterLabel = btn.querySelector('[name="o_pay_later_label"]');
+            if (payNowLabel && payLaterLabel) {
+                payNowLabel.classList.toggle('d-none', isPayLaterMethod);
+                payLaterLabel.classList.toggle('d-none', !isPayLaterMethod);
+            }
+        });
+    }
 
     /**
      * Check whether the given payment method expects immediate payment.

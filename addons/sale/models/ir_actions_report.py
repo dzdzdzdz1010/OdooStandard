@@ -1,11 +1,13 @@
 import io
 
-from odoo import models
+from odoo import fields, models
 from odoo.tools.pdf import OdooPdfFileReader, OdooPdfFileWriter
 
 
 class IrActionsReport(models.Model):
     _inherit = 'ir.actions.report'
+
+    hide_signature = fields.Boolean(default=False)
 
     def _render_qweb_pdf_prepare_streams(self, report_ref, data, res_ids=None):
         # EXTENDS base
@@ -49,8 +51,10 @@ class IrActionsReport(models.Model):
         return collected_streams
 
     def _is_sale_order_report(self, report_ref):
-        return self._get_report(report_ref).report_name in (
+        return self._get_report(report_ref).report_name in {
             'sale.report_saleorder_document',
             'sale.report_saleorder',
+            'sale.report_saleorder_no_sig',
             'sale.report_saleorder_raw',
-        )
+            'sale.report_saleorder_raw_no_sig',
+        }

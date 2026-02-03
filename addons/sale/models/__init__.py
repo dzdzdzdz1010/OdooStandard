@@ -15,5 +15,7 @@ from . import product_template
 from . import res_company
 from . import res_partner
 from . import sale_order
+from . import report_sale_order_no_sig
+from . import report_sale_order_raw_no_sig
 from . import sale_order_line
 from . import utm_campaign

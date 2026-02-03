@@ -86,18 +86,6 @@ class ResourceCalendar(models.Model):
         string='Calendar Type', default='fixed', required=True)
 
     # --------------------------------------------------
-    # Constrains
-    # --------------------------------------------------
-
-    @api.constrains('attendance_ids')
-    def _check_attendance_ids(self):
-        for res_calendar in self:
-            # Avoid superimpose in attendance
-            attendance_ids = res_calendar.attendance_ids.filtered(
-                lambda attendance: not attendance.display_type)
-            res_calendar._check_overlap(attendance_ids)
-
-    # --------------------------------------------------
     # Compute Methods
     # --------------------------------------------------
 
@@ -503,38 +491,6 @@ class ResourceCalendar(models.Model):
 
             result[resource.id] = full_interval_UTC - utc_work_intervals
         return result
-
-    # --------------------------------------------------
-    # Private Methods / Helpers
-    # --------------------------------------------------
-
-    def _check_overlap(self, attendance_ids):
-        """ attendance_ids correspond to attendance of a week,
-            will check for each day of week that there are no superimpose. """
-        weeday_attendances = []
-        date_attendances = []
-        hours_based_weekdays = set()
-        duration_based_weekdays = set()
-        for attendance in attendance_ids:
-            if (attendance.duration_based and attendance.calendar_id.schedule_type == "fixed" and attendance.dayofweek in hours_based_weekdays
-                    or not attendance.duration_based and attendance.dayofweek in duration_based_weekdays):
-                raise ValidationError(self.env._("You cannot define hours and duration based attendances for the same day."))
-            if attendance.duration_based:
-                duration_based_weekdays.add(attendance.dayofweek)
-            else:
-                hours_based_weekdays.add(attendance.dayofweek)
-                # 0.000001 is added to each start hour to avoid to detect two contiguous intervals as superimposing.
-                # Indeed Intervals function will join 2 intervals with the start and stop hour corresponding.
-                if attendance.date:
-                    date_attendances.append((
-                        datetime.combine(attendance.date, float_to_time(attendance.hour_from)) + timedelta(microseconds=1),
-                        datetime.combine(attendance.date, float_to_time(attendance.hour_to)),
-                        attendance))
-                else:
-                    weeday_attendances.append((int(attendance.dayofweek) * 24 + attendance.hour_from + 0.000001, int(attendance.dayofweek) * 24 + attendance.hour_to, attendance))
-
-        if len(Intervals(weeday_attendances)) != len(weeday_attendances) or len(Intervals(date_attendances)) != len(date_attendances):
-            raise ValidationError(self.env._("Attendances can't overlap."))
 
     def _get_attendance_intervals_days_data(self, attendance_intervals):
         """

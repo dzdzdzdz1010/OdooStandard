@@ -70,6 +70,7 @@
                 <field name="display_name"/>
                 <field name="hour_from"/>
                 <field name="hour_to"/>
+                <field name="duration_hours"/>
             </calendar>
         </field>
     </record>

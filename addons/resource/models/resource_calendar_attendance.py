@@ -1,7 +1,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+from collections import defaultdict
+from datetime import datetime, date, timedelta
+
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 from odoo.tools import format_time
 from odoo.tools.date_utils import float_to_time
+from odoo.tools.intervals import Intervals
 
 
 class ResourceCalendarAttendance(models.Model):
@@ -40,6 +45,30 @@ class ResourceCalendarAttendance(models.Model):
 
     # Variable
     date = fields.Date()
+
+    @api.constrains('calendar_id', 'date', 'duration_hours', 'dayofweek')
+    def _check_attendance(self):
+        # will check for each day of week that there are no superimpose.
+        for calendar in self.mapped("calendar_id"):
+            intervals_attendances = []
+            duration_per_date = defaultdict(float)
+            for attendance in calendar.filtered_attendance_ids:
+                if attendance.date:
+                    date_to_combine = attendance.date
+                else:
+                    date_to_combine = date.min + timedelta(days=int(attendance.dayofweek))
+                if not attendance.duration_based:
+                    intervals_attendances.append((
+                        datetime.combine(date_to_combine, float_to_time(attendance.hour_from)) + timedelta(
+                            microseconds=1),
+                        datetime.combine(date_to_combine, float_to_time(attendance.hour_to)),
+                        attendance
+                    ))
+                duration_per_date[date_to_combine] += attendance.duration_hours
+                if duration_per_date[date_to_combine] > 24:
+                    raise ValidationError(self.env._("Attendance durations can't exceed 24 hours in the day."))
+            if len(Intervals(intervals_attendances)) != len(intervals_attendances):
+                raise ValidationError(self.env._("Attendances can't overlap."))
 
     @api.onchange('hour_from')
     def _onchange_hour_from(self):

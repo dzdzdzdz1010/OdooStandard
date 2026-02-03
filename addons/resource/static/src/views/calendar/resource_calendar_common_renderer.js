@@ -3,7 +3,7 @@ import { CalendarCommonRenderer } from "@web/views/calendar/calendar_common/cale
 import { useService } from "@web/core/utils/hooks";
 import { formatFloatTime } from "@web/views/fields/formatters";
 import { ResourcePopover } from "../../components/resource_popover/resource_popover";
-import {serializeDate} from "@web/core/l10n/dates";
+import {serializeDate, serializeDateTime} from "@web/core/l10n/dates";
 import {usePopover} from "@web/core/popover/popover_hook";
 
 export class ResourceCalendarCommonRenderer extends CalendarCommonRenderer {
@@ -27,7 +27,8 @@ export class ResourceCalendarCommonRenderer extends CalendarCommonRenderer {
         return {
             ...super.interactiveOptions,
             selectable: this.props.model.canCreate,
-        }
+            forceEventDuration: true,
+        };
     }
 
     handleDateClick(info) {
@@ -39,12 +40,22 @@ export class ResourceCalendarCommonRenderer extends CalendarCommonRenderer {
     }
 
     onEventDragStart(info) {
-        super.onEventDragStart(...arguments);
-        if (info.event.isAllDay) {
-
-        } else {
-            debugger
+        if (info.event.allDay) {
+            const hours = Math.floor(info.event.extendedProps.forcedDuration);
+            const minutes = Math.round((info.event.extendedProps.forcedDuration - hours) * 60);
+            info.view.calendar.setOption(
+                "defaultTimedEventDuration",
+                `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+            );
         }
+        super.onEventDragStart(...arguments);
+    }
+
+    onEventDrop(info) {
+        if (info.oldEvent.allDay) {
+            info.view.calendar.setOption("defaultTimedEventDuration", "01:00");
+        }
+        super.onEventDrop(...arguments);
     }
 
     get additionalFieldsToFetch() {
@@ -78,6 +89,12 @@ export class ResourceCalendarCommonRenderer extends CalendarCommonRenderer {
     onDateClick(info) {
         const date = luxon.DateTime.fromJSDate(info.date)
         info.view.calendar.select(date.toISO(), date.plus({hours: 1}).toISO())
+    }
+
+    convertRecordToEvent(record) {
+        const res = super.convertRecordToEvent(...arguments);
+        res.forcedDuration = record.duration;
+        return res;
     }
 
     fcEventToRecord(event) {

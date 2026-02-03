@@ -6,6 +6,7 @@ import { executeButtonCallback, useViewButtons } from "@web/views/view_button/vi
 import { ViewButton } from "@web/views/view_button/view_button";
 import { serializeDate } from "@web/core/l10n/dates";
 import { _t } from "@web/core/l10n/translation";
+import {useService} from "@web/core/utils/hooks";
 
 export class ResourcePopover extends Component {
     static template = "resource.ResourcePopover";
@@ -16,7 +17,6 @@ export class ResourcePopover extends Component {
     };
     static props = {
         close: Function,
-        readonly: { type: Boolean },
         onReload: Function,
         originalRecord: { type: Object },
         recordProps: { type: Object },
@@ -24,22 +24,10 @@ export class ResourcePopover extends Component {
         getSource: Function,
         getDurationStr: Function,
         context: { type: Object },
-        isSplittable: { type: Boolean, optional: true },
     };
-    static defaultProps = {
-        isSplittable: false,
-    }
 
     setup() {
-        this.state = useState({
-            isSplit: false,
-            originalDuration: this.props.originalRecord?.duration,
-            newRecordValues: {
-                hour_from: 0,
-                hour_to: 0,
-                duration: 0,
-            },
-        });
+        this.notification = useService("notification");
         this.rootRef = useRef("root");
         useViewButtons(this.rootRef, {
             reload: this.props.onReload,
@@ -51,39 +39,8 @@ export class ResourcePopover extends Component {
         return {
             ...this.props.recordProps,
             resId: this.props.originalRecord?.id,
-            mode: this.props.readonly ? "readonly" : "edit",
-            context: this.props.context,
-            hooks: {
-                onRecordChanged: (record, changes) => {
-                    if (changes.duration) {
-                        this.state.newRecordValues = {
-                            ...this.state.newRecordValues,
-                            duration: Math.max(
-                                0,
-                                this.state.originalDuration - record.data.duration
-                            ),
-                        };
-                    }
-                },
-            },
-        };
-    }
-
-    newRecordProps(currentRecord) {
-        return {
-            ...this.props.recordProps,
             mode: "edit",
-            values: {
-                ...currentRecord?.data,
-                ...this.state.newRecordValues,
-                ...(currentRecord?.data.date ? {date: serializeDate(currentRecord.data.date)} : {}),
-            },
             context: this.props.context,
-            hooks: {
-                onRecordChanged: (record, changes) => {
-                    this.state.newRecordValues = record.data;
-                },
-            },
         };
     }
 
@@ -121,22 +78,16 @@ export class ResourcePopover extends Component {
         return ` ${durationStr}`;
     }
 
-    onToggleSplit() {
-        this.state.isSplit = !this.state.isSplit;
-    }
-
-    async onSave(currentRecord, newRecord) {
+    async onSave(currentRecord) {
         await executeButtonCallback(this.rootRef.el, async () => {
-            const areValid =
-                (await currentRecord.checkValidity()) &&
-                (!this.state.isSplit || (await newRecord.checkValidity()));
-            if (areValid) {
-                if (this.state.isSplit) {
-                    await newRecord.save();
+            if (await currentRecord.checkValidity()) {
+                try {
+                    await currentRecord.save();
+                    await this.props.onReload();
+                    this.props.close();
+                } catch (error) {
+                    return this.notification.add(_t(error.data.message), { type: "danger" });
                 }
-                await currentRecord.save();
-                await this.props.onReload();
-                this.props.close();
             }
         });
     }

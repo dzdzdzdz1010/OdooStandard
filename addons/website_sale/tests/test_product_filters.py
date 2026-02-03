@@ -1,7 +1,15 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+<<<<<<< d0d1cafa52a472dd3cf9e55c07dfb7051ae17295:addons/website_sale/tests/test_product_filters.py
 from odoo import Command, fields
 from odoo.tests import tagged
+||||||| c9314e73f060efd0857fd8b06c3434b3e02f3dd7:addons/website_sale/tests/test_website_sale_product_filters.py
+from odoo import Command
+from odoo.tests import tagged
+=======
+from odoo import Command
+from odoo.tests import tagged, HttpCase
+>>>>>>> b065b3e543df656effec67f576bfad82fb1f6a5a:addons/website_sale/tests/test_website_sale_product_filters.py
 from odoo.tools import SQL
 
 from odoo.addons.product.tests.test_product_attribute_value_config import (
@@ -11,7 +19,7 @@ from odoo.addons.website_sale.tests.common import MockRequest, WebsiteSaleCommon
 
 
 @tagged('post_install', '-at_install')
-class TestWebsiteSaleProductFilters(WebsiteSaleCommon, TestProductAttributeValueCommon):
+class TestWebsiteSaleProductFilters(WebsiteSaleCommon, TestProductAttributeValueCommon, HttpCase):
 
     @classmethod
     def setUpClass(cls):
@@ -334,3 +342,12 @@ class TestWebsiteSaleProductFilters(WebsiteSaleCommon, TestProductAttributeValue
                 16,
                 "When displaying newest product templates, 16 unique templates should be shown",
             )
+
+    def test_shop_attribute_filters_remain_when_changing_page(self):
+        self.env['product.attribute'].search([]).write({'visibility': 'hidden'})
+        self.color_attribute.visibility = 'visible'
+        self.size_attribute.visibility = 'visible'
+        self.env['website'].get_current_website().shop_ppg = 1
+        computer_case_copy = self.computer_case.copy()
+        computer_case_copy.website_published = True
+        self.start_tour('/shop', 'shop_attribute_filters_remain_when_changing_page')

@@ -5,6 +5,8 @@ from odoo import _, models, Command
 from odoo.tools import html2plaintext, cleanup_xml_node, float_is_zero, float_repr, float_round
 from odoo.addons.account.tools import dict_to_xml
 from odoo.addons.account_edi_ubl_cii.tools import Invoice, CreditNote, DebitNote
+from odoo.addons.account_edi_ubl_cii.tools.ubl_20_optional_fields import PEPPOL_OPTIONAL_FIELDS
+
 
 UBL_NAMESPACES = {
     'cbc': "urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2",
@@ -1093,6 +1095,7 @@ class AccountEdiXmlUBL20(models.AbstractModel):
         self._add_invoice_exchange_rate_nodes(document_node, vals)
         self._add_invoice_tax_total_nodes(document_node, vals)
         self._add_invoice_monetary_total_nodes(document_node, vals)
+        self._add_invoice_optional_nodes(document_node, vals)
         return document_node
 
     def _add_invoice_config_vals(self, vals):
@@ -1363,6 +1366,19 @@ class AccountEdiXmlUBL20(models.AbstractModel):
                 'currencyID': vals['currency_name'],
             },
         })
+
+    def _add_invoice_optional_nodes(self, document_node, vals):
+        invoice = vals['invoice']
+        invoice_optional_fields = {key: invoice[key] for key in invoice._fields if key.startswith("x_studio_peppol") and invoice[key]}
+        for field in invoice_optional_fields:
+            path = PEPPOL_OPTIONAL_FIELDS[field]["path"]
+            attrs = PEPPOL_OPTIONAL_FIELDS[field]["attrs"](invoice)
+            node = document_node
+            for tag in path:
+                if tag not in node:
+                    node[tag] = {}
+                node = node[tag]
+            node.update(attrs)
 
     def _get_invoice_line_node(self, vals):
         self._add_invoice_line_vals(vals)

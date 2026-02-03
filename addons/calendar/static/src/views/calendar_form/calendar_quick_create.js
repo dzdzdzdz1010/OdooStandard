@@ -12,6 +12,8 @@ export const QUICK_CREATE_CALENDAR_EVENT_FIELDS = {
     stop: { type: "datetime" },
     allday: { type: "boolean" },
     partner_ids: { type: "many2many" },
+    location: { type: "string" },
+    notes: { type: "string" },
     videocall_location: { type: "string" },
     description: { type: "string" }
 };

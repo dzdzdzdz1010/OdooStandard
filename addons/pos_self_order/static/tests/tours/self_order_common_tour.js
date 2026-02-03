@@ -158,6 +158,7 @@ registry.category("web_tour.tours").add("test_self_order_optional_product", {
                     attributes: [],
                 },
             ]),
+            Utils.clickBtn("OK"),
             Utils.clickBtn("Checkout"),
             CartPage.checkProduct("Coca-Cola", "7.59", "3"),
             CartPage.checkProduct("Fanta", "2.53", "1"),

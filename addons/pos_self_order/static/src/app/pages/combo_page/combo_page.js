@@ -25,6 +25,7 @@ export class ComboPage extends Component {
             return;
         }
         useSubEnv({ selectedValues: {} });
+        this.historyState = history.state;
         this.selfOrder = useSelfOrder();
         this.state = useState({
             selectedChoiceIndex: 0,
@@ -229,8 +230,12 @@ export class ComboPage extends Component {
     }
 
     isBackVisible() {
-        return !(
-            this.state.selectedChoiceIndex === 0 && !this.currentChoiceState.displayAttributesOfItem
+        return (
+            this.historyState.redirectPage ||
+            !(
+                this.state.selectedChoiceIndex === 0 &&
+                !this.currentChoiceState.displayAttributesOfItem
+            )
         );
     }
 
@@ -432,9 +437,15 @@ export class ComboPage extends Component {
             this.getComboSelection()
         );
 
-        if (productTemplate.pos_optional_product_ids.length) {
+        if (productTemplate.pos_optional_product_ids.length && !this.historyState.redirectPage) {
             this.router.navigate("optional_product", { id: productTemplate.id });
             return;
+        }
+
+        if (this.historyState.state?.optionalProductQtys) {
+            this.historyState.state.optionalProductQtys[productTemplate.id] =
+                (this.historyState.state.optionalProductQtys[productTemplate.id] || 0) +
+                this.state.qty;
         }
         this.goBack();
     }
@@ -449,6 +460,10 @@ export class ComboPage extends Component {
     }
 
     goBack() {
+        if (this.historyState.redirectPage) {
+            const { redirectPage, params, state } = this.historyState;
+            return this.router.navigate(redirectPage, params, state);
+        }
         this.router.navigate("product_list");
     }
 

@@ -232,3 +232,30 @@ class TestVariableResourceCalendar(TransactionCase):
         self.assertEqual(target_attendances[0].date, date(2025, 12, 1), "First attendance should be on Dec 1, 2025")
         self.assertFalse(target_attendances.filtered(lambda att: att.date == date(2025, 12, 31)), "Should have no attendance on this day as september is shorter than december")
         self.assertFalse(target_attendances.filtered(lambda att: int(att.dayofweek) >= 5), "Should have no attendance on weekends")
+
+    def test_dayofweek_compute(self):
+        """Test that the dayofweek is correctly computed based on the date"""
+        self.calendar.attendance_ids = [(5, 0, 0), (0, 0, {
+            'date': date(1, 1, 5),  # This is a Friday
+            'hour_from': 8,
+            'hour_to': 17,
+        })]
+        attendance = self.calendar.attendance_ids[0]
+        self.assertEqual(attendance.dayofweek, '4', "Attendance on Friday should have dayofweek 4")
+
+        attendance.date = date(1, 1, 3)  # This is a Wednesday
+        self.assertEqual(attendance.dayofweek, '2', "Attendance on Wednesday should have dayofweek 2")
+
+        self.calendar.attendance_ids = [(5, 0, 0), (0, 0, {
+            'dayofweek': '1',
+            'hour_from': 8,
+            'hour_to': 17,
+        })]
+        attendance = self.calendar.attendance_ids[0]
+        self.assertEqual(attendance.dayofweek, '1', "Attendance with no date should keep the manually set dayofweek")
+
+        attendance.date = date(1, 1, 2)  # This is a Tuesday
+        self.assertEqual(attendance.dayofweek, '1', "Attendance should update dayofweek on date set")
+
+        attendance.date = False
+        self.assertEqual(attendance.dayofweek, '1', "Attendance with date removed should keep the manually set dayofweek")

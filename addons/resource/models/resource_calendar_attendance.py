@@ -17,7 +17,7 @@ class ResourceCalendarAttendance(models.Model):
         ('4', 'Friday'),
         ('5', 'Saturday'),
         ('6', 'Sunday')
-        ], 'Day of Week', required=True, index=True, default='0',
+        ], 'Day of Week', required=True, index=True, precompute=True,
         compute="_compute_dayofweek", store=True, readonly=False)
     hour_from = fields.Float(string='Work from', default=0, required=True, index=True,
         help="Start and End time of working.\n"

@@ -1,5 +1,4 @@
 .o_blockUI {
-    cursor: wait;
     z-index: $zindex-popover !important;
 
     &:not(.o_blockUI_invisible) {
@@ -7,5 +6,9 @@
         backdrop-filter: blur(2px);
         background: rgba(#000, .5);
         color: #fff;
+    }
+
+    &:not(.o_blockUI_reset_cursor) {
+        cursor: wait;
     }
 }

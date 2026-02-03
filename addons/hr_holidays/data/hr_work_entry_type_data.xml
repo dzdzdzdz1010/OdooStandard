@@ -3,7 +3,7 @@
 <!-- Global Leave Types -->
     <!-- Paid Time Off -->
     <function model="hr.work.entry.type" name="write">
-        <value model="hr.work.entry.type" search="[('code', '=', 'LEAVE120')]"/>
+        <value model="hr.work.entry.type" eval="obj().sudo().search([('code', '=', 'LEAVE120')]).ids"/>
         <value eval="{
             'requires_allocation': True,
             'employee_requests': False,
@@ -21,7 +21,7 @@
 
     <!-- Sick Time Off -->
     <function model="hr.work.entry.type" name="write">
-        <value model="hr.work.entry.type" search="[('code', '=', 'LEAVE110')]"/>
+        <value model="hr.work.entry.type" eval="obj().sudo().search([('code', '=', 'LEAVE110')]).ids"/>
         <value eval="{
             'requires_allocation': False,
             'request_unit': 'day',
@@ -37,7 +37,7 @@
 
     <!-- Compensatory -->
     <function model="hr.work.entry.type" name="write">
-        <value model="hr.work.entry.type" search="[('code', '=', 'LEAVE105')]"/>
+        <value model="hr.work.entry.type" eval="obj().sudo().search([('code', '=', 'LEAVE105')]).ids"/>
         <value eval="{
             'requires_allocation': True,
             'employee_requests': True,
@@ -54,7 +54,7 @@
 
     <!-- Unpaid -->
     <function model="hr.work.entry.type" name="write">
-        <value model="hr.work.entry.type" search="[('code', '=', 'LEAVE90')]"/>
+        <value model="hr.work.entry.type" eval="obj().sudo().search([('code', '=', 'LEAVE90')]).ids"/>
         <value eval="{
             'requires_allocation': False,
             'leave_validation_type': 'both',

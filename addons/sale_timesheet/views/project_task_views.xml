@@ -14,13 +14,11 @@
             </xpath>
             <xpath expr="//button[@name='action_view_sos']" position="after">
                 <button class="oe_stat_button" name="action_actual_margin" type="object" groups="project.group_project_manager" context="{'active_id': id}" invisible="is_template or not allow_billable">
-                    <field name="actual_margin_status" readonly="1" widget="color_status"/>
+                    <i class="fa fa-fw o_button_icon fa-dollar text-success" invisible="actual_margin &lt; 0" title="On Track"/>
+                    <i class="fa fa-fw o_button_icon fa-dollar text-danger" invisible="actual_margin &gt;= 0" title="Off Track"/>
                     <div class="o_stat_info">
-                        <div class="o_stat_text">
-                            <i class="fa fa-dollar pe-1" title="dollar"/>
-                            <field name="actual_margin"/>
-                        </div>
-                        <span class="o_stat_value">Actual Margin</span>
+                        <span class="o_stat_text">Actual Margin</span>
+                        <field name="actual_margin" class="o_stat_value" widget="float" options="{'digits': [1, 0]}"/>
                     </div>
                 </button>
             </xpath>

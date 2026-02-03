@@ -50,18 +50,22 @@
                                 </span>
                             </div>
                         </button>
-                        <button class="oe_stat_button" name="action_view_milestones" type="object" groups="project.group_project_milestone" invisible="is_template or not allow_milestones or not milestone_ids">
-                            <field name="next_milestone_status" readonly="1" widget="color_status"/>
-                            <div class="flex-column o_stat_info" style="max-width: 8rem;">
-                                <field name="next_milestone_date" class="o_stat_text"/>
-                                <field name="next_milestone_name" class="text-truncate o_stat_value"/>
+                        <button class="oe_stat_button" name="action_get_list_view" type="object" groups="project.group_project_milestone" invisible="not allow_milestones or milestone_count &lt;= 0 or is_template">
+                            <i class="fa o_button_icon fa-check text-success" invisible="next_milestone_status == 'off_track'" title="On Track"/>
+                            <i class="fa o_button_icon fa-check text-danger" invisible="next_milestone_status == 'on_track'" title="Off Track"/>
+                            <div class="o_field_widget o_stat_info">
+                                <span class="o_stat_text">Milestones</span>
+                                <span class="o_stat_value">
+                                    <field name="milestone_count_reached"/> / <field name="milestone_count"/>
+                                    (<field name="milestone_progress" options="{'digits': [1, 0]}"/>%)
+                                </span>
                             </div>
                         </button>
                         <button class="oe_stat_button" name="project_update_all_action" type="object" groups="project.group_project_user" context="{'active_id': id}" invisible="is_template">
-                            <field name="last_update_status" readonly="1" widget="color_status_selection"/>
-                            <div class="flex-column o_stat_info">
-                                <field name="last_update_status" readonly="1" class="o_stat_text"/>
-                                <span class="o_stat_value">Progress:  <field name="last_update_progress_percentage" widget="percentage" options="{'digits': [1, 0]}"/> <t invisible="not last_update_progress_date">(<field name="last_update_progress_date" widget="date"/>)</t></span>
+                            <field name="last_update_color" invisible="1"/>
+                            <div class="o_stat_info">
+                                <field name="update_count" invisible="1"/>
+                                <field name="last_update_status" readonly="1" widget="status_with_color" status_label="Status"/>
                             </div>
                         </button>
                         <button name="action_view_all_rating" type="object" class="oe_stat_button" icon="" invisible="rating_count == 0">
@@ -88,11 +92,29 @@
                         </h1>
                     </div>
                     <group>
-                        <group>
-                            <i class="fa fa-user pe-2" title="Customer" name="partner_id"/><field name="partner_id" nolabel="1" widget="res_partner_many2one" placeholder="None" context="{'show_address': True}"/>
+                        <group class="d-lg-none">
+                            <div class="d-flex mb-3">
+                                <i class="fa fa-user pe-2" title="Customer" name="partner_id"/>
+                                <field name="partner_id" nolabel="1" widget="res_partner_many2one" placeholder="Select Customer" context="{'show_address': True}"/>
+                            </div>
+                            <div class="d-flex align-items-center" invisible="not partner_phone">
+                                <i class="fa fa-phone pe-2" title="Phone"/>
+                                <field name="partner_phone" nolabel="1"/>
+                            </div>
+                            <div class="d-flex align-items-center mb-3" invisible="not partner_email">
+                                <i class="fa fa-envelope pe-2" title="Email"/>
+                                <field name="partner_email" nolabel="1"/>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <i class="fa fa-tag pe-2" title="Tags"/>
+                                <field name="tag_ids" nolabel="1" widget="many2many_tags" placeholder="Select Tags" options="{'color_field': 'color', 'on_tag_click': 'edit_color'}"/>
+                            </div>
+                        </group>
+                        <group class="d-none d-lg-grid">
+                            <i class="fa fa-user pe-2" title="Customer" name="partner_id"/><field name="partner_id" nolabel="1" widget="res_partner_many2one" placeholder="Select Customer" context="{'show_address': True}"/>
                             <i class="fa fa-phone pe-2" title="Phone" invisible="not partner_phone"/><field name="partner_phone" nolabel="1" invisible="not partner_phone"/>
                             <i class="fa fa-envelope pe-2" title="Email" invisible="not partner_email"/><field name="partner_email" nolabel="1" invisible="not partner_email"/>
-                            <i class="fa fa-tag pe-2" title="Tags"/><field name="tag_ids" nolabel="1" widget="many2many_tags" options="{'color_field': 'color', 'on_tag_click': 'edit_color'}"/>
+                            <i class="fa fa-tag pe-2" title="Tags"/><field name="tag_ids" nolabel="1" widget="many2many_tags" placeholder="Select Tags" options="{'color_field': 'color', 'on_tag_click': 'edit_color'}"/>
                         </group>
                         <group>
                             <field name="active" invisible="1"/>
@@ -114,7 +136,7 @@
                                     <!-- Always display the whole alias in edit mode. It depends in read only -->
                                     <!-- Need to add alias_id in view for getting alias_domain_id by default -->
                                     <field name="alias_id" invisible="1"/>
-                                    <field name="label_tasks" string="Name of the Tasks" placeholder="e.g. Tasks"/>
+                                    <field name="label_tasks" string="Name of Tasks" placeholder="e.g. Tasks"/>
                                     <label for="alias_name" string="Email Alias" invisible="is_template"/>
                                     <field name="alias_email" widget="email" readonly="1" nolabel="1" groups="!project.group_project_manager" invisible="is_template"/>
                                     <div class="row" groups="project.group_project_manager" invisible="is_template">
@@ -141,10 +163,8 @@
                                         <i class="fa fa-warning pe-2" title="Warning"/><field class="d-inline" name="privacy_visibility_warning" nolabel="1"/>
                                     </span>
                                 </group>
-                                <group name="extra_settings">
-                                    <t name="allocated_hours_placeholder"/>
-                                </group>
                                 <group name="analytic" groups="analytic.group_analytic_accounting">
+                                    <t name="allocated_hours_placeholder"/>
                                     <div class="o_flexible_margin_top o_horizontal_separator text-uppercase fw-bolder small mb-3" colspan="2">analytic</div>
                                     <field name="account_id"/>
                                 </group>

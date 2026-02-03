@@ -10,6 +10,7 @@ Allows to compute accurate margin for Service sales.
     'auto_install': True,
     'data': [
         'views/project_task_views.xml',
+        'views/project_menus.xml',
     ],
     'author': 'Odoo S.A.',
     'license': 'LGPL-3',

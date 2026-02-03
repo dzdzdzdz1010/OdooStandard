@@ -132,23 +132,23 @@
                     </div>
                 </group>
             </xpath>
-            <xpath expr="//group[@name='extra_settings']/t[@name='allocated_hours_placeholder']" position="after">
-                <field name="reinvoiced_sale_order_id" invisible="not allow_billable or not partner_id or is_template" context="{'default_partner_id': partner_id}"/>
+            <xpath expr="//group[@name='analytic']/t[@name='allocated_hours_placeholder']" position="after">
+                <field name="reinvoiced_sale_order_id" invisible="not allow_billable or not partner_id or is_template"  context="{'default_partner_id': partner_id}"/>
                 <label for="sale_line_id" invisible="not allow_billable or not partner_id or is_template"/>
                 <div
                     class="o_row"
                     invisible="not allow_billable or not partner_id or is_template">
                     <field name="sale_line_id"
-                    groups="!sales_team.group_sale_salesman"
-                    options="{'no_create': True, 'no_edit': True, 'no_open': True}"/>
+                        groups="!sales_team.group_sale_salesman"
+                        options="{'no_create': True, 'no_edit': True, 'no_open': True}"/>
                     <field name="sale_line_id"
-                    groups="sales_team.group_sale_salesman"
-                    options="{'no_create': True}"
+                        groups="sales_team.group_sale_salesman"
+                        options="{'no_create': True}"
                     />
                     <span
-                    class="fa fa-exclamation-triangle text-warning"
-                    title="The sales order associated with this project has been cancelled. We recommend either updating the sales order item or cancelling this project in alignment with the cancellation of the sales order."
-                    invisible="sale_order_state != 'cancel'"/>
+                        class="fa fa-exclamation-triangle text-warning"
+                        title="The sales order associated with this project has been cancelled. We recommend either updating the sales order item or cancelling this project in alignment with the cancellation of the sales order."
+                        invisible="sale_order_state != 'cancel'"/>
                 </div>
                 <field name="sale_order_state" invisible="1"/>
             </xpath>

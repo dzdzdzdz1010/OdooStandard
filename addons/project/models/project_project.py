@@ -187,11 +187,9 @@ class ProjectProject(models.Model):
     can_mark_milestone_as_done = fields.Boolean(compute='_compute_next_milestone_id', groups="project.group_project_milestone", export_string_translation=False)
     is_milestone_deadline_exceeded = fields.Boolean(compute='_compute_next_milestone_id', groups="project.group_project_milestone", export_string_translation=False)
     next_milestone_status = fields.Char(compute='_compute_next_milestone_info', export_string_translation=False)
-    next_milestone_name = fields.Char(compute='_compute_next_milestone_info', export_string_translation=False)
-    next_milestone_date = fields.Date(compute='_compute_next_milestone_info', export_string_translation=False)
     is_template = fields.Boolean(copy=False, export_string_translation=False)
     show_ratings = fields.Boolean(compute='_compute_show_ratings', export_string_translation=False)
-    google_map_iframe = fields.Html(compute='_compute_google_map_iframe', sanitize=False, export_string_translation=False)
+    google_map_iframe = fields.Html(compute='_compute_google_map_iframe', sanitize=False, readonly=False, export_string_translation=False)
 
     _project_date_greater = models.Constraint(
         'check(date >= date_start)',
@@ -211,31 +209,21 @@ class ProjectProject(models.Model):
     @api.depends('next_milestone_id')
     def _compute_next_milestone_info(self):
         for project in self:
-            milestone = project.sudo().next_milestone_id
-            if milestone:
+            if milestone := project.next_milestone_id:
                 project.next_milestone_status = 'off_track' if milestone.is_deadline_exceeded else 'on_track'
-                project.next_milestone_date = milestone.deadline
-                project.next_milestone_name = milestone.name
             else:
                 project.next_milestone_status = False
-                project.next_milestone_name = False
-                project.next_milestone_date = False
 
     @api.depends('partner_id')
     def _compute_google_map_iframe(self):
         for project in self:
-            if not project.partner_id or not project.partner_id.contact_address_complete:
+            if not project.partner_id.contact_address_complete:
                 project.google_map_iframe = False
                 continue
-            address = project.partner_id.contact_address_complete.replace('\n', ', ')
+            address = Markup(project.partner_id.contact_address_complete.replace('\n', ', '))
             iframe_html = f"""
                 <iframe
-                    width="100%"
-                    height="100%"
-                    frameborder="0"
-                    style="border:0"
                     loading="lazy"
-                    allowfullscreen
                     src="https://www.google.com/maps?q={address}&output=embed">
                 </iframe>
             """
@@ -1030,6 +1018,7 @@ class ProjectProject(models.Model):
         return action
 
     def action_open_project_form(self):
+        self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
             'name': self.env._('Project Overview'),
@@ -1330,8 +1319,3 @@ class ProjectProject(models.Model):
         project = self.with_context(**context).copy(default=default)
         project.message_post(body=self.env._("Project created from template %(name)s.", name=self.name))
         return project
-
-    def action_view_milestones(self):
-        action = self.env['ir.actions.act_window']._for_xml_id('project.project_milestone_action')
-        action['display_name'] = self.env._("%(name)s's Milestones", name=self.name)
-        return action

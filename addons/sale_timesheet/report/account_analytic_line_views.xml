@@ -33,18 +33,10 @@
         <field name="path">project-margins</field>
         <field name="search_view_id" ref="account.view_account_analytic_line_filter_inherit_account"/>
         <field name="view_id" ref="sale_timesheet.view_account_analytic_line_pivot_inherit_sale_timesheet"/>
-        <field name="view_mode">pivot</field>
+        <field name="view_mode">pivot,list,kanban,graph,grid</field>
         <field name="context">{
             'search_default_group_by_analytic_account': 1,
             'search_default_fiscal_date': 1,
         }</field>
     </record>
-
-    <menuitem
-        name="Margins"
-        id="analytic_margins_menu_project"
-        parent="project.menu_project_report"
-        action="action_analytic_reporting_inherit_sale_timesheet"
-        sequence="60"
-    />
 </odoo>

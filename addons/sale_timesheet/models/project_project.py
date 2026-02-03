@@ -69,7 +69,6 @@ class ProjectProject(models.Model):
         store=True,
     )
     actual_margin = fields.Monetary(compute='_compute_actual_margin', export_string_translation=False)
-    actual_margin_status = fields.Char(compute='_compute_actual_margin', export_string_translation=False)
 
     @api.model
     def _get_view(self, view_id=None, view_type='form', **options):
@@ -181,7 +180,6 @@ class ProjectProject(models.Model):
         ))
         for project in self:
             project.actual_margin = margin_per_project.get(project, 0.0)
-            project.actual_margin_status = 'off_track' if project.actual_margin < 0 else 'on_track'
 
     @api.constrains('sale_line_id')
     def _check_sale_line_type(self):
@@ -256,6 +254,7 @@ class ProjectProject(models.Model):
         return action
 
     def action_actual_margin(self):
+        self.ensure_one()
         action = self.env['ir.actions.act_window']._for_xml_id('sale_timesheet.action_analytic_reporting_inherit_sale_timesheet')
         action['display_name'] = self.env._("%(name)s's Actual Analytic Margins", name=self.name)
         action['views'] = [(self.env.ref('sale_timesheet.view_account_analytic_line_pivot_inherit_sale_timesheet_project').id, 'pivot')]

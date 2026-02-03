@@ -30,7 +30,7 @@
                         </div>
                     </t>
                 </xpath>
-                <xpath expr="//group[@name='extra_settings']/t[@name='allocated_hours_placeholder']" position="replace">
+                <xpath expr="//group[@name='analytic']/t[@name='allocated_hours_placeholder']" position="replace">
                     <field name="allocated_hours" widget="timesheet_uom_no_toggle" invisible="not allow_timesheets" groups="hr_timesheet.group_hr_timesheet_user"/>
                 </xpath>
                 <xpath expr="//group[@name='group_time_managment']" position="attributes">

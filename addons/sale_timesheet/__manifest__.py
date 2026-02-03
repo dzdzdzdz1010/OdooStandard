@@ -31,6 +31,7 @@ have real delivered quantities in sales orders.
         'report/project_report_view.xml',
         'report/account_analytic_line_views.xml',
         'wizard/sale_make_invoice_advance_views.xml',
+        'views/project_menus.xml',
     ],
     'demo': [
         'data/sale_service_demo.xml',

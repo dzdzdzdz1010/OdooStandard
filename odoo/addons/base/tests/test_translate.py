@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from hashlib import sha256
+from textwrap import dedent
 from unittest.mock import patch
 import logging
 import time
@@ -342,6 +343,23 @@ class TranslationToolsTestCase(BaseCase):
 
                         <div data-stuff.translate="dog"/>
                     </t>""")
+
+    def test_translate_xml_select(self):
+        source = dedent("""
+            <select>
+                <option>A</option>
+                <option>B</option>
+            </select>""")
+        result = xml_translate(lambda term: f'<span data-oe-translation-source-sha="123">{term}</span>', source)
+        self.assertEqual(result, dedent("""
+            <select>
+                <option data-oe-translation-span-wrapper="&lt;span data-oe-translation-source-sha=&quot;123&quot;&gt;A&lt;/span&gt;">A</option>
+                <option data-oe-translation-span-wrapper="&lt;span data-oe-translation-source-sha=&quot;123&quot;&gt;B&lt;/span&gt;">B</option>
+            </select>""").strip())
+
+        result = xml_translate(lambda term: term, source)
+        self.assertEqual(result, source.strip())
+
 
     def test_translate_html(self):
         """ Test html_translate(). """

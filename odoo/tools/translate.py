@@ -66,7 +66,7 @@ TRANSLATED_ELEMENTS = {
     'abbr', 'b', 'bdi', 'bdo', 'br', 'cite', 'code', 'data', 'del', 'dfn', 'em',
     'font', 'i', 'ins', 'kbd', 'keygen', 'mark', 'math', 'meter', 'output',
     'progress', 'q', 'ruby', 's', 'samp', 'small', 'span', 'strong', 'sub',
-    'sup', 'time', 'u', 'var', 'wbr', 'text', 'select', 'option',
+    'sup', 'time', 'u', 'var', 'wbr', 'text',
 }
 
 # Attributes from QWeb views that must be translated.
@@ -225,7 +225,12 @@ def translate_xml_node(node, callback, parse, serialize):
                     # change the tag to <span/> which is one of TRANSLATED_ELEMENTS
                     # so that 'result_elem' can be checked by translatable and hastext
                     result_elem.tag = 'span'
-                    if translatable(result_elem) and hastext(result_elem):
+                    if node.tag.lower() == 'option' and translatable(result_elem) and \
+                            result_elem[0:1] and result_elem[0].get('data-oe-translation-source-sha'):
+                        # We can't put the translation <span> inside an
+                        # <option> element, so we put it in an attribute
+                        node.set('data-oe-translation-span-wrapper', etree.tostring(result_elem[0]))
+                    elif translatable(result_elem) and hastext(result_elem):
                         div = result_elem
                         if pos:
                             node[pos-1].tail = div.text

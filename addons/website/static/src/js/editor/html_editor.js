@@ -131,6 +131,10 @@ patch(LinkPopover.prototype, {
         super.onClickApply();
     },
 
+    get showGearIcon() {
+        return !!this.env.services.website.currentWebsiteId;
+    },
+
     get sources() {
         return [this.optionsSource];
     },

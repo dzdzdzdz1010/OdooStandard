@@ -61,3 +61,33 @@ class TestWebsiteEventSale(HttpCaseWithUserPortal, TestWebsiteEventSaleCommon):
             ('order_line.event_ticket_id', '=', self.ticket.id),
             ('order_line.event_ticket_id', '=', free_ticket.id)
         ]), "Sale order should be created for the free/paid tickets mix")
+
+    def test_website_event_registration_redirection_for_public_user_with_no_address(self):
+        """ Public users with no existing billing address registering for an event
+        which requires payment should be redirected to the billing address form. """
+        self.authenticate(None, None)
+        ticket = self.env['event.event.ticket'].create({
+            'event_id': self.event.id,
+            'name': 'New Ticket',
+            'product_id': self.product_event.id,
+            'price': 10,
+        })
+        event_questions = self.event.question_ids
+        name_question = event_questions.filtered(lambda q: q.question_type == 'name')
+        email_question = event_questions.filtered(lambda q: q.question_type == 'email')
+        phone_question = event_questions.filtered(lambda q: q.question_type == 'phone')
+        registration_data = {
+            f'1-name-{name_question.id}': 'New Public Customer',
+            f'1-email-{email_question.id}': 'new_public_customer@test.example.com',
+            f'1-phone-{phone_question.id}': '123456789',
+            '1-event_ticket_id': ticket.id,
+            'csrf_token': http.Request.csrf_token(self),
+        }
+        url = f'/event/{self.event.id}/registration/confirm'
+        response = self.url_open(url, data=registration_data, allow_redirects=True)
+        self.assertEqual(response.status_code, 200)
+        new_partner = self.env['res.partner'].search([
+            ('name', '=', 'New Public Customer'),
+            ('type', '=', 'invoice'),
+        ])
+        self.assertIn(f'/shop/address?partner_id={new_partner.id}&address_type=billing', response.url)

@@ -2,9 +2,10 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 
 from odoo import Command, fields
-from odoo.tests import Form, TransactionCase
+from odoo.tests import Form, TransactionCase, freeze_time
 
 
 class TestSalePurchaseStockFlow(TransactionCase):
@@ -535,3 +536,38 @@ class TestSalePurchaseStockFlow(TransactionCase):
         self.assertFalse(sale_orders.picking_ids.move_ids.move_orig_ids)
         sale_orders.picking_ids.action_assign()
         self.assertListEqual(sale_orders.picking_ids.move_ids.mapped('quantity'), [1.0, 1.0])
+
+    def test_product_monthly_demand(self):
+        """
+        Test monthly demand is counted once in a 3-step delivery flow.
+        """
+        self.env['res.config.settings'].write({
+            'group_stock_adv_location': True,
+        })
+        self.warehouse.delivery_steps = 'pick_pack_ship'
+        product = self.env['product.product'].create({
+            'name': 'Product 3 steps',
+            'is_storable': True,
+            'qty_available': 100,
+        })
+        with freeze_time(fields.Datetime.now() - relativedelta(days=1)):
+            with Form(self.env['sale.order']) as so_form:
+                so_form.partner_id = self.customer
+                with so_form.order_line.new() as line:
+                    line.product_id = product
+                    line.product_uom_qty = 10
+            sale_order = so_form.save()
+            sale_order.action_confirm()
+            # Step 1: Pick
+            picking_1 = sale_order.picking_ids[0]
+            picking_1.button_validate()
+            self.assertEqual(picking_1.state, 'done')
+            # Step 2: Pack
+            picking_2 = sale_order.picking_ids[1]
+            picking_2.button_validate()
+            self.assertEqual(picking_2.state, 'done')
+            # Step 3: Ship
+            picking_3 = sale_order.picking_ids[2]
+            picking_3.button_validate()
+            self.assertEqual(picking_3.state, 'done')
+        self.assertEqual(product.monthly_demand, 10.0)

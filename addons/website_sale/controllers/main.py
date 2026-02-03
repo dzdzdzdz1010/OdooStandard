@@ -3,10 +3,10 @@
 import base64
 import itertools
 import json
+
 from datetime import datetime
 from urllib.parse import parse_qs, urlencode, urlparse
 
-from werkzeug import urls
 from werkzeug.exceptions import Forbidden, NotFound
 from werkzeug.urls import url_decode, url_encode, url_parse
 
@@ -30,36 +30,6 @@ from odoo.addons.website_sale.models.website import (
 )
 
 _lt = LazyTranslate(__name__)
-
-
-def handle_product_params_error(exc, product, category=None, **kwargs):
-    """ Handle access and missing errors related to product or category on the eCommerce.
-
-    This function is intended to prevent access-related exceptions when a user attempts to view a
-    product or category page. It checks if the provided product and category records still exist and
-    are accessible, and then attempts to redirect to a valid fallback route if possible. If no valid
-    route is found, it returns a 404 response code (instead of a 403).
-
-    :param odoo.exceptions.AccessError | odoo.exceptions.MissingError exc: The exception thrown
-            by _check_access `base.models.ir_http._pre_dispatch`.
-    :param product.template product: The product the user is trying to access.
-    :param product.public.category category: The category the user is trying to access, if any.
-    :param dict kwargs: Optional data. This parameter is not used here.
-    :return: A redirect response to a valid shop or product page, or a 404 error code if no valid
-             fallback is found.
-    :rtype: int | Response
-    """
-    product = product.exists()
-    if category:
-        category = category.exists()
-
-    if category and not (product and product.has_access('read')):
-        return request.redirect(WebsiteSale._get_shop_path(category))
-
-    if not category and product and product.has_access('read'):
-        return request.redirect(product._get_product_url())
-
-    return NotFound.code  # 404
 
 
 class TableCompute:
@@ -212,7 +182,7 @@ class WebsiteSale(payment_portal.PaymentPortal):
         dom = sitemap_qs2dom(qs, SHOP_PATH, ProductTemplate._rec_name)
         dom &= Domain(website.sale_product_domain())
         for product in ProductTemplate.with_context(prefetch_fields=False).search(dom):
-            loc = f'{SHOP_PATH}/{env["ir.http"]._slug(product)}'
+            loc = f'{SHOP_PATH}/product/{env["ir.http"]._slug(product)}'
             if not qs or qs.lower() in loc:
                 yield {'loc': loc}
 
@@ -255,14 +225,13 @@ class WebsiteSale(payment_portal.PaymentPortal):
     def _shop_get_query_url_kwargs(
         self, search, min_price, max_price, order=None, tags=None, **kwargs
     ):
-        attribute_values = request.session.get('attribute_values', [])
         return {
             'search': search,
             'min_price': min_price,
             'max_price': max_price,
             'order': order,
             'tags': tags,
-            'attribute_values': attribute_values,
+            **request.session.get('attribute_value_params', {}),
         }
 
     def _get_additional_shop_values(self, values, **kwargs):
@@ -292,19 +261,22 @@ class WebsiteSale(payment_portal.PaymentPortal):
         handle_params_access_error=lambda e, **kwargs: NotFound.code,
     )
     def shop(self, page=0, category=None, search='', min_price=0.0, max_price=0.0, tags='', **post):
+        # Hide attribute name in attribute value slug.
+        request.update_context(show_attribute=False)
+
         if not request.website.has_ecommerce_access():
             return request.redirect(f'/web/login?redirect={request.httprequest.path}')
 
         is_category_in_query = category and isinstance(category, str)
         category = self._validate_and_get_category(category)
-        # If the category is provided as a query parameter (which is deprecated), we redirect to the
-        # "correct" shop URL, where the category has been removed from the query parameters and
-        # added to the path.
+        # TODO: remove support for `category` param in version 20 (or later).
         if is_category_in_query:
-            query = self._get_filtered_query_string(
-                request.httprequest.query_string.decode(), keys_to_remove=['category']
+            query = request.httprequest.args.to_dict(flat=False)
+            query.pop('category', None)
+            url = urlparse(self._get_shop_path(category, page))
+            return request.redirect(
+                url._replace(query=urlencode(query, doseq=True)).geturl(), code=301
             )
-            return request.redirect(f'{self._get_shop_path(category, page)}?{query}', code=301)
 
         try:
             min_price = float(min_price)
@@ -322,20 +294,31 @@ class WebsiteSale(payment_portal.PaymentPortal):
         ppr = website.shop_ppr or 4
         gap = website.shop_gap or "16px"
 
-        request_args = request.httprequest.args
-        attribute_values = request_args.getlist('attribute_values')
-        attribute_value_dict = self._get_attribute_value_dict(attribute_values)
+        attribute_value_params = self._get_attribute_value_params(post)
+        if not attribute_value_params:
+            # TODO: remove support for `attribute_values` query param in version 20 (or later).
+            attribute_values = request.httprequest.args.getlist('attribute_values')
+            # Transform the attribute value query params list into a dict.
+            # Before:
+            #     `['1-2,3', '4-5,6']`
+            # After:
+            #     `{'1': '2,3', '4': '5,6'}`
+            attribute_value_params = dict([
+                pair.split('-') for pair in attribute_values if pair and pair.count('-') == 1
+            ])
+        attribute_value_dict = self._get_attribute_value_dict(attribute_value_params)
         attribute_ids = set(attribute_value_dict.keys())
         attribute_value_ids = set(itertools.chain.from_iterable(attribute_value_dict.values()))
-        if attribute_values:
-            request.session['attribute_values'] = attribute_values
+        if attribute_value_params:
+            request.session['attribute_value_params'] = attribute_value_params
         else:
-            request.session.pop('attribute_values', None)
+            request.session.pop('attribute_value_params', None)
 
         filter_by_tags_enabled = website.is_view_active('website_sale.filter_products_tags')
         if filter_by_tags_enabled:
             if tags:
                 post['tags'] = tags
+                # TODO(loti): ensure that these are ints
                 tags = {self.env['ir.http']._unslug(tag)[1] for tag in tags.split(',')}
             else:
                 post['tags'] = None
@@ -485,14 +468,14 @@ class WebsiteSale(payment_portal.PaymentPortal):
             attribute_ids = [attribute.id for attribute, in attributes_grouped]
             attributes = ProductAttribute.browse(attribute_ids)
         else:
-            attributes = ProductAttribute.browse(attribute_ids).sorted()
+            attributes = ProductAttribute.browse(attribute_ids).exists().sorted()
 
         products_prices = products._get_sales_prices(website)
         product_query_params = self._get_product_query_params(**post)
 
         grouped_attributes_values = request.env['product.attribute.value'].browse(
             attribute_value_ids
-        ).sorted().grouped('attribute_id')
+        ).exists().sorted().grouped('attribute_id')
 
         values = {
             'auto_assign_ribbons': self.env['product.ribbon'].sudo().search([('assign', '!=', 'manual')]),
@@ -522,7 +505,7 @@ class WebsiteSale(payment_portal.PaymentPortal):
             'product_query_params': product_query_params,
             'grouped_attributes_values': grouped_attributes_values,
             'previewed_attribute_values': lazy(
-                lambda: products._get_previewed_attribute_values(category, product_query_params),
+                lambda: products._get_previewed_attribute_values(product_query_params),
             ),
         }
         if filter_by_price_enabled:
@@ -539,6 +522,7 @@ class WebsiteSale(payment_portal.PaymentPortal):
 
     @route(
         [
+            f'{SHOP_PATH}/product/<model("product.template"):product>',
             f'{SHOP_PATH}/<model("product.template"):product>',
             f'{SHOP_PATH}/<model("product.public.category"):category>/<model("product.template"):product>',
         ],
@@ -546,9 +530,13 @@ class WebsiteSale(payment_portal.PaymentPortal):
         auth='public',
         website=True,
         sitemap=sitemap_products,
-        handle_params_access_error=handle_product_params_error,
+        # Sends a 404 error in case of any Access error instead of 403.
+        handle_params_access_error=lambda e, **kwargs: NotFound.code,
     )
-    def product(self, product, category=None, pricelist=None, **kwargs):
+    def product(self, product, pricelist=None, **kwargs):
+        # Hide attribute name in attribute value slug.
+        request.update_context(show_attribute=False)
+
         if not request.website.has_ecommerce_access():
             return request.redirect(f'/web/login?redirect={request.httprequest.path}')
 
@@ -560,34 +548,21 @@ class WebsiteSale(payment_portal.PaymentPortal):
                     "Wrong format: got `pricelist=%s`, expected an integer", pricelist,
                 ))
             if not self._apply_selectable_pricelist(pricelist_id):
-                return request.redirect(self._get_shop_path(category))
+                return request.redirect(self._get_shop_path())
 
         request.update_context(website_sale_product_page=True)
-        is_category_in_query = category and isinstance(category, str)
-        category = self._validate_and_get_category(category)
-        query = self._get_filtered_query_string(
-            request.httprequest.query_string.decode(), keys_to_remove=['category']
-        )
-        # If the product doesn't belong to the category, we redirect to the canonical product URL,
-        # which doesn't include the category.
-        if (
-            category
-            and not product.filtered_domain([('public_categ_ids', 'child_of', category.id)])
-        ):
-            return request.redirect(f'{product._get_product_url()}?{query}', code=301)
-        # If the category is provided as a query parameter (which is deprecated), we redirect to the
-        # "correct" shop URL, where the category has been removed from the query parameters and
-        # added to the path.
-        if is_category_in_query:
-            return request.redirect(
-                f'{product._get_product_url(category)}?{query}', code=301
-            )
+        # TODO: remove support for `category` param and path in version 20 (or later).
+        if not request.httprequest.path.startswith(f'{SHOP_PATH}/product/'):
+            query = request.httprequest.args.to_dict(flat=False)
+            query.pop('category', None)
+            return request.redirect(product._get_product_url(query), code=301)
+
         return request.render(
             'website_sale.product',
             self._prepare_product_values(
                 # request context must be given to ensure context updates in overrides are correctly
                 # forwarded to `_get_combination_info` call
-                product.with_context(request.env.context), category, **kwargs,
+                product.with_context(request.env.context), **kwargs,
             )
         )
 
@@ -615,24 +590,6 @@ class WebsiteSale(payment_portal.PaymentPortal):
         return request.env['ir.binary']._get_stream_from(
             document.ir_attachment_id,
         ).get_response(as_attachment=True)
-
-    @route(
-        [f'{SHOP_PATH}/product/<model("product.template"):product>'],
-        type='http',
-        auth='public',
-        website=True,
-        sitemap=False,
-    )
-    def old_product(self, product, category='', **kwargs):
-        # Compatibility pre-v14
-        # Redirect to the "correct" product URL, which doesn't include `/product`, and where the
-        # category has been removed from the query parameters and added to the path.
-        category = int(category) if str(category).isdigit() else False
-        category = self._validate_and_get_category(category)
-        query = self._get_filtered_query_string(
-            request.httprequest.query_string.decode(), keys_to_remove=['category']
-        )
-        return request.redirect(f'{product._get_product_url(category)}?{query}', code=301)
 
     @route(['/shop/product/extra-media'], type='jsonrpc', auth='user', website=True)
     def add_product_media(self, media, type, product_product_id, product_template_id, combination_ids=None):
@@ -798,29 +755,28 @@ class WebsiteSale(payment_portal.PaymentPortal):
         # In sudo mode to check fields and conditions not accessible to the customer directly.
         return product.sudo()._is_add_to_cart_allowed()
 
-    def _prepare_product_values(self, product, category, **kwargs):
-        ProductCategory = request.env['product.public.category']
+    def _prepare_product_values(self, product, **kwargs):
         product_markup_data = [product._to_markup_data(request.website)]
-        category = (
-            (category and ProductCategory.browse(int(category)).exists())
-            or product.public_categ_ids[:1]
-        )
+        category = product.public_categ_ids[:1]
         if category:
             # Add breadcrumb's SEO data.
             product_markup_data.append(self._prepare_breadcrumb_markup_data(
                 request.website.get_base_url(), category, product.name
             ))
+        keep = QueryURL(self._get_shop_path(), **request.session.get('attribute_value_params', {}))
 
-        if (last_attributes_search := request.session.get('attribute_values', [])):
-            keep = QueryURL(
-                self._get_shop_path(category),
-                attribute_values=last_attributes_search
-            )
-        else:
-            keep = QueryURL(self._get_shop_path(category))
-
-        if attribute_values := kwargs.get('attribute_values', ''):
-            attribute_value_ids = {int(i) for i in attribute_values.split(',')}
+        attribute_value_params = self._get_attribute_value_params(kwargs)
+        attribute_value_dict = self._get_attribute_value_dict(attribute_value_params)
+        attribute_value_ids = set(itertools.chain.from_iterable(attribute_value_dict.values()))
+        if not attribute_value_ids:
+            # TODO: remove support for `attribute_values` query param in version 20 (or later).
+            attribute_values = kwargs.get('attribute_values', '')
+            attribute_value_ids = {
+                int(value_id)
+                for value_id in attribute_values.split(',')
+                if value_id and value_id.isdigit()
+            }
+        if attribute_value_ids:
             combination = product.attribute_line_ids.mapped(
                 lambda ptal: (
                     ptal.product_template_value_ids.filtered(
@@ -841,7 +797,9 @@ class WebsiteSale(payment_portal.PaymentPortal):
         view_track = request.website.viewref("website_sale.product").track
 
         return {
-            'categories': ProductCategory.search([('parent_id', '=', False)]),
+            'categories': request.env['product.public.category'].search([
+                ('parent_id', '=', False),
+            ]),
             'category': category,
             'combination_info': combination_info,
             'keep': keep,
@@ -1949,27 +1907,25 @@ class WebsiteSale(payment_portal.PaymentPortal):
 
     @staticmethod
     def _validate_and_get_category(category):
-        """ Validate and return the `product.public.category` record corresponding to the provided
+        """Validate and return the `product.public.category` record corresponding to the provided
         category, which can be a record, a record id, or a slug.
 
-        - If no category is provided, return an empty recordset.
-        - If a category is provided, but it doesn't exist or can't be accessed, raise a 404.
-        - If a valid category is provided, return the corresponding record.
+        If the provided category is invalid, non-existing, or inaccessible, return an empty
+        recordset. Otherwise, return the corresponding record.
 
         :param str|product.public.category category: The category to validate and return.
-        :return: The validated category.
+        :return: The validated category, or an empty recordset.
         :rtype: product.public.category
         """
         ProductCategory = request.env['product.public.category']
-        if not isinstance(category, ProductCategory.__class__) and category and not str(category).isdigit():
-            raise ValidationError(_("Invalid category."))
+        if category and isinstance(category, str) and not category.isdigit():
+            return ProductCategory
         if (
             (category := ProductCategory.browse(category and int(category)).exists())
             and category.can_access_from_current_website()
         ):
             return category
-        else:
-            return ProductCategory
+        return ProductCategory
 
     @staticmethod
     def _get_shop_path(category=None, page=0):
@@ -1981,34 +1937,58 @@ class WebsiteSale(payment_portal.PaymentPortal):
             path += f'/page/{page}'
         return path
 
-    @staticmethod
-    def _get_filtered_query_string(query_string, keys_to_remove):
-        """ Return a filtered copy of the provided query string, where all keys in `keys_to_remove`
-        are removed.
+    def _get_attribute_value_params(self, query_params):
+        """Extract the attribute value query params from a dict of more general query params.
 
-        Note: the query string shouldn't include the leading '?'.
+        Attribute value query params are expected to have the following format:
+        `attribute-name-1=attribute-value-name-2,attribute-value-name-3`
 
-        :param str query_string: The query string to filter.
-        :param list(str) keys_to_remove: The keys to remove from the query string.
-        :return: The filtered query string.
-        :rtype: str
+        :param dict(str, str) query_params: The more general query params from which to extract the
+            attribute value query params.
+        :return: A dict of attribute value query params.
+        :rtype: dict(str, str)
         """
-        query = urls.url_parse(f'?{query_string}').decode_query()
-        for key in keys_to_remove:
-            query.pop(key, False)
-        return urls.url_encode(query)
+        unslug = self.env['ir.http']._unslug
+        # Only keep the query params whose key can be unslugged (meaning that the key is an
+        # attribute slug).
+        return {
+            attr: attr_values
+            for attr, attr_values in query_params.items()
+            if unslug(attr)[1] and attr_values
+        }
 
-    @staticmethod
-    def _get_attribute_value_dict(attribute_values):
-        """ Parses a list of attribute value query params, and returns a dict grouping attribute
-        value ids by attribute id.
+    def _get_attribute_value_dict(self, attribute_value_params):
+        """Return a dict mapping attribute IDs to lists of attribute value IDs, from a dict of
+        attribute value query params.
 
-        :param list(str) attribute_values: The list of attribute value query parameters to parse.
-        :return: A dict grouping attribute value ids by attribute id.
+        Attribute value query params are expected to have the following format:
+        `attribute-name-1=attribute-value-name-2,attribute-value-name-3`
+
+        This method will ignore any invalid attributes and attribute values (we don't want to raise
+        errors for invalid query params). Moreover, it will only consider the first occurrence of a
+        given attribute (other occurrences are ignored).
+
+        :param dict(str, str) attribute_value_params: The attribute value query params from which to
+            compute the mapping.
+        :return: A dict mapping attribute IDs to lists of attribute value IDs.
         :rtype: dict(int, list(int))
         """
-        attribute_value_pairs = [value.split('-') for value in attribute_values if value]
+        unslug = self.env['ir.http']._unslug
+        # For each attribute value query param, unslug its key (attribute) and value (attribute
+        # values).
+        attribute_value_dict = {
+            unslug(attr)[1]: [unslug(attr_value)[1] for attr_value in attr_values.split(',')]
+            for attr, attr_values in attribute_value_params.items()
+        }
+        # Only keep the attributes and attribute values that were correctly unslugged.
+        filtered_attribute_value_dict = {
+            attr_id: [attr_value_id for attr_value_id in attr_value_ids if attr_value_id]
+            for attr_id, attr_value_ids in attribute_value_dict.items()
+            if attr_id
+        }
+        # Only keep attributes that have at least one attribute value.
         return {
-            int(pair[0]): [int(value_id) for value_id in pair[1].split(',')]
-            for pair in attribute_value_pairs
+            attr_id: attr_value_ids
+            for attr_id, attr_value_ids in filtered_attribute_value_dict.items()
+            if attr_value_ids
         }

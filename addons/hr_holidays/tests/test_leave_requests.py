@@ -17,8 +17,8 @@ from odoo.addons.hr_holidays.tests.common import TestHrHolidaysCommon
 @tagged('at_install', '-post_install')  # LEGACY at_install
 class TestLeaveRequests(TestHrHolidaysCommon):
 
-    def _check_holidays_status(self, holiday_status, employee, ml, lt, rl, vrl):
-        result = holiday_status.get_allocation_data(employee)[employee][0][1]
+    def _check_holidays_status(self, work_entry_type, employee, ml, lt, rl, vrl):
+        result = work_entry_type.get_allocation_data(employee)[employee][0][1]
         self.assertEqual(
             result['max_leaves'], ml,
             'hr_holidays: wrong type days computation')
@@ -239,8 +239,8 @@ class TestLeaveRequests(TestHrHolidaysCommon):
             })
             allocation.action_approve()
 
-            holiday_status = self.holidays_type_2.with_user(self.user_employee_id)
-            self._check_holidays_status(holiday_status, self.employee_emp, 2.0, 0.0, 2.0, 2.0)
+            work_entry_type = self.holidays_type_2.with_user(self.user_employee_id)
+            self._check_holidays_status(work_entry_type, self.employee_emp, 2.0, 0.0, 2.0, 2.0)
 
             hol = self.env['hr.leave'].with_user(self.user_employee_id).create({
                 'name': 'Hol11',
@@ -250,13 +250,13 @@ class TestLeaveRequests(TestHrHolidaysCommon):
                 'request_date_to': datetime.today(),
             })
 
-            holiday_status.invalidate_model()
-            self._check_holidays_status(holiday_status, self.employee_emp, 2.0, 0.0, 2.0, 0.0)
+            work_entry_type.invalidate_model()
+            self._check_holidays_status(work_entry_type, self.employee_emp, 2.0, 0.0, 2.0, 0.0)
 
             hol.with_user(self.user_hrmanager_id).action_approve()
 
-            holiday_status.invalidate_model(['max_leaves'])
-            self._check_holidays_status(holiday_status, self.employee_emp, 2.0, 2.0, 0.0, 0.0)
+            work_entry_type.invalidate_model(['max_leaves'])
+            self._check_holidays_status(work_entry_type, self.employee_emp, 2.0, 2.0, 0.0, 0.0)
 
     @mute_logger('odoo.models.unlink', 'odoo.addons.mail.models.mail_mail')
     def test_accrual_validity_time_valid(self):
@@ -1454,8 +1454,8 @@ class TestLeaveRequests(TestHrHolidaysCommon):
             'request_date_from': '2024-01-23',
             'request_date_to': '2024-01-27',
         })
-        holiday_status = self.holidays_type_4.with_user(self.user_employee_id)
-        self._check_holidays_status(holiday_status, employee, 20.0, 0.0, 20.0, 15.0)
+        work_entry_type = self.holidays_type_4.with_user(self.user_employee_id)
+        self._check_holidays_status(work_entry_type, employee, 20.0, 0.0, 20.0, 15.0)
         self.assertEqual(leave.duration_display, '5 days')
 
     def test_default_request_date_timezone(self):

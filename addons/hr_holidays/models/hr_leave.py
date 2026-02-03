@@ -75,7 +75,7 @@ class HrLeave(models.Model):
     def default_get(self, fields):
         defaults = super().default_get(fields)
         defaults = self._default_get_request_dates(defaults)
-        if self.env.context.get('holiday_status_display_name', True) and 'work_entry_type_id' in fields and not defaults.get('work_entry_type_id'):
+        if self.env.context.get('work_entry_type_display_name', True) and 'work_entry_type_id' in fields and not defaults.get('work_entry_type_id'):
             domain = ['|', ('requires_allocation', '=', False), ('has_valid_allocation', '=', True)]
             defaults['work_entry_type_id'] = False
             work_entry_types = self.env['hr.work.entry.type'].search(domain, order='sequence')
@@ -143,7 +143,7 @@ class HrLeave(models.Model):
                 ('has_valid_allocation', '=', True),
         ]""",
         tracking=True)
-    holiday_status_requires_allocation = fields.Boolean(related="work_entry_type_id.requires_allocation")
+    work_entry_type_requires_allocation = fields.Boolean(related="work_entry_type_id.requires_allocation")
     color = fields.Integer("Color", related='work_entry_type_id.color')
     validation_type = fields.Selection(string='Validation Type', related='work_entry_type_id.leave_validation_type', readonly=False)
     # HR data
@@ -532,7 +532,7 @@ class HrLeave(models.Model):
         durations = self._get_durations(check_work_entry_type=False)
         for leave in self:
             days = durations[leave.id][0]
-            if leave.work_entry_type_request_unit == 'day' and leave.holiday_status_requires_allocation and days < leave.number_of_days:
+            if leave.work_entry_type_request_unit == 'day' and leave.work_entry_type_requires_allocation and days < leave.number_of_days:
                 leave.work_entry_type_increases_duration = self.env._("According to your working schedule you are expected to work"
                 " %(days)s days in this period, but %(nb_days)s days will be used because this leave"
                 " %(work_entry_type_name)s can only be taken by days.",

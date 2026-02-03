@@ -405,11 +405,11 @@ class TestAccessRightsWrite(TestHrHolidaysAccessRightsCommon):
         self.employee_emp.leave_manager_id = respo_user
 
         for validatation_type in ['manager', 'both']:
-            self.leave_type.write({'leave_validation_type': validatation_type})
+            self.work_entry_type.write({'leave_validation_type': validatation_type})
             values = {
                 'name': 'Random Time Off',
                 'employee_id': self.employee_emp.id,
-                'holiday_status_id': self.leave_type.id,
+                'work_entry_type_id': self.work_entry_type.id,
                 'state': 'confirm',
             }
             leave = self.request_leave(self.user_employee, date.today(), 1, values)

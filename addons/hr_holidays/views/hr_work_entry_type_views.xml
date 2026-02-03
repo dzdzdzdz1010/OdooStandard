@@ -112,7 +112,7 @@
         </field>
     </record>
 
-    <record id="hr_holiday_status_view_kanban" model="ir.ui.view">
+    <record id="hr_work_entry_type_view_kanban" model="ir.ui.view">
         <field name="name">hr.work.entry.type.kanban</field>
         <field name="model">hr.work.entry.type</field>
         <field name="arch" type="xml">
@@ -130,7 +130,7 @@
         </field>
     </record>
 
-    <record id="view_holiday_status_normal_tree" model="ir.ui.view">
+    <record id="view_work_entry_type_normal_tree" model="ir.ui.view">
         <field name="name">hr.work.entry.type.normal.list</field>
         <field name="model">hr.work.entry.type</field>
         <field name="arch" type="xml">
@@ -150,7 +150,7 @@
         </field>
     </record>
 
-    <record id="open_view_holiday_status" model="ir.actions.act_window">
+    <record id="open_view_work_entry_type" model="ir.actions.act_window">
         <field name="name">Time Off Types</field>
         <field name="res_model">hr.work.entry.type</field>
         <field name="view_mode">list,kanban,form</field>

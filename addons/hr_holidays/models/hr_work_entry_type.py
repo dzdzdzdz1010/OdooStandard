@@ -275,12 +275,12 @@ class HrWorkEntryType(models.Model):
         # when context gets cleaned and 'default_' context keys gets removed
         target_date = self.env.context.get('leave_date_from') or self.env.context.get('default_date_from')
         data_days = self.get_allocation_data(employee, target_date)[employee]
-        for holiday_status in self:
-            result = [item for item in data_days if item[0] == holiday_status.name]
+        for work_entry_type in self:
+            result = [item for item in data_days if item[0] == work_entry_type.name]
             work_entry_type_tuple = result[0] if result else ('', {})
-            holiday_status.max_leaves = work_entry_type_tuple[1].get('max_leaves', 0)
-            holiday_status.leaves_taken = work_entry_type_tuple[1].get('leaves_taken', 0)
-            holiday_status.virtual_remaining_leaves = work_entry_type_tuple[1].get('virtual_remaining_leaves', 0)
+            work_entry_type.max_leaves = work_entry_type_tuple[1].get('max_leaves', 0)
+            work_entry_type.leaves_taken = work_entry_type_tuple[1].get('leaves_taken', 0)
+            work_entry_type.virtual_remaining_leaves = work_entry_type_tuple[1].get('virtual_remaining_leaves', 0)
 
     def _compute_allocation_count(self):
         min_datetime = fields.Datetime.to_string(datetime.now().replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0))
@@ -297,7 +297,7 @@ class HrWorkEntryType(models.Model):
             ['work_entry_type_id'],
             ['__count'],
         )
-        grouped_dict = {holiday_status.id: count for holiday_status, count in grouped_res}
+        grouped_dict = {work_entry_type.id: count for work_entry_type, count in grouped_res}
         for allocation in self:
             allocation.allocation_count = grouped_dict.get(allocation.id, 0)
 
@@ -315,7 +315,7 @@ class HrWorkEntryType(models.Model):
             ['work_entry_type_id'],
             ['__count'],
         )
-        grouped_dict = {holiday_status.id: count for holiday_status, count in grouped_res}
+        grouped_dict = {work_entry_type.id: count for work_entry_type, count in grouped_res}
         for allocation in self:
             allocation.group_days_leave = grouped_dict.get(allocation.id, 0)
 
@@ -334,7 +334,7 @@ class HrWorkEntryType(models.Model):
             ['work_entry_type_id'],
             ['__count'],
         )
-        return {holiday_status.id: count for holiday_status, count in leaves_count}
+        return {work_entry_type.id: count for work_entry_type, count in leaves_count}
 
     def _allocations_count_by_work_entry_type_id(self):
         allocation_domain = [
@@ -345,13 +345,13 @@ class HrWorkEntryType(models.Model):
             ['work_entry_type_id'],
             ['__count'],
         )
-        return {holiday_status.id: count for holiday_status, count in allocations_count}
+        return {work_entry_type.id: count for work_entry_type, count in allocations_count}
 
     def requested_display_name(self):
-        return self.env.context.get('holiday_status_display_name', True) and self.env.context.get('employee_id')
+        return self.env.context.get('work_entry_type_display_name', True) and self.env.context.get('employee_id')
 
     @api.depends('requires_allocation', 'virtual_remaining_leaves', 'max_leaves', 'unit_of_measure')
-    @api.depends_context('holiday_status_display_name', 'employee_id')
+    @api.depends_context('work_entry_type_display_name', 'employee_id')
     def _compute_display_name(self):
         if not self.requested_display_name():
             # leave counts is based on employee_id, would be inaccurate if not based on correct employee

@@ -4529,7 +4529,7 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
 
         allocation_day = self.env['hr.leave.allocation'].create({
             'name': 'Daily Accrual',
-            'holiday_status_id': self.leave_type_day.id,
+            'work_entry_type_id': self.work_entry_type_day.id,
             'employee_id': self.employee_emp.id,
             'allocation_type': 'accrual',
             'accrual_plan_id': self.accrual_plan_start1.id,
@@ -4565,8 +4565,9 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
         })
         self.employee_emp.resource_calendar_id = calendar
 
-        leave_type_hour = self.env['hr.leave.type'].create({
+        work_entry_type_hour = self.env['hr.work.entry.type'].create({
             'name': 'Hourly Leave Type',
+            'code': 'Hourly Leave Type',
             'time_type': 'leave',
             'requires_allocation': True,
             'allocation_validation_type': 'hr',
@@ -4576,7 +4577,7 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
 
         allocation_hour = self.env['hr.leave.allocation'].create({
             'name': 'Hourly Allocation with daily accrual',
-            'holiday_status_id': leave_type_hour.id,
+            'work_entry_type_id': work_entry_type_hour.id,
             'employee_id': self.employee_emp.id,
             'allocation_type': 'accrual',
             'accrual_plan_id': accrual_plan.id,
@@ -4592,8 +4593,9 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
 
     def test_accrual_leaves_cancel_cron_with_refused_allocation(self):
         """ Test that the _cancel_invalid_leaves cron cancels leaves without valid allocation"""
-        leave_type = self.env['hr.leave.type'].create({
+        work_entry_type = self.env['hr.work.entry.type'].create({
             'name': 'Test Accrual',
+            'code': 'Test Accrual',
             'time_type': 'leave',
             'requires_allocation': 'yes',
             'allocation_validation_type': 'no_validation',
@@ -4612,7 +4614,7 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
         with freeze_time("2024-01-01"):
             allocation = self.env['hr.leave.allocation'].create({
                 'employee_id': self.employee_emp.id,
-                'holiday_status_id': leave_type.id,
+                'work_entry_type_id': work_entry_type.id,
                 'allocation_type': 'accrual',
                 'accrual_plan_id': accrual_plan.id,
                 'number_of_days': 1,
@@ -4620,7 +4622,7 @@ class TestAccrualAllocations(TestHrHolidaysCommon):
 
             leave = self.env['hr.leave'].create({
                 'employee_id': self.employee_emp.id,
-                'holiday_status_id': leave_type.id,
+                'work_entry_type_id': work_entry_type.id,
                 'request_date_from': '2024-01-05',
                 'request_date_to': '2024-01-05',
             })

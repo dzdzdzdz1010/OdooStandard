@@ -115,7 +115,7 @@
                 <field name="can_refuse"/>
                 <field name="request_date_from_period"/>
                 <field name="request_date_to_period"/>
-                <field name="holiday_status_requires_allocation"/>
+                <field name="work_entry_type_requires_allocation"/>
                 <templates>
                     <t t-name="card" class="g-0">
                         <div class="o_hr_holidays_kanban w-100">
@@ -183,7 +183,7 @@
                                                 Amount
                                             </div>
                                             <div class="col-2 o_hr_holidays_card">
-                                                <div t-if="record.holiday_status_requires_allocation.raw_value"> <!-- To keep the same space-->
+                                                <div t-if="record.work_entry_type_requires_allocation.raw_value"> <!-- To keep the same space-->
                                                     <div class="fw-bold d-flex gap-1 me-1">
                                                         <field name="virtual_remaining_leaves" widget="float" digits="[3,2]"/>
                                                         /

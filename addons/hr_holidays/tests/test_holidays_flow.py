@@ -95,7 +95,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
 
             self.admin_employee.tz = "Europe/Brussels"
 
-            holiday_status_paid_time_off = self.env['hr.work.entry.type'].create({
+            work_entry_type_paid_time_off = self.env['hr.work.entry.type'].create({
                 'name': 'Paid Time Off',
                 'code': 'Paid Time Off',
                 'requires_allocation': True,
@@ -109,14 +109,14 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
             self.env['hr.leave.allocation'].create([
                 {
                     'name': 'Paid Time off for David',
-                    'work_entry_type_id': holiday_status_paid_time_off.id,
+                    'work_entry_type_id': work_entry_type_paid_time_off.id,
                     'number_of_days': 20,
                     'employee_id': self.employee_emp_id,
                     'state': 'confirm',
                     'date_from': time.strftime('%Y-%m-01'),
                 }, {
                     'name': 'Paid Time off for Admin',
-                    'work_entry_type_id': holiday_status_paid_time_off.id,
+                    'work_entry_type_id': work_entry_type_paid_time_off.id,
                     'number_of_days': 20,
                     'employee_id': self.admin_employee.id,
                     'state': 'confirm',
@@ -124,8 +124,8 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
                 }
             ]).action_approve()
 
-            def _check_holidays_status(holiday_status, employee, ml, lt, rl, vrl):
-                result = holiday_status.get_allocation_data(employee)[employee][0][1]
+            def _check_holidays_status(work_entry_type, employee, ml, lt, rl, vrl):
+                result = work_entry_type.get_allocation_data(employee)[employee][0][1]
                 self.assertEqual(result['max_leaves'], ml,
                                 'hr_holidays: wrong type days computation')
                 self.assertEqual(result['leaves_taken'], lt,
@@ -211,7 +211,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
 
             employee_id = self.admin_employee.id
             # cl can be of maximum 20 days for admin_emp
-            hol3_status = holiday_status_paid_time_off.with_context(employee_id=employee_id)
+            hol3_status = work_entry_type_paid_time_off.with_context(employee_id=employee_id)
             # I assign the dates in the holiday request for 1 day
             hol3 = Requests.create({
                 'name': 'Sick Time Off',
@@ -249,7 +249,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
         # error message is triggered if the date_from is after
         # date_to. Coming from a bug due to the new ORM 13.0
 
-        holiday_status_paid_time_off = self.env['hr.work.entry.type'].create({
+        work_entry_type_paid_time_off = self.env['hr.work.entry.type'].create({
             'name': 'Paid Time Off',
             'code': 'Paid Time Off',
             'requires_allocation': True,
@@ -262,7 +262,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
 
         self.env['hr.leave.allocation'].create({
             'name': 'Paid Time off for David',
-            'work_entry_type_id': holiday_status_paid_time_off.id,
+            'work_entry_type_id': work_entry_type_paid_time_off.id,
             'number_of_days': 20,
             'employee_id': self.admin_employee.id,
             'state': 'confirm',
@@ -272,7 +272,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
 
         leave_vals = {
             'name': 'Sick Time Off',
-            'work_entry_type_id': holiday_status_paid_time_off.id,
+            'work_entry_type_id': work_entry_type_paid_time_off.id,
             'request_date_from': date.today() + relativedelta(day=11),
             'request_date_to': date.today() + relativedelta(day=10),
             'employee_id': self.admin_employee.id,
@@ -282,7 +282,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
 
         leave_vals = {
             'name': 'Sick Time Off',
-            'work_entry_type_id': holiday_status_paid_time_off.id,
+            'work_entry_type_id': work_entry_type_paid_time_off.id,
             'request_date_from': date.today() + relativedelta(day=10),
             'request_date_to': date.today() + relativedelta(day=11),
             'employee_id': self.admin_employee.id,

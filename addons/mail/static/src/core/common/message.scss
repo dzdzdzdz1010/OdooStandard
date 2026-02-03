@@ -10,11 +10,6 @@
         --border-opacity: .2;
     }
 
-    &.o-highlighted {
-        transform: translateY(-#{map-get($spacers, 3)});
-        z-index: 2;
-    }
-
     &.o-actionMenuMobileOpen {
         background-color: rgba($o-action, .075);
         outline: 1px solid rgba($o-action, .125);
@@ -175,4 +170,14 @@
 
 .o-mail-Message-translated {
     color: $o-enterprise-action-color;
+}
+
+.o-mail-Thread:has(.o-highlighted) {
+    > div {
+        > *:not(.o-highlighted) {
+            transition: opacity .3s ease-in-out, filter .3s ease-in-out;
+            opacity: .4;
+            filter: blur(3px);
+        }
+    }
 }

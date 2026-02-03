@@ -51,6 +51,10 @@ class Binary(Field[BinaryValue]):
     def _description_sortable(self, env):
         return False
 
+    def _to_prefetch(self, record):
+        # limit the prefetch for binary fields more than for other fields
+        return super()._to_prefetch(record)[:10]
+
     def convert_to_column(self, value, record, values=None, validate=True):
         data = self.convert_to_cache(value, record, validate) or BinaryValue.from_bytes(b'')
         value = data.content

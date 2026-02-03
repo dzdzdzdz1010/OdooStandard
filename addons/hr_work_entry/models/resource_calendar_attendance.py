@@ -19,11 +19,12 @@ class ResourceCalendarAttendance(models.Model):
                     resource_calendar_attendence.work_entry_type_id = types_per_calendar[calendar]
                 else:
                     all_types = self.env['hr.work.entry.type'].sudo().search([('code', '=', 'WORK100')])
-                    default_work_entry_type = all_types.filtered(lambda t: t.country_id == calendar.country_id)
-                    if not default_work_entry_type:
-                        default_work_entry_type = all_types.filtered(lambda t: not t.country_id)
-                    resource_calendar_attendence.work_entry_type_id = default_work_entry_type
-                    types_per_calendar[calendar] = default_work_entry_type
+                    default_work_entry_type = all_types.filtered(
+                        lambda t: t.country_id == calendar.country_id
+                    ) or all_types.filtered(lambda t: not t.country_id)
+                    if default_work_entry_type:
+                        resource_calendar_attendence.work_entry_type_id = default_work_entry_type[0]
+                        types_per_calendar[calendar] = default_work_entry_type[0]
 
     def _copy_attendance_vals(self):
         res = super()._copy_attendance_vals()

@@ -45,25 +45,31 @@ class TestSandwichLeave(TransactionCase):
 
         self.work_entry_type_day, self.work_entry_type_half_day, self.work_entry_type_hours = self.env['hr.work.entry.type'].create([{
             'name': 'Test Leave Type',
+            'code': 'Test Leave Type',
             'request_unit': 'day',
             'unit_of_measure': 'day',
             'requires_allocation': False,
             'l10n_in_is_sandwich_leave': True,
             'company_id': self.indian_company.id,
+            'count_as': 'absence',
         }, {
             'name': 'Test Leave Type 2',
+            'code': 'Test Leave Type 2',
             'request_unit': 'half_day',
             'unit_of_measure': 'day',
             'requires_allocation': False,
             'l10n_in_is_sandwich_leave': True,
             'company_id': self.indian_company.id,
+            'count_as': 'absence',
         }, {
             'name': 'Test Leave Type 3',
+            'code': 'Test Leave Type 3',
             'request_unit': 'hour',
             'unit_of_measure': 'hour',
             'requires_allocation': False,
             'l10n_in_is_sandwich_leave': True,
             'company_id': self.indian_company.id,
+            'count_as': 'absence',
         }])
         self.rahul_emp = self.env['hr.employee'].create({
             'name': 'Rahul',
@@ -431,9 +437,11 @@ class TestSandwichLeave(TransactionCase):
         """
         other_work_entry_type = self.env['hr.work.entry.type'].create({
             'name': 'Test Leave Type',
+            'code': 'Test Leave Type',
             'request_unit': 'day',
             'unit_of_measure': 'day',
             'requires_allocation': False,
+            'count_as': 'absence',
         })
         before_holiday_leave = self.env['hr.leave'].create({
             'name': 'Test Leave',

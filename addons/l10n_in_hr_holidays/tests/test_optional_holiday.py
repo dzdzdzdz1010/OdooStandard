@@ -17,6 +17,7 @@ class TestOptionalHoliday(TestHrHolidaysCommon):
 
         cls.work_entry_type = cls.env['hr.work.entry.type'].create({
             'name': 'Indian Leave Type',
+            'code': 'Indian Leave Type',
             'requires_allocation': False,
             'count_as': 'absence',
             'request_unit': 'hour',

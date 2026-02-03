@@ -86,17 +86,13 @@ class HrVersion(models.Model):
     def _get_attendance_intervals(self, start_dt, end_dt):
         assert start_dt.tzinfo and end_dt.tzinfo, "function expects localized date"
         # {resource: intervals}
-        versions_by_calendar = defaultdict(lambda: self.env['hr.version'])
-        for version in self:
-            if version.work_entry_source != 'calendar':
-                continue
-            versions_by_calendar[version.resource_calendar_id] |= version
+        versions_with_calendar_work_entry_source = self.filtered(lambda version: version.work_entry_source == 'calendar')
         result = dict()
-        for calendar, versions in versions_by_calendar.items():
+        for calendar, versions in versions_with_calendar_work_entry_source.grouped('resource_calendar_id').items():
             fully_flex_versions = versions.filtered('is_fully_flexible')
             for version in fully_flex_versions:
                 result.update({version.employee_id.resource_id.id: Intervals([(start_dt, end_dt, self.env['resource.calendar.attendance'])])})
-            remaining_versions = self.env['hr.version'].browse((versions - fully_flex_versions).ids)
+            remaining_versions = (versions - fully_flex_versions).with_prefetch()
             resources_per_tz = remaining_versions._get_resources_per_tz()
             if remaining_versions:
                 result.update(calendar._attendance_intervals_batch(

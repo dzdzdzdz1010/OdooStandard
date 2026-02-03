@@ -425,3 +425,10 @@ class PurchaseOrderLine(models.Model):
     def _merge_po_line(self, rfq_line):
         super()._merge_po_line(rfq_line)
         self.move_dest_ids += rfq_line.move_dest_ids
+
+    def _get_product_purchase_description(self, product):
+        name = super()._get_product_purchase_description(product)
+        self_with_context = self.with_context(product.env.context)
+        if self_with_context.product_description_variants:
+            name += "\n" + self_with_context.product_description_variants
+        return name

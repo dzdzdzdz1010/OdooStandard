@@ -784,6 +784,9 @@ patch(PosStore.prototype, {
                     });
                 }
             }
+            if (!order.finalized) {
+                continue;
+            }
             await this._postProcessLoyalty(order);
         }
     },

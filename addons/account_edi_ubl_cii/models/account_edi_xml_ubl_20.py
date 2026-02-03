@@ -757,6 +757,11 @@ class AccountEdiXmlUBL20(models.AbstractModel):
 
         # Taxes
         inv_line_vals = self._import_fill_invoice_line_values(tree, xpath_dict, invoice_line, qty_factor)
+        # If the invoice line has no meaningful LineExtensionAmount (empty/null/zero),
+        # the parser returns None. In that case, remove the created line and skip it.
+        if inv_line_vals is None:
+            invoice_line.unlink()
+            return []
         # retrieve tax nodes
         tax_nodes = tree.findall('.//{*}Item/{*}ClassifiedTaxCategory/{*}Percent')
         if not tax_nodes:

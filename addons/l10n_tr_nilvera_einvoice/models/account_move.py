@@ -1,13 +1,18 @@
 import base64
+import logging
 import uuid
-from markupsafe import Markup
 from urllib.parse import quote, urlencode, urlparse
+
+from markupsafe import Markup
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools import SQL
+
 from odoo.addons.l10n_tr_nilvera.const import NILVERA_ERROR_CODE_MESSAGES
 from odoo.addons.l10n_tr_nilvera.lib.nilvera_client import _get_nilvera_client
+
+_logger = logging.getLogger(__name__)
 
 MOVE_TYPE_CATEGORY_MAP = {
     "out_invoice": {
@@ -55,6 +60,7 @@ class AccountMove(models.Model):
         selection=[
             ('TEMELFATURA', "Basic"),
             ('KAMU', "Public Sector"),
+            ('TICARIFATURA', "Commercial"),
         ],
         default='TEMELFATURA',
         string="Invoice Scenario",
@@ -102,6 +108,22 @@ class AccountMove(models.Model):
     l10n_tr_nilvera_customer_status = fields.Selection(
         string="Partner Nilvera Status",
         related='partner_id.l10n_tr_nilvera_customer_status',
+    )
+    l10n_tr_ticarifatura_status = fields.Selection(
+        selection=[
+            ('pending', "Sent and Waiting Response"),
+            ('approved', "Approved"),
+            ('rejected', "Rejected"),
+        ],
+        string="Commercial Response",
+        readonly=True,
+        copy=False,
+        tracking=True,
+    )
+    l10n_tr_ticarifatura_response_note = fields.Text(
+        string="Commercial Response Note",
+        readonly=True,
+        copy=False,
     )
 
     @api.depends("l10n_tr_gib_invoice_scenario", "l10n_tr_gib_invoice_type", "l10n_tr_is_export_invoice")
@@ -274,13 +296,19 @@ class AccountMove(models.Model):
                         if nilvera_status == 'error':
                             invoice.message_post(
                                 body=Markup(
-                                    "%s<br/>%s - %s<br/>"
+                                    "%s<br/>%s - %s<br/>",
                                 ) % (
                                     _("The invoice couldn't be sent to the recipient."),
                                     response.get('InvoiceStatus', {}).get('Description') or response.get('StatusDetail'),
                                     response.get('InvoiceStatus', {}).get('DetailDescription') or response.get('ReportStatus'),
-                                )
+                                ),
                             )
+                        if nilvera_status == 'succeed' and invoice.move_type == 'out_invoice' and invoice.l10n_tr_gib_invoice_scenario == "TICARIFATURA":
+                            if response.get('Answer') is None:
+                                invoice.l10n_tr_ticarifatura_status = 'pending'
+                            elif response['Answer'].get('AnswerCode') in {'approved', 'rejected'}:
+                                invoice.l10n_tr_ticarifatura_status = response['Answer']['AnswerCode']
+                                invoice.l10n_tr_ticarifatura_response_note = response['Answer']['Description']
                     else:
                         invoice.message_post(body=_("The invoice status couldn't be retrieved from Nilvera."))
 
@@ -464,8 +492,8 @@ class AccountMove(models.Model):
         # Allows overriding the default customer alias with a custom one.
         self.ensure_one()
         return (
-            self.l10n_tr_is_export_invoice
-            and self.company_id.l10n_tr_nilvera_export_alias
+            (self.l10n_tr_is_export_invoice
+            and self.company_id.l10n_tr_nilvera_export_alias)
             or self.partner_id.l10n_tr_nilvera_customer_alias_id.name
         )
 
@@ -533,3 +561,77 @@ class AccountMove(models.Model):
                         document_category="Sale",
                         invoice_channel=invoice.l10n_tr_nilvera_customer_status,
                     )
+
+    def action_send_ticarifatura_response(self, answer_code='approved', rejection_note=''):
+        """
+        Send the Ticarifatura response to Nilvera.
+        Applicable only for Commercial bills.
+
+        :param str answer_code: 'approved' or 'rejected'
+        :param str rejection_note: Note for rejection, if applicable.
+        """
+        self.ensure_one()
+        if self.move_type != 'in_invoice' or self.l10n_tr_gib_invoice_scenario != 'TICARIFATURA':
+            raise UserError(_("This action is only available for Commercial bills."))
+        if self.l10n_tr_ticarifatura_status != 'pending':
+            raise UserError(_("The response has already been sent for this bill."))
+
+        with _get_nilvera_client(self.env.company) as client:
+            response = client.request(
+                method="POST",
+                endpoint="/einvoice/Purchase/SendAnswer",
+                json={
+                    "UUID": self.l10n_tr_nilvera_uuid,
+                    "AnswerCode": answer_code,
+                    "RejectNote": rejection_note,
+                },
+            )
+            if isinstance(response, str):
+                self.l10n_tr_ticarifatura_status = answer_code
+                self.l10n_tr_ticarifatura_response_note = rejection_note
+                if answer_code == 'approved':
+                    self.l10n_tr_nilvera_get_pdf()
+            elif response.get('errors'):
+                _logger.error("Error sending Ticarifatura response: %s", response['errors'])
+                raise UserError(_("Error sending Ticarifatura response"))
+
+    def action_fetch_ticafatura_response(self):
+        """
+        Fetch the Ticarifatura response status from Nilvera for the given UUID.
+        Applicable only for Commercial Invoice.
+
+        :param str uuid: The NILVERA UUID of the Commercial Invoice.
+        """
+        self.ensure_one()
+
+        if self.move_type not in ['out_invoice', 'in_invoice'] or self.l10n_tr_gib_invoice_scenario != 'TICARIFATURA':
+            raise UserError(_("This action is only available for Commercial Invoices/Bill."))
+        if self.l10n_tr_ticarifatura_status != 'pending':
+            raise UserError(_("Either the status has already been received the invoice is not approved by Nilvera yet."))
+
+        with _get_nilvera_client(self.env.company) as client:
+            response = client.request(
+                method="GET",
+                endpoint=f"/einvoice/Purchase/{self.l10n_tr_nilvera_uuid}/Status",
+            )
+            if response.get('Answer') is not None:
+                if response['Answer'].get('AnswerCode') == 'approved':
+                    self.l10n_tr_ticarifatura_status = response['Answer']['AnswerCode']
+                elif response['Answer'].get('AnswerCode') == 'rejected':
+                    self.l10n_tr_ticarifatura_status = response['Answer']['AnswerCode']
+                    self.l10n_tr_ticarifatura_response_note = response['Answer'].get('Description', '')
+                    self.button_draft()
+                    self.button_cancel()
+
+    def action_reject_ticarifatura(self):
+        self.ensure_one()
+        return {
+            'name': _('Reject Bill'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'l10n_tr_nilvera_einvoice.ticafatura.response.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_move_id': self.id,
+            },
+        }

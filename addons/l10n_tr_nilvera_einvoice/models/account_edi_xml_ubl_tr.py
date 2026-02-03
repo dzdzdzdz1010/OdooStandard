@@ -4,7 +4,7 @@ from collections import defaultdict
 from lxml import etree
 from num2words import num2words
 
-from odoo import _, Command, api, models
+from odoo import Command, _, api, models
 from odoo.exceptions import UserError
 from odoo.tools import float_compare, frozendict, html2plaintext
 from odoo.tools.misc import clean_context
@@ -101,7 +101,7 @@ class AccountEdiXmlUblTr(models.AbstractModel):
             }
         document_node['cbc:Note'] = [
             document_node['cbc:Note'],
-            {'_text': self._l10n_tr_get_amount_integer_partn_text_note(invoice.amount_residual_signed, self.env.ref('base.TRY')), 'note_attrs': {}}
+            {'_text': self._l10n_tr_get_amount_integer_partn_text_note(invoice.amount_residual_signed, self.env.ref('base.TRY')), 'note_attrs': {}},
         ]
         if vals['invoice'].currency_id.name != 'TRY':
             document_node['cbc:Note'].append({'_text': self._l10n_tr_get_amount_integer_partn_text_note(invoice.amount_residual, vals['invoice'].currency_id), 'note_attrs': {}})
@@ -396,7 +396,7 @@ class AccountEdiXmlUblTr(models.AbstractModel):
             'cac:Country': {
                 'cbc:IdentificationCode': {'_text': partner.country_id.code},
                 'cbc:Name': {'_text': partner.country_id.with_context(lang='tr_TR').name},
-            }
+            },
         }
 
     def _get_invoice_line_node(self, vals):
@@ -474,15 +474,15 @@ class AccountEdiXmlUblTr(models.AbstractModel):
         party_node = {
             'cac:PartyIdentification': self._get_party_identification_node_list(partner),
             'cac:PartyName': {
-                'cbc:Name': {'_text': partner.display_name}
+                'cbc:Name': {'_text': partner.display_name},
             },
             'cac:PostalAddress': self._get_address_node(vals),
             'cac:PartyTaxScheme': {
                 'cac:TaxScheme': {
                     'cbc:Name': {
                         '_text': partner.l10n_tr_tax_office_id.name,
-                    }
-                }
+                    },
+                },
             },
             'cac:PartyLegalEntity': {
                 'cbc:RegistrationName': {'_text': commercial_partner.name},
@@ -493,7 +493,7 @@ class AccountEdiXmlUblTr(models.AbstractModel):
                 'cbc:Name': {'_text': partner.name},
                 'cbc:Telephone': {'_text': partner.phone},
                 'cbc:ElectronicMail': {'_text': partner.email},
-            }
+            },
         }
         if not partner.is_company:
             name_parts = partner.name.split(' ', 1)
@@ -550,8 +550,8 @@ class AccountEdiXmlUblTr(models.AbstractModel):
         tax_category_node = {
             'cac:TaxScheme': {
                 'cbc:Name': {'_text': 'KDV Tevkifatı' if is_withholding else 'Gerçek Usulde KDV'},
-                'cbc:TaxTypeCode': {'_text': grouping_key['tax_category_code']}
-            }
+                'cbc:TaxTypeCode': {'_text': grouping_key['tax_category_code']},
+            },
         }
         tax_invoice_exemption = vals['invoice'].l10n_tr_exemption_code_id
         if self.env.context.get('skip_tr_reason_code') or not tax_invoice_exemption:
@@ -938,7 +938,7 @@ class AccountEdiXmlUblTr(models.AbstractModel):
         # under profile_id on xml there is a ID, we will map it to bill reference/reference for bill and invoice
         if profile_id == "IHRACAT":
             invoice_values["l10n_tr_is_export_invoice"] = True
-        elif profile_id in ["TEMELFATURA", "KAMU"]:
+        elif profile_id in ["TEMELFATURA", "KAMU", "TICARIFATURA"]:
             # EARSIVFATURA is ignored as it's not in the l10n_tr_gib_invoice_scenario field
             invoice_values["l10n_tr_gib_invoice_scenario"] = profile_id
 
@@ -953,6 +953,7 @@ class AccountEdiXmlUblTr(models.AbstractModel):
             or self._find_value("./cbc:ID", tree)
         )
         invoice_values["narration"] = self._import_description(tree, xpaths=["./{*}Note", "./{*}PaymentTerms/{*}Note"])
+        invoice_values["l10n_tr_ticarifatura_status"] = 'pending' if profile_id == "TICARIFATURA" else False
 
     @api.model
     def _l10n_tr_find_product_id_by_default_code_or_ctsp(self, vals):
@@ -1165,6 +1166,10 @@ class AccountEdiXmlUblTr(models.AbstractModel):
         self._l10n_tr_resolve_invoice_lines(tree, invoice_values, move_type, logs)
 
         invoice.write(invoice_values)
+
+        # Get ticarifatura status incase it was responded from nilvera portal before sync.
+        if invoice.l10n_tr_gib_invoice_scenario == 'TICARIFATURA':
+            invoice.action_fetch_ticafatura_response()
 
         if not invoice.currency_id.active:
             invoice.currency_id.active = True

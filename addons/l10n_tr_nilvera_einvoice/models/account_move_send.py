@@ -1,6 +1,6 @@
-from io import BytesIO
 import logging
 import re
+from io import BytesIO
 
 from odoo import _, api, models
 
@@ -69,17 +69,17 @@ class AccountMoveSend(models.AbstractModel):
                 or not m.company_id.city
                 or not m.company_id.state_id
                 or m.company_id.country_code != 'TR'
-            )
+            ),
         ).company_id:
             alerts["tr_companies_missing_required_fields"] = {
                 'level': 'danger',
                 "message": _(
                     "The following company(s) either do not have their country set as Türkiye "
-                    "or are missing at least one of these fields: Tax ID, Street, City, or State"
+                    "or are missing at least one of these fields: Tax ID, Street, City, or State",
                 ),
                 "action_text": _("View Company(s)"),
                 "action": tr_companies_missing_required_fields._get_records_action(name=_(
-                    "Check Tax ID, City, Street, State, and Country or Company(s)"
+                    "Check Tax ID, City, Street, State, and Country or Company(s)",
                 )),
             }
 
@@ -100,17 +100,17 @@ class AccountMoveSend(models.AbstractModel):
             lambda m: (
                 m.partner_id.invoice_edi_format != 'ubl_tr'
                 or m.partner_id.l10n_tr_nilvera_customer_status == 'not_checked'
-            )
+            ),
         ).partner_id:
             alerts["tr_partners_invalid_edi_or_status"] = {
                 'level': 'danger',
                 "message": _(
                     "The following partner(s) either do not have the e-invoice format UBL TR 1.2 "
-                    "or have not checked their Nilvera Status"
+                    "or have not checked their Nilvera Status",
                 ),
                 "action_text": _("View Partner(s)"),
                 "action": tr_partners_invalid_edi_or_status._get_records_action(
-                    name=_("Check e-Invoice Format or Nilvera Status on Partner(s)"
+                    name=_("Check e-Invoice Format or Nilvera Status on Partner(s)",
                 )),
             }
 
@@ -214,7 +214,6 @@ class AccountMoveSend(models.AbstractModel):
             if invoice.company_id.country_code == 'TR':
                 invoice.is_move_sent = invoice.l10n_tr_nilvera_send_status == 'sent'
 
-
     @api.model
     def _call_web_service_before_invoice_pdf_render(self, invoices_data):
         # EXTENDS 'account'
@@ -245,6 +244,6 @@ class AccountMoveSend(models.AbstractModel):
         # Nilvera rejects XMLs with the PDF attachment.
 
         if invoice_data['invoice_edi_format'] == 'ubl_tr':
-            return
+            return None
 
         return super()._postprocess_invoice_ubl_xml(invoice, invoice_data)

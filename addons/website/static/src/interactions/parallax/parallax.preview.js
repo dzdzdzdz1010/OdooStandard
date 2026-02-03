@@ -16,10 +16,15 @@ const ParallaxPreview = (I) =>
         // background SCALE to prevent background cutoff.
         PARALLAX_RATE = 16;
         SCALE = 2.4;
+        dynamicContent = {};
 
         setup() {
             this.backgroundEl = this.el.querySelector(".s_parallax_bg");
             this.previewContainerEl = this.el.ownerDocument.body;
+            this.parallaxType = this.el.dataset.parallaxType;
+            this.speed = parseFloat(this.el.getAttribute("data-scroll-background-ratio")) || 0;
+            this.isZoomIn = this.parallaxType === "zoom_in";
+            this.isZoomOut = this.parallaxType === "zoom_out";
         }
 
         start() {
@@ -86,10 +91,28 @@ const ParallaxPreview = (I) =>
          */
         updateParallaxPosition = () => {
             const rect = this.el.getBoundingClientRect();
-            const relativeScrollProgress = rect.top / this.previewContainerEl.clientHeight;
+            const viewportHeight = this.previewContainerEl.clientHeight;
+            const relativeScrollProgress = viewportHeight ? rect.top / viewportHeight : 0;
 
             const parallaxShift = relativeScrollProgress * this.PARALLAX_RATE * 100;
-            this.backgroundEl.style.transform = `translate(50%, calc(50% - ${parallaxShift}px)) scale(${this.SCALE})`;
+            let scale = this.SCALE;
+            let translateY = `calc(50% - ${parallaxShift}px)`;
+            if (this.isZoomIn || this.isZoomOut) {
+                const minScrollPos = -rect.height;
+                const maxScrollPos = viewportHeight;
+                const scrollRange = maxScrollPos - minScrollPos;
+                const progress = scrollRange
+                    ? Math.min(1, Math.max(0, (rect.top - minScrollPos) / scrollRange))
+                    : 0;
+                const maxZoom = this.speed + 1;
+                if (this.isZoomIn) {
+                    scale *= 1 + (maxZoom - 1) * progress;
+                } else {
+                    scale *= maxZoom - (maxZoom - 1) * progress;
+                }
+                translateY = "50%";
+            }
+            this.backgroundEl.style.transform = `translate(50%, ${translateY}) scale(${scale})`;
         };
     };
 

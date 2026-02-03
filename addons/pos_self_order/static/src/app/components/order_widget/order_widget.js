@@ -99,4 +99,16 @@ export class OrderWidget extends Component {
             },
         });
     }
+
+    get presetBtnName() {
+        const currentOrderPreset = this.selfOrder.currentOrder?.preset_id;
+        if (!currentOrderPreset || this.router.activeSlot !== "cart") {
+            return null;
+        }
+        return currentOrderPreset.name;
+    }
+
+    onClickPresetBtn() {
+        this.router.navigate("location", {}, { redirectPage: this.router.activeSlot });
+    }
 }

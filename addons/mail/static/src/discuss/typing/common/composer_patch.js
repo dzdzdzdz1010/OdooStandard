@@ -35,7 +35,11 @@ patch(Composer.prototype, {
      * @param {boolean} [is_typing=true]
      */
     notifyIsTyping(is_typing = true) {
-        if (this.thread?.channel && this.thread.id > 0) {
+        if (
+            this.thread?.channel &&
+            this.thread.id > 0 &&
+            !(this.thread.channel.parent_channel_id && !this.thread.channel.self_member_id)
+        ) {
             rpc(
                 "/discuss/channel/notify_typing",
                 {

@@ -168,6 +168,8 @@ class ChannelController(http.Controller):
         channel = request.env["discuss.channel"].search([("id", "=", channel_id)])
         if not channel:
             raise request.not_found()
+        if channel.parent_channel_id and not channel.self_member_id:
+            return
         if is_typing:
             member = channel._find_or_create_member_for_self()
         else:

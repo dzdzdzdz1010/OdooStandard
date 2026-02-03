@@ -1002,6 +1002,8 @@ class DiscussChannel(models.Model):
 
     def message_post(self, *, message_type="notification", partner_ids=None, **kwargs):
         if message_type not in ["notification", "user_notification"]:
+            if not self.env.user._is_superuser():
+                self._find_or_create_member_for_self()
             # sudo: discuss.channel - write to discuss.channel is not accessible for most users
             self.sudo().last_interest_dt = fields.Datetime.now()
         if "everyone" in kwargs.pop("special_mentions", []):

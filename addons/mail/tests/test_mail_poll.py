@@ -145,7 +145,7 @@ class TestMailPoll(MailCommon, HttpCase):
         # Posting enough message so that the poll message isn't loaded when
         # opening the channel.
         for i in range(50):
-            channel.message_post(body=f"message_{i}", message_type="comment")
+            channel.with_user(self.user_employee).message_post(body=f"message_{i}", message_type="comment")
         self.start_tour(
             f"/odoo/discuss?active_id={channel.id}&test_poll_id={poll_id}",
             "mail_poll_tour.js",

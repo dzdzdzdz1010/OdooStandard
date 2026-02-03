@@ -45,5 +45,32 @@ class HrEmployeeSkill(models.Model):
             'views': [(self.env.ref('hr_skills.employee_skill_view_inherit_certificate_form').id, 'form')],
         }
 
+    def action_hr_employee_skill_certification(self):
+        skill_type = self.env['hr.skill.type'].search([('is_certification', '=', True)], limit=1)
+        show_certificate_button = bool(skill_type)
+
+        return {
+            'name': 'Certifications',
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.employee.skill',
+            'view_mode': 'list,form',
+            'domain': [('is_certification', '=', True), ('company_id', 'in', self.env.context.get('allowed_company_ids', []))],
+            'context': {
+                'show_employee': True,
+                'show_certificate': show_certificate_button,
+                'default_skill_type_id': skill_type.id if skill_type else False,
+            },
+            'views': [
+                (self.env.ref('hr_skills.hr_employee_skill_view_list').id, 'list'),
+                (self.env.ref('hr_skills.employee_skill_view_inherit_certificate_form').id, 'form'),
+            ],
+            'help': self.env._("""
+                <p class="o_view_nocontent_smiling_face">No Certifications available. Navigate to Skill types!</p>
+                <a type="action" name="hr_skills.hr_skill_type_action" class="btn btn-primary">
+                Show Skill Types
+                </a>
+            """),
+        }
+
     def action_save(self):
         return {'type': 'ir.actions.act_window_close'}

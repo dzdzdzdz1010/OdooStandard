@@ -9,11 +9,9 @@ declare module "models" {
         autoOpenChatWindowOnNewMessage: Readonly<boolean>;
         categoryAsChannelWithCounter: DiscussAppCategory;
         createSubChannel: (param0: { initialMessage: Message, name: string }) => Promise<void>;
-        discuss_category_id: DiscussCategory;
         discussAppCategory: DiscussAppCategory;
         hasSubChannelFeature: Readonly<boolean>;
         isDisplayInSidebar: boolean;
-        isLocallyPinned: boolean;
         lastSubChannelLoaded: DiscussChannel;
         loadMoreSubChannels: (param0: { searchTerm: string }) => Promise<void>;
         loadSubChannelsDone: boolean;

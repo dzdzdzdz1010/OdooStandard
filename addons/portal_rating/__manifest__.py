@@ -29,12 +29,24 @@ inclusion of rating directly within the customer portal discuss widget.
             'portal_rating/static/src/interactions/**/*',
             'portal_rating/static/src/xml/**/*',
         ],
+        "web.assets_backend": [
+            "portal_rating/static/src/chatter/common/**/*",
+        ],
+        "mail.assets_public": [
+            "portal_rating/static/src/chatter/common/**/*",
+        ],
+        "portal.assets_chatter_helpers": [
+            "portal_rating/static/src/chatter/common/**/*",
+        ],
         'portal.assets_chatter': [
             'portal_rating/static/src/chatter/portal/**/*',
         ],
         'portal.assets_chatter_style': [
             'portal_rating/static/src/scss/portal_rating.scss',
-        ]
+        ],
+        "im_livechat.assets_embed_core": [
+            "portal_rating/static/src/chatter/common/**/*",
+        ],
     },
     'author': 'Odoo S.A.',
     'license': 'LGPL-3',

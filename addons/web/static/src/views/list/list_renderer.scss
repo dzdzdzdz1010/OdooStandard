@@ -30,6 +30,10 @@
     th, td {
         // This fixes a bug that was hidding part of cell borders on Firefox.
         background-clip: padding-box;
+
+        @include media-breakpoint-down(sm) {
+            max-width: 80vw;
+        }
     }
 
     .o_list_view & {
@@ -65,6 +69,12 @@
                 --table-striped-bg: #{$gray-100};
                 --table-striped-color: #{color-contrast($gray-100)};
             }
+        }
+
+        @include media-breakpoint-down(sm) {
+            // On mobile, allow the table to extend to it's natural size.
+            width: auto;
+            min-width: 100%;
         }
 
         > thead, > tbody, > tfoot {

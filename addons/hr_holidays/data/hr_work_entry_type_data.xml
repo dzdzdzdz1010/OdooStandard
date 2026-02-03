@@ -362,8 +362,6 @@
     </record>
 
     <record id="hr_work_entry.hk_work_entry_type_compensatory" model="hr.work.entry.type">
-        <field name="name">HK Compensation Leaves</field>
-        <field name="code">HK Compensation Leaves</field>
         <field name="requires_allocation">True</field>
         <field name="request_unit">half_day</field>
         <field name="unit_of_measure">day</field>

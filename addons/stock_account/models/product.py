@@ -1,5 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from shutil import move
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from odoo.fields import Domain
@@ -264,7 +265,7 @@ class ProductProduct(models.Model):
             moves_qty_by_product[product] = qty_by_move
         return moves_qty_by_product
 
-    def _process_avco_moves(self, moves, product_values_list, quantity, avco_value, avco_total_value, at_date=None, lot=None, in_qty_map=None, out_qty_map=None):
+    def _process_avco_moves(self, moves, product_values_list, quantity, avco_value, avco_total_value, at_date=None, lot=None, in_qty_map=None, out_qty_map=None, in_values_map=None):
         for move in moves:
             while product_values_list and move.date >= product_values_list[0].date:
                 product_value = product_values_list.pop(0)
@@ -274,7 +275,7 @@ class ProductProduct(models.Model):
                 in_qty = in_qty_map.get(move, 0) if in_qty_map and not move.is_dropship else move._get_valued_qty()
                 in_value = move.value
                 if at_date or move.is_dropship:
-                    in_value = move._get_value(at_date=at_date)
+                    in_value = in_values_map.get(move.id)['value']
                 if lot:
                     lot_qty = move._get_valued_qty(lot)
                     in_value = (in_value * lot_qty / in_qty) if in_qty else 0
@@ -405,6 +406,11 @@ class ProductProduct(models.Model):
         directions_data = moves._get_move_directions()
         in_qty_map = directions_data.get('in_qty_map', {})
         out_qty_map = directions_data.get('out_qty_map', {})
+        dropshiped_moves = self.env['stock.move'].search_fetch(
+            [('is_dropship', '=', True)],
+            field_names=move_fields,
+            order='product_id, date, id'
+        )
 
         product_value_domain = [('product_id', 'in', avco_products.ids), ('lot_id', '=', False)]
         if at_date:
@@ -413,7 +419,10 @@ class ProductProduct(models.Model):
 
         moves_by_product = {k: list(g) for k, g in groupby(moves, key=lambda m: m.product_id.id)}
         values_by_product = {k: list(g) for k, g in groupby(product_values, key=lambda v: v.product_id.id)}
-
+        in_values_map = dropshiped_moves._get_value(in_qty_map=in_qty_map, out_qty_map=out_qty_map)
+        if at_date:
+            in_values_map |= (directions_data['in'])._get_value(at_date=at_date, in_qty_map=in_qty_map, out_qty_map=out_qty_map)
+            
         for product in avco_products:
             p_id = product.id
             product_moves = moves_by_product.get(p_id, [])
@@ -438,6 +447,7 @@ class ProductProduct(models.Model):
                 at_date,
                 in_qty_map=in_qty_map,
                 out_qty_map=out_qty_map,
+                in_values_map=in_values_map,
             )
             results[p_id] = (final_avco, total_val)
 

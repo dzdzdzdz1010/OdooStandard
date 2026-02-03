@@ -44,8 +44,9 @@
                     <field name="ab_testing_enabled" string="A/B Test" groups="mass_mailing.group_mass_mailing_campaign"/>
                     <field name="campaign_id" string="Campaign" groups="mass_mailing.group_mass_mailing_campaign" optional="hide"/>
                     <field name="sent" sum="Total" />
-                    <field name="received_ratio" class="d-flex align-items-center ps-0" widget="progressbar" string="Delivered (%)" avg="Average"/>
-                    <field name="opened_ratio" class="d-flex align-items-center ps-0" widget="progressbar" string="Opened (%)" avg="Average"/>
+                    <!-- TEST ONLY: color + threshold demo (will be removed) -->
+                    <field name="received_ratio" class="d-flex align-items-center ps-0" widget="progressbar" string="Delivered (%)" avg="Average" decoration-success="received_ratio >= 85" decoration-danger="received_ratio &lt; 85"/>
+                    <field name="opened_ratio" class="d-flex align-items-center ps-0" widget="progressbar" string="Opened (%)" avg="Average" decoration-success="opened_ratio >= 50" decoration-danger="opened_ratio &lt; 50"/>
                     <field name="bounced_ratio" string="Bounced (%)" optional="hide" avg="Average"/>
                     <field name="clicks_ratio" string="Clicked (%)" avg="Average"/>
                     <field name="replied_ratio" string="Replied (%)" avg="Average"/>

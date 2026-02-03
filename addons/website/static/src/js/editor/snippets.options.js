@@ -30,7 +30,7 @@ import {
     removeTextHighlight,
     drawTextHighlightSVG,
 } from "@website/js/text_processing";
-import { throttleForAnimation } from "@web/core/utils/timing";
+import { debounce, throttleForAnimation } from "@web/core/utils/timing";
 
 import { Component, markup, useRef, useState } from "@odoo/owl";
 
@@ -442,7 +442,13 @@ const GPSPicker = InputUserValueWidget.extend({
     // don't want input focusout messing with the google map API. Because of
     // this, clicking on google map autocomplete suggestion on Firefox was not
     // working properly.
-    events: {},
+    events: {
+        input: "_onInput",
+        keydown: "_onKeyDown",
+        "blur input": "_onInputBlur",
+    },
+    AUTOCOMPLETE_DEBOUNCE_DELAY: 300, // milliseconds
+    AUTOCOMPLETE_MIN_LENGTH: 2,
 
     /**
      * @constructor
@@ -495,20 +501,23 @@ const GPSPicker = InputUserValueWidget.extend({
             return;
         }
 
-        this._gmapAutocomplete = new this.contentWindow.google.maps.places.Autocomplete(this.inputEl, {types: ['geocode']});
-        this.contentWindow.google.maps.event.addListener(this._gmapAutocomplete, 'place_changed', this._onPlaceChanged.bind(this));
+        this._selectedIndex = -1;
+        this._suggestionItems = [];
+        this._debouncedFetchSuggestions = debounce(async (inputValue) => {
+            await this._fetchSuggestions(inputValue);
+        }, this.AUTOCOMPLETE_DEBOUNCE_DELAY);
     },
     /**
      * @override
      */
     destroy() {
         this._super(...arguments);
+        if (this.suggestionBoxEl) {
+            this.suggestionBoxEl.remove();
+        }
 
-        // Without this, the google library injects elements inside the backend
-        // DOM but do not remove them once the editor is left. Notice that
-        // this is also done when the widget is destroyed for another reason
-        // than leaving the editor, but if the google API needs that container
-        // again afterwards, it will simply recreate it.
+        // Clean up any remaining suggestion boxes from this or previous
+        // instances.
         for (const el of document.body.querySelectorAll('.pac-container')) {
             el.remove();
         }
@@ -545,6 +554,8 @@ const GPSPicker = InputUserValueWidget.extend({
     //--------------------------------------------------------------------------
 
     /**
+     * Performs a nearby search for places around the given GPS coordinates.
+     *
      * @private
      * @param {string} gps
      * @param {boolean} [notify=true]
@@ -555,47 +566,40 @@ const GPSPicker = InputUserValueWidget.extend({
             return this._gmapCacheGPSToPlace[gps];
         }
 
+        await this.contentWindow.google.maps.importLibrary("places");
         const p = gps.substring(1).slice(0, -1).split(',');
-        const location = new this.contentWindow.google.maps.LatLng(p[0] || 0, p[1] || 0);
-        return new Promise(resolve => {
-            const service = new this.contentWindow.google.maps.places.PlacesService(document.createElement('div'));
-            service.nearbySearch({
-                // Do a 'nearbySearch' followed by 'getDetails' to avoid using
-                // GMap Geocoder which the user may not have enabled... but
-                // ideally Geocoder should be used to get the exact location at
-                // those coordinates and to limit billing query count.
-                location: location,
-                radius: 1,
-            }, (results, status) => {
-                const GMAP_CRITICAL_ERRORS = [
-                    this.contentWindow.google.maps.places.PlacesServiceStatus.REQUEST_DENIED,
-                    this.contentWindow.google.maps.places.PlacesServiceStatus.UNKNOWN_ERROR
-                ];
-                if (status === this.contentWindow.google.maps.places.PlacesServiceStatus.OK) {
-                    service.getDetails({
-                        placeId: results[0].place_id,
-                        fields: ['geometry', 'formatted_address'],
-                    }, (place, status) => {
-                        if (status === this.contentWindow.google.maps.places.PlacesServiceStatus.OK) {
-                            this._gmapCacheGPSToPlace[gps] = place;
-                            resolve(place);
-                        } else if (GMAP_CRITICAL_ERRORS.includes(status)) {
-                            if (notify) {
-                                this._notifyGMapError();
-                            }
-                            resolve();
-                        }
-                    });
-                } else if (GMAP_CRITICAL_ERRORS.includes(status)) {
-                    if (notify) {
-                        this._notifyGMapError();
-                    }
-                    resolve();
-                } else {
-                    resolve();
-                }
+        try {
+            const { Place } = await this.contentWindow.google.maps.importLibrary("places");
+            const { places } = await Place.searchNearby({
+                fields: ["id", "location"],
+                locationRestriction: {
+                    center: { lat: Number(p[0]), lng: Number(p[1]) },
+                    radius: 10,
+                },
+                maxResultCount: 1,
             });
-        });
+            if (!places || places.length === 0) {
+                return null;
+            }
+            const placeResult = places[0];
+            await placeResult.fetchFields({
+                fields: ["id", "location", "formattedAddress"],
+            });
+            const place = {
+                place_id: placeResult.id,
+                formatted_address: placeResult.formattedAddress,
+                geometry: {
+                    location: placeResult.location,
+                },
+            };
+            this._gmapCacheGPSToPlace[gps] = place;
+            return place;
+        } catch {
+            if (notify) {
+                this._notifyGMapError();
+            }
+            return null;
+        }
     },
     /**
      * Indicates to the user there is an error with the google map API and
@@ -629,6 +633,159 @@ const GPSPicker = InputUserValueWidget.extend({
 
         setTimeout(() => this.trigger_up('user_value_widget_critical'));
     },
+    /**
+     * Creates or retrieves the suggestion box for Google Maps autocomplete.
+     * If it doesn't exist yet, it is appended to the DOM.
+     *
+     * @private
+     * @returns {HTMLElement} The suggestion box element.
+     */
+    _getSuggestionBox() {
+        if (!this.suggestionBoxEl) {
+            this.suggestionBoxEl = document.createElement("div");
+            this.suggestionBoxEl.className = "pac-container pac-logo";
+
+            this.suggestionBoxEl.addEventListener("mouseenter", (ev) => {
+                const itemEl = ev.target.closest(".pac-item");
+                if (itemEl) {
+                    this._highlightItem(itemEl);
+                }
+            });
+            this.suggestionBoxEl.addEventListener("mousedown", async (ev) => {
+                const itemEl = ev.target.closest(".pac-item");
+                if (itemEl) {
+                    const index = this._suggestionItems.indexOf(itemEl);
+                    const placePrediction = this._suggestions[index].placePrediction;
+                    await this._selectPlace(placePrediction);
+                }
+            });
+            document.body.appendChild(this.suggestionBoxEl);
+        }
+        return this.suggestionBoxEl;
+    },
+    /**
+     * Clears the suggestions and the suggestion box.
+     *
+     * @private
+     */
+    _clearSuggestions() {
+        this._suggestionItems = [];
+        this._selectedIndex = -1;
+        if (this.suggestionBoxEl) {
+            this.suggestionBoxEl.innerHTML = "";
+            this.suggestionBoxEl.style.display = "none";
+        }
+    },
+    /**
+     * Updates the visual highlight of suggestion items.
+     *
+     * @private
+     */
+    _updateHighlight() {
+        this._suggestionItems.forEach((itemEl, index) => {
+            itemEl.classList.toggle("pac-item-selected", index === this._selectedIndex);
+        });
+    },
+    /**
+     * Highlights the given suggestion item.
+     *
+     * @private
+     * @param {HTMLElement} itemEl The suggestion item to highlight.
+     */
+    _highlightItem(itemEl) {
+        const index = this._suggestionItems.indexOf(itemEl);
+        if (index >= 0) {
+            this._selectedIndex = index;
+            this._updateHighlight();
+        }
+    },
+    /**
+     * Creates a suggestion item for the given place prediction.
+     *
+     * @private
+     * @param {Object} placePrediction The place prediction object.
+     * @returns {HTMLElement} The suggestion item element.
+     */
+    _createSuggestionItem(placePrediction) {
+        const itemEl = document.createElement("div");
+        itemEl.className = "pac-item";
+
+        const spanEl = document.createElement("span");
+        spanEl.className = "pac-icon pac-icon-marker";
+        itemEl.appendChild(spanEl);
+
+        const textEl = document.createElement("span");
+        textEl.className = "pac-item-query";
+        textEl.textContent = placePrediction.text.toString();
+        itemEl.appendChild(textEl);
+
+        return itemEl;
+    },
+    /**
+     * Selects the given place prediction.
+     *
+     * @private
+     * @param {Object} placePrediction The place prediction object.
+     */
+    async _selectPlace(placePrediction) {
+        const placeResult = placePrediction.toPlace();
+        await placeResult.fetchFields({
+            fields: ["displayName", "formattedAddress", "location"],
+        });
+        const place = {
+            place_id: placeResult.id,
+            formatted_address: placeResult.formattedAddress || placeResult.displayName,
+            geometry: {
+                location: {
+                    lat: placeResult.location.lat,
+                    lng: placeResult.location.lng,
+                },
+            },
+            name: placeResult.displayName,
+        };
+        this.inputEl.value = place.formatted_address || placePrediction.text;
+        this._gmapAutocompletePlace = place;
+        this._clearSuggestions();
+        this._onPlaceChanged();
+    },
+    /**
+     * Fetches autocomplete suggestions from Google Maps API.
+     *
+     * @private
+     * @param {string} inputValue The search query
+     * @returns {Promise<void>}
+     */
+    async _fetchSuggestions(inputValue) {
+        this._clearSuggestions();
+        try {
+            const result =
+                await this.contentWindow.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions(
+                    {
+                        input: inputValue,
+                        includedPrimaryTypes: ["geocode"],
+                    }
+                );
+            this._suggestions = result.suggestions || [];
+
+            if (!this._suggestions.length) {
+                return;
+            }
+
+            const suggestionBoxEl = this._getSuggestionBox();
+            const inputRect = this.inputEl.getBoundingClientRect();
+            suggestionBoxEl.style.display = "block";
+            suggestionBoxEl.style.position = "absolute";
+            suggestionBoxEl.style.top = `${inputRect.bottom + window.scrollY}px`;
+            suggestionBoxEl.style.left = `${inputRect.left + window.scrollX}px`;
+
+            this._suggestionItems = this._suggestions.map((suggestion) =>
+                this._createSuggestionItem(suggestion.placePrediction)
+            );
+            suggestionBoxEl.append(...this._suggestionItems);
+        } catch {
+            this._notifyGMapError();
+        }
+    },
 
     //--------------------------------------------------------------------------
     // Handlers
@@ -639,7 +796,7 @@ const GPSPicker = InputUserValueWidget.extend({
      * @param {Event} ev
      */
     _onPlaceChanged(ev) {
-        const gmapPlace = this._gmapAutocomplete.getPlace();
+        const gmapPlace = this._gmapAutocompletePlace;
         if (gmapPlace && gmapPlace.geometry) {
             this._gmapPlace = gmapPlace;
             const location = this._gmapPlace.geometry.location;
@@ -648,6 +805,39 @@ const GPSPicker = InputUserValueWidget.extend({
             this._gmapCacheGPSToPlace[this._value] = gmapPlace;
             if (oldValue !== this._value) {
                 this._onUserValueChange(ev);
+            }
+        }
+    },
+    _onInputBlur() {
+        this._clearSuggestions();
+    },
+    async _onInput(ev) {
+        const inputValue = ev.target.value.trim();
+        if (inputValue.length < this.AUTOCOMPLETE_MIN_LENGTH) {
+            this._clearSuggestions();
+            return;
+        }
+        this._debouncedFetchSuggestions(inputValue);
+    },
+    async _onKeyDown(ev) {
+        if (!this._suggestionItems.length) {
+            return;
+        }
+        if (ev.key === "ArrowDown") {
+            ev.preventDefault();
+            this._selectedIndex = (this._selectedIndex + 1) % this._suggestionItems.length;
+            this._updateHighlight();
+        } else if (ev.key === "ArrowUp") {
+            ev.preventDefault();
+            this._selectedIndex =
+                (this._selectedIndex - 1 + this._suggestionItems.length) %
+                this._suggestionItems.length;
+            this._updateHighlight();
+        } else if (ev.key === "Enter") {
+            ev.preventDefault();
+            if (this._selectedIndex >= 0 && this._suggestions[this._selectedIndex]) {
+                const placePrediction = this._suggestions[this._selectedIndex].placePrediction;
+                await this._selectPlace(placePrediction);
             }
         }
     },

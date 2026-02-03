@@ -1223,8 +1223,60 @@ export class PosStore extends WithLazyGetterTrap {
                 .reduce((acc, attr) => acc + attr.price_extra, 0);
 
             values.price_extra += priceExtra;
+<<<<<<< fa993fdc4450368822c1ac7e278ee9708e1aacab
             if (!values.attribute_value_ids) {
                 values.attribute_value_ids = [];
+||||||| 15948309eb6d2961161cd11717072bde342276af
+            values.attribute_value_ids = values.product_id.product_template_variant_value_ids.map(
+                (attr) => ["link", attr]
+            );
+        }
+    }
+
+    /**
+     * In case of clicking a combo product a popup will be shown to the user
+     * It will return the combo prices and the selected products
+     * ---
+     * This actions cannot be handled inside pos_order.js or pos_order_line.js
+     */
+    async handleComboProduct(values, order, configure = true, { line } = {}) {
+        if (values.product_tmpl_id.isCombo() && configure) {
+            const payload =
+                values?.payload && Object.keys(values?.payload).length
+                    ? values.payload
+                    : await makeAwaitable(this.dialog, ComboConfiguratorPopup, {
+                          productTemplate: values.product_tmpl_id,
+                          line: line,
+                      });
+
+            if (!payload) {
+                return;
+=======
+            values.attribute_value_ids = values.product_id.product_template_variant_value_ids.map(
+                (attr) => ["link", attr]
+            );
+        }
+    }
+
+    /**
+     * In case of clicking a combo product a popup will be shown to the user
+     * It will return the combo prices and the selected products
+     * ---
+     * This actions cannot be handled inside pos_order.js or pos_order_line.js
+     */
+    async handleComboProduct(values, order, configure = true, { line } = {}) {
+        if (values.product_tmpl_id.isCombo() && configure) {
+            const payload =
+                values?.payload && Object.keys(values?.payload).length
+                    ? values.payload
+                    : await makeAwaitable(this.dialog, ComboConfiguratorPopup, {
+                          productTemplate: values.product_tmpl_id,
+                          line: line,
+                      });
+
+            if (!payload) {
+                return false;
+>>>>>>> d68d5fa6fee37e913a3a9689df306ddc54060d1b
             }
             values.attribute_value_ids = values.attribute_value_ids.concat(
                 values.product_id.product_template_variant_value_ids.map((attr) => ["link", attr])

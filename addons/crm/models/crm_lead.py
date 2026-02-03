@@ -1786,6 +1786,16 @@ class CrmLead(models.Model):
     # CONVERT
     # ----------------------------------------------------------------------
 
+    def action_convert_and_allocate(self):
+        self.ensure_one()
+        self._handle_partner_assignment(
+            force_partner_id=self._find_matching_partner() or self.partner_id.id,
+            create_missing=True,
+            with_parent=self.partner_id.parent_id,
+        )
+
+        self.convert_opportunity(self.partner_id, user_ids=[self.user_id.id], team_id=self.team_id.id)
+
     def _convert_opportunity_data(self, customer, team_id=False):
         """ Extract the data from a lead to create the opportunity
             :param customer : res.partner record

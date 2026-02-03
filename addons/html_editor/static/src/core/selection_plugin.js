@@ -359,7 +359,7 @@ export class SelectionPlugin extends Plugin {
             };
         } else {
             range = selection.getRangeAt(0);
-            let { anchorNode, anchorOffset, focusNode, focusOffset } = selection;
+            const { anchorNode, anchorOffset, focusNode, focusOffset } = selection;
             let direction =
                 anchorNode === range.startContainer ? DIRECTIONS.RIGHT : DIRECTIONS.LEFT;
             if (anchorNode === focusNode && focusOffset < anchorOffset) {
@@ -374,16 +374,6 @@ export class SelectionPlugin extends Plugin {
                 // inside a protected zone.
                 return this.activeSelection;
             }
-            [anchorNode, anchorOffset] = normalizeCursorPosition(
-                anchorNode,
-                anchorOffset,
-                direction ? "left" : "right"
-            );
-            [focusNode, focusOffset] = normalizeCursorPosition(
-                focusNode,
-                focusOffset,
-                direction ? "right" : "left"
-            );
             const [startContainer, startOffset, endContainer, endOffset] =
                 direction === DIRECTIONS.RIGHT
                     ? [anchorNode, anchorOffset, focusNode, focusOffset]

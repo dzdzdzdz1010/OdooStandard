@@ -829,3 +829,19 @@ export function isRedundantElement(node) {
 
     return true;
 }
+
+const QWEB_SELECTOR = "[t-esc], [t-raw], [t-out], [t-field]";
+
+/**
+ * Returns the QWeb element associated with the given node.
+ *
+ * A node is considered a QWeb node if it is itself, or is contained within,
+ * an element that has QWeb-specific attributes such as `t-field`, `t-out`,
+ * `t-esc`, or `t-raw`. This function returns the closest such element.
+ *
+ * @param {Node} node - The DOM node to check.
+ * @returns {Element|null} The QWeb element if found, otherwise `null`.
+ */
+export function getQwebNode(node) {
+    return closestElement(node, QWEB_SELECTOR);
+}

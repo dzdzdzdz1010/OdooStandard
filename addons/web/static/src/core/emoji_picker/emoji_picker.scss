@@ -11,16 +11,16 @@
 .o-EmojiPicker {
     --EmojiPicker-active: #{rgba($o-action, .15)};
 
+    background-color: var(--EmojiPicker-background-color, $gray-100);
+
     .o-Emoji {
         padding-left: map-get($spacers, 1);
         padding-right: map-get($spacers, 1);
-        font-size: 0.8rem;
+        font-size: var(--EmojiPicker-font-size, $h2-font-size);
         aspect-ratio: 1;
-        &:hover {
-            background-color: var(--EmojiPicker-active) !important;
-        }
-        &.o-active {
-            background-color: var(--EmojiPicker-active) !important;
+
+        &:hover, &.o-active {
+            background-color: var(--EmojiPicker-active);
         }
     }
 
@@ -40,8 +40,24 @@
         }
     }
 
-    .o-EmojiPicker-sectionIcon {
-        filter: grayscale(1);
+    .o-EmojiPicker-section {
+        background-color: var(--EmojiPicker-background-color, $gray-100);
+
+        .o-EmojiPicker-sectionIcon {
+            filter: grayscale(1);
+        }
+    }
+
+    .o-EmojiPicker-sectionIcon + small,
+    .o-EmojiPicker-empty + span,
+    .o-EmojiPicker-search input:focus + .oi-search {
+        color: var(--EmojiPicker-text-color, $text-muted);
+    }
+
+    .o-EmojiPicker-sectionIcon,
+    .o_EmojiPicker-navbar-icon,
+    .o-EmojiPicker-empty + span {
+        font-size: var(--EmojiPicker-font-size, $h5-font-size);
     }
 
     .o-EmojiPicker-empty {
@@ -57,13 +73,19 @@
 
 .o-EmojiPicker-search {
     input {
+        font-size: var(--EmojiPicker-font-size, $input-font-size);
+
+        &, &:focus {
+            background-color: var(--EmojiPicker-background-color, $o-view-background-color);
+        }
+
         &::placeholder {
             opacity: var(--EmojiPicker-placeholderOpacity, 50%);
+            color: var(--EmojiPicker-text-color, $input-placeholder-color);
         }
-        &:not(:focus) {
-            & + .oi-search {
-                color: $text-muted;
-            }
+
+        & + .oi-search {
+            color: var(--EmojiPicker-text-color, $body-color);
         }
     }
 }

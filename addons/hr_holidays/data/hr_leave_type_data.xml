@@ -135,28 +135,6 @@
         <field name="country_id" ref="base.be"/>
     </record>
 
-    <record id="l10n_be_leave_type_paternity_legal" model="hr.leave.type">
-        <field name="name">Paternity Time Off (Legal)</field>
-        <field name="requires_allocation">False</field>
-        <field name="leave_validation_type">no_validation</field>
-        <field name="request_unit">half_day</field>
-        <field name="unit_of_measure">day</field>
-        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
-        <field name="icon_id" ref="hr_holidays.icon_17"/>
-        <field name="company_id" eval="False"/>
-        <field name="country_id" ref="base.be"/>
-    </record>
-
-    <record id="l10n_be_leave_type_unpredictable" model="hr.leave.type">
-        <field name="name">Unpredictable Reason</field>
-        <field name="requires_allocation">False</field>
-        <field name="request_unit">half_day</field>
-        <field name="unit_of_measure">day</field>
-        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
-        <field name="company_id" eval="False"/>
-        <field name="country_id" ref="base.be"/>
-    </record>
-
     <record id="l10n_be_leave_type_training" model="hr.leave.type">
         <field name="name">Training Time Off</field>
         <field name="requires_allocation">True</field>
@@ -252,6 +230,154 @@
         <field name="request_unit">half_day</field>
         <field name="unit_of_measure">day</field>
         <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_marriage_employee" model="hr.leave.type">
+        <field name="name">Marriage (Employee)</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">2</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_marriage_family" model="hr.leave.type">
+        <field name="name">Marriage of a Family Member</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">1</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_child_ceremony" model="hr.leave.type">
+        <field name="name">Child Ceremony (Communion / Secular Youth)</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">1</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_paternity_legal" model="hr.leave.type">
+        <field name="name">Birth Leave (Father / Co-parent)</field>
+        <field name="requires_allocation">True</field>
+        <field name="leave_validation_type">no_validation</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">20</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="icon_id" ref="hr_holidays.icon_17"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_foster_care_obligations" model="hr.leave.type">
+        <field name="name">Foster Care Obligations or Missions</field>
+        <field name="requires_allocation">True</field>
+        <field name="employee_requests">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">6</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_child_adoption" model="hr.leave.type">
+        <field name="name">Child Adoption / Long-Term Foster Care</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">30</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_death_close_family" model="hr.leave.type">
+        <field name="name">Death of Partner or Child</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">10</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_death_parents" model="hr.leave.type">
+        <field name="name">Death of Parent or In-law</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">4</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_death_extended_family" model="hr.leave.type">
+        <field name="name">Death of Extended Family Member</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">2</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_death_one_day" model="hr.leave.type">
+        <field name="name">Death (One Day Leave)</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">1</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_civic_duty" model="hr.leave.type">
+        <field name="name">Civic or Judicial Duty</field>
+        <field name="requires_allocation">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">5</field>
+        <field name="employee_requests">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave"/>
+        <field name="company_id" eval="False"/>
+        <field name="country_id" ref="base.be"/>
+    </record>
+
+    <record id="l10n_be_leave_type_unpredictable" model="hr.leave.type">
+        <field name="name">Urgent Family or Social Reason (Unpaid)</field>
+        <field name="requires_allocation">True</field>
+        <field name="employee_requests">True</field>
+        <field name="unpaid">True</field>
+        <field name="request_unit">day</field>
+        <field name="unit_of_measure">day</field>
+        <field name="default_duration">10</field>
+        <field name="hide_on_dashboard">True</field>
+        <field name="leave_notif_subtype_id" ref="hr_holidays.mt_leave_unpaid"/>
         <field name="company_id" eval="False"/>
         <field name="country_id" ref="base.be"/>
     </record>

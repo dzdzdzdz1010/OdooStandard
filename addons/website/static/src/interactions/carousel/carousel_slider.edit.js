@@ -12,7 +12,6 @@ const CarouselSliderEdit = (I) =>
         };
         // Pause carousel in edit mode.
         carouselOptions = { ride: false, pause: true, keyboard: false };
-        showClickableSlideLinks = false;
 
         onContentChanged() {
             this.computeMaxHeight();

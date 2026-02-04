@@ -21,7 +21,6 @@ export class CarouselSlider extends Interaction {
                 "min-height": this.maxHeight ? `${this.maxHeight}px` : "",
             }),
         },
-        ".slide-link": { "t-att-class": () => ({ "d-none": !this.showClickableSlideLinks }) },
         ".carousel-indicators button, .carousel-indicators li": {
             "t-on-pointerdown": (ev) => {
                 const toLoadEl = this.carouselItemEls.at(ev.currentTarget.dataset.bsSlideTo);
@@ -37,7 +36,6 @@ export class CarouselSlider extends Interaction {
         },
     };
     carouselOptions = undefined;
-    showClickableSlideLinks = true;
 
     setup() {
         this.maxHeight = undefined;

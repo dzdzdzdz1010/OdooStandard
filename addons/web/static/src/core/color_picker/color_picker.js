@@ -63,6 +63,7 @@ export class ColorPicker extends Component {
         noTransparency: { type: Boolean, optional: true },
         close: { type: Function, optional: true },
         className: { type: String, optional: true },
+        dynamicThemeColors: { type: Boolean, optional: true },
     };
     static defaultProps = {
         close: () => {},
@@ -81,7 +82,16 @@ export class ColorPicker extends Component {
 
         this.DEFAULT_COLORS = DEFAULT_COLORS;
         this.grayscales = Object.assign({}, DEFAULT_GRAYSCALES, this.props.grayscales);
+
         this.DEFAULT_THEME_COLOR_VARS = DEFAULT_THEME_COLOR_VARS;
+        const htmlStyle = document.defaultView.getComputedStyle(document.documentElement);
+        this.defaultThemeColors = this.DEFAULT_THEME_COLOR_VARS.map((key) => {
+            let value = htmlStyle.getPropertyValue(`--${key}`).trim();
+            value = normalizeCSSColor(value);
+            return value.replace(/"/g, "'");
+        });
+        this.dynamicThemeColors = this.props.dynamicThemeColors
+
         this.defaultColorSet = this.getDefaultColorSet();
         this.defaultColor = this.props.state.selectedColor;
         this.focusedBtn = null;

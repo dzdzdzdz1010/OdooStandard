@@ -73,6 +73,7 @@ export class ColorUIPlugin extends Plugin {
                 const nodes = this.dependencies.selection.getTargetedNodes().filter(isTextNode);
                 return nodes.map((node) => closestElement(node));
             },
+            dynamicThemeColors: this.config.dynamicThemeColors,
         };
     }
 

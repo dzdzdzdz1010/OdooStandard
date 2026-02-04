@@ -16,6 +16,8 @@ export class ColorPickerSolidTab extends Component {
         cssVarColorPrefix: { type: String, optional: true },
         defaultColors: Array,
         defaultThemeColorVars: Array,
+        dynamicThemeColors: { type: Boolean, optional: true },
+        defaultThemeColors: { type: Array, optional: true },
         "*": { optional: true },
     };
 }

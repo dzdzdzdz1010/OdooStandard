@@ -27,6 +27,7 @@ export class ColorSelector extends Component {
         enabledTabs: { type: Array, optional: true },
         cssVarColorPrefix: { type: String, optional: true },
         onClose: Function,
+        dynamicThemeColors: { type: Boolean, optional: true },
     };
     static defaultProps = {
         cssVarColorPrefix: "",
@@ -70,6 +71,7 @@ export class ColorSelector extends Component {
                 colorPrefix: this.props.colorPrefix,
                 enabledTabs: this.props.enabledTabs,
                 cssVarColorPrefix: this.props.cssVarColorPrefix,
+                dynamicThemeColors: this.props.dynamicThemeColors,
             },
             {
                 env: this.__owl__.childEnv,

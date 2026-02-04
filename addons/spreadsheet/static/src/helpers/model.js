@@ -92,7 +92,7 @@ function containsLinkToOdoo(link) {
  */
 export async function freezeOdooData(model) {
     await waitForDataLoaded(model);
-    const data = model.exportData();
+    const data = model._exportData(false);
     for (const sheet of Object.values(data.sheets)) {
         sheet.formats ??= {};
         for (const [xc, content] of Object.entries(sheet.cells)) {

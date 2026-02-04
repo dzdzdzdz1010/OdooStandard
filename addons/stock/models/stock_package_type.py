@@ -2,6 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class StockPackageType(models.Model):
@@ -58,6 +59,15 @@ class StockPackageType(models.Model):
         'CHECK(max_weight>=0.0)',
         'Max Weight must be positive',
     )
+
+    @api.constrains('barcode')
+    def _check_barcode_uniqueness(self):
+        """ Ensure the uniqueness between products', packagings' and package types' barcodes"""
+        domain = [('barcode', 'in', [b for b in self.mapped('barcode') if b])]
+        product = self.env['product.product']
+        packaging = self.env['product.uom']
+        if product.search_count(domain, limit=1) or packaging.search_count(domain, limit=1):
+            raise ValidationError(self.env._("A product or a packaging already uses the barcode."))
 
     @api.depends('name', 'packaging_length', 'width', 'height')
     @api.depends_context('formatted_display_name')

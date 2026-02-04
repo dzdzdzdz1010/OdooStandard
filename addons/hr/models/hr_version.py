@@ -107,16 +107,6 @@ class HrVersion(models.Model):
     children = fields.Integer(string='Dependent Children', groups="hr.group_hr_user", tracking=1)
 
     # Work Information
-    employee_type = fields.Selection([
-            ('employee', 'Employee'),
-            ('worker', 'Worker'),
-            ('student', 'Student'),
-            ('trainee', 'Trainee'),
-            ('contractor', 'Contractor'),
-            ('freelance', 'Freelancer'),
-            ('statutory', 'Statutory'),
-            ('apprenticeship', 'Apprenticeship'),
-        ], string='Employee Type', default='employee', required=True, groups="hr.group_hr_user", tracking=1)
     department_id = fields.Many2one('hr.department', check_company=True, tracking=1, index=True)
     member_of_department = fields.Boolean("Member of department", compute='_compute_part_of_department', search='_search_part_of_department',
         help="Whether the employee is a member of the active user's department or one of it's child department.")
@@ -160,6 +150,7 @@ class HrVersion(models.Model):
     contract_date_end = fields.Date(
         'Contract End Date', tracking=1, help="End date of the contract (if it's a fixed-term contract).",
         groups="hr.group_hr_manager")
+    fixed_term = fields.Boolean('Fixed Term', tracking=1, groups='hr.group_hr_manager')
     trial_date_end = fields.Date('End of Trial Period', help="End date of the trial period (if there is one).",
                                  groups="hr.group_hr_manager", tracking=1)
     date_start = fields.Date(compute='_compute_dates', groups="hr.group_hr_manager", search="_search_start_date")
@@ -184,7 +175,7 @@ class HrVersion(models.Model):
     company_country_id = fields.Many2one('res.country', string="Company country",
                                          related='company_id.country_id', readonly=True)
     country_code = fields.Char(related='company_country_id.code', depends=['company_country_id'], readonly=True)
-    contract_type_id = fields.Many2one('hr.contract.type', "Contract Type", tracking=1,
+    contract_type_id = fields.Many2one('hr.contract.type', "Employee Type", tracking=1,
                                        groups="hr.group_hr_manager")
     additional_note = fields.Text(string='Additional Note', groups="hr.group_hr_user", tracking=1)
 

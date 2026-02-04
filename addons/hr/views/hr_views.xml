@@ -112,10 +112,9 @@
                 <menuitem
                     id="menu_view_hr_contract_type"
                     action="hr_contract_type_action"
-                    parent="menu_config_recruitment"
+                    parent="menu_config_employee"
                     sequence="3"
-                    groups="group_hr_user"
-                    active="0"/>
+                    groups="group_hr_user"/>
 
     </data>
 </odoo>

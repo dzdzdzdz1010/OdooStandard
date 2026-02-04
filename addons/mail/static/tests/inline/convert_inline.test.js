@@ -9,6 +9,7 @@ import {
     listGroupToTable,
     normalizeColors,
     normalizeRem,
+    splitSelectors,
 } from "@mail/views/web/fields/html_mail_field/convert_inline";
 import { beforeEach, describe, expect, getFixture, test } from "@odoo/hoot";
 import { enableTransitions } from "@odoo/hoot-mock";
@@ -1493,6 +1494,7 @@ describe("Properly add MSO conditions", () => {
         });
     });
 });
+<<<<<<< 77ad82ff765de2e9c5003215c8d563e079e486eb
 
 describe("Should not convert blacklisted class to inline styles", () => {
     let styleEl, styleSheet;
@@ -1552,3 +1554,22 @@ describe("Should not convert blacklisted class to inline styles", () => {
         );
     });
 });
+||||||| b8ef07b191a9b396fa776900a6ad3f83b99e13d0
+=======
+
+describe("splitSelectors method", () => {
+    test("no parentheses", async () => {
+        expect(splitSelectors("abc, def, ghi")).toEqual(["abc", "def", "ghi"]);
+    });
+    test("one depth parentheses", async () => {
+        expect(splitSelectors("abc:has(xyz), def, ghi")).toEqual(["abc:has(xyz)", "def", "ghi"]);
+    });
+    test("two depth parentheses", async () => {
+        expect(splitSelectors("abc:has(xyz:not(.ooo)), def, ghi")).toEqual([
+            "abc:has(xyz:not(.ooo))",
+            "def",
+            "ghi",
+        ]);
+    });
+});
+>>>>>>> 26dfdbc5cdd5d56b357add68aec93ce40d395a5a

@@ -77,7 +77,7 @@ class ResourceCalendar(models.Model):
     is_fulltime = fields.Boolean(compute='_compute_work_time_rate', string="Is Full Time")
     work_resources_count = fields.Integer("Work Resources count", compute='_compute_work_resources_count')
     work_time_rate = fields.Float(string='Work Time Rate', compute='_compute_work_time_rate', search='_search_work_time_rate',
-        help='Work time rate versus full time working schedule, should be between 0 and 100 %.')
+        help='Work time rate versus full time working schedule, should be between 0 and 1')
 
     # --------------------------------------------------
     # Constrains
@@ -142,9 +142,9 @@ class ResourceCalendar(models.Model):
     def _compute_work_time_rate(self):
         for calendar in self:
             if calendar.full_time_required_hours:
-                calendar.work_time_rate = calendar.hours_per_week / calendar.full_time_required_hours * 100
+                calendar.work_time_rate = calendar.hours_per_week / calendar.full_time_required_hours
             else:
-                calendar.work_time_rate = 100
+                calendar.work_time_rate = 1.0
 
             calendar.is_fulltime = float_compare(calendar.full_time_required_hours, calendar.hours_per_week, 3) == 0
 

@@ -1468,20 +1468,6 @@ class TestMessageToStorePerformance(BaseMailPerformance):
                 ],
                 'subject': f'Test Container {msg_idx}',
                 'subtype_id': comment_subtype_id,
-                'tracking_value_ids': [
-                    (0, 0, {
-                        'field_id': name_field.id,
-                        'new_value_char': 'new 0',
-                        'old_value_char': 'old 0',
-                    }),
-                    (0, 0, {
-                        'field_id': customer_id_field.id,
-                        'new_value_char': 'new 1',
-                        'new_value_integer': cls.partners[(record_idx * 5)].id,
-                        'old_value_char': 'old 1',
-                        'old_value_integer': cls.partners[(record_idx * 5) + 1].id,
-                    }),
-                ]
             }
             for msg_idx in range(2)
             for record_idx, record in enumerate(cls.containers)
@@ -1628,7 +1614,6 @@ class TestMessageToStorePerformance(BaseMailPerformance):
                                         "subject": False,
                                         "subtype_id": self.env.ref("mail.mt_comment").id,
                                         "thread": {"id": record.id, "model": "mail.test.simple"},
-                                        "trackingValues": [],
                                         "write_date": fields.Datetime.to_string(message.write_date),
                                     },
                                 ),
@@ -1741,7 +1726,6 @@ class TestMessageToStorePerformance(BaseMailPerformance):
                                         "subject": False,
                                         "subtype_id": self.env.ref("mail.mt_comment").id,
                                         "thread": {"id": record.id, "model": "mail.test.simple"},
-                                        "trackingValues": [],
                                         "write_date": fields.Datetime.to_string(message.write_date),
                                     },
                                 ),
@@ -1873,21 +1857,6 @@ class TestPerformance(BaseMailPostPerformance):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.tracking_values_ids = [
-            (0, 0, {
-                'field_id': cls.env['ir.model.fields']._get(cls.record_ticket._name, 'email_from').id,
-                'new_value_char': 'new_value',
-                'old_value_char': 'old_value',
-            }),
-            (0, 0, {
-                'field_id': cls.env['ir.model.fields']._get(cls.record_ticket._name, 'customer_id').id,
-                'new_value_char': 'New Fake',
-                'new_value_integer': 2,
-                'old_value_char': 'Old Fake',
-                'old_value_integer': 1,
-            }),
-        ]
-
     @mute_logger('odoo.tests', 'odoo.addons.mail.models.mail_mail', 'odoo.models.unlink')
     @users('employee')
     @warmup
@@ -1918,7 +1887,6 @@ class TestPerformance(BaseMailPostPerformance):
                 partner_ids=recipients.ids,
                 subject='Test Subject',
                 subtype_xmlid='mail.mt_comment',
-                tracking_value_ids=self.tracking_values_ids,
             )
         new_message = ticket.message_ids[0]
         self.assertEqual(attachments.mapped('res_model'), [ticket._name for i in range(3)])
@@ -1964,7 +1932,6 @@ class TestPerformance(BaseMailPostPerformance):
                     partner_ids=recipients.ids,
                     subject='Test Subject',
                     subtype_xmlid='mail.mt_comment',
-                    tracking_value_ids=self.tracking_values_ids,
                 )
         for ticket, attachments in zip(tickets, attachments_all, strict=True):
             new_message = ticket.message_ids[0]

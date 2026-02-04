@@ -1347,7 +1347,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
                 "thread": {"id": channel.id, "model": "discuss.channel"},
-                "trackingValues": [],
                 "write_date": write_date,
             }
         if channel == self.channel_channel_public_1:
@@ -1384,7 +1383,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "starred": True,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
-                "trackingValues": [],
                 "write_date": write_date,
             }
         if channel == self.channel_channel_public_2:
@@ -1420,7 +1418,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "starred": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_comment").id,
-                "trackingValues": [],
                 "write_date": write_date,
             }
         if channel == self.channel_channel_group_1:
@@ -1457,7 +1454,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "starred": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
-                "trackingValues": [],
                 "write_date": write_date,
             }
         if channel == self.channel_channel_group_2:
@@ -1493,7 +1489,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "starred": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_comment").id,
-                "trackingValues": [],
                 "write_date": write_date,
             }
         if channel == self.channel_livechat_1:
@@ -1526,7 +1521,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "starred": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
-                "trackingValues": [],
                 "write_date": write_date,
             }
         if channel == self.channel_livechat_2:
@@ -1559,7 +1553,6 @@ class TestDiscussFullPerformance(HttpCase, MailCommon):
                 "starred": False,
                 "subject": False,
                 "subtype_id": self.env.ref("mail.mt_note").id,
-                "trackingValues": [],
                 "write_date": write_date,
             }
         return {}

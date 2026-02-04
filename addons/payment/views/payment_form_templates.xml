@@ -391,7 +391,6 @@
         </button>
     </template>
 
-
     <template id="payment.no_pms_available_warning">
         <div class="alert alert-warning mt-2">
             <div>

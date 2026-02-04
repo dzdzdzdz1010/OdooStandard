@@ -410,7 +410,7 @@ function clickPrintButton() {
 export function clickEditPayment() {
     return [
         {
-            trigger: ".feedback-screen .edit-order-payment:contains(Edit)",
+            trigger: ".feedback-screen .edit-order-payment:contains(Back)",
             run: "click",
         },
     ];

@@ -45,6 +45,7 @@ import { logPosMessage } from "../utils/pretty_console_log";
 import { initLNA } from "../utils/init_lna";
 import { uuid } from "@web/core/utils/strings";
 import { GeneratePrinterData } from "../utils/generate_printer_data";
+import { accountTaxHelpers } from "@account/helpers/account_tax";
 
 const { DateTime } = luxon;
 export const CONSOLE_COLOR = "#F5B427";
@@ -52,7 +53,7 @@ export const CONSOLE_COLOR = "#F5B427";
 export class PosStore extends WithLazyGetterTrap {
     loadingSkipButtonIsShown = false;
     mainScreen = { name: null, component: null };
-    feedbackScreenAutoSkipDelay = 5000;
+    feedbackScreenAutoSkipDelay = 1000;
 
     static serviceDependencies = [
         "bus_service",
@@ -3046,10 +3047,21 @@ export class PosStore extends WithLazyGetterTrap {
                             if (qtyNeeded === 0) {
                                 break;
                             }
+                            const line = this.selectedOrder.lines.filter(
+                                (l) => l.uuid === lUuid
+                            )[0];
                             const takeQty = Math.min(qty, qtyNeeded);
                             quantityTaken[comboId][lUuid] = {
                                 qty: takeQty,
                                 combo_item: item,
+                                line_price: line.priceIncl,
+                                attribute_value_ids: line.attribute_value_ids.map(
+                                    (value) => value.id
+                                ),
+                                attribute_value_extra_price: line.attribute_value_ids.reduce(
+                                    (sum, value) => sum + value.price_extra,
+                                    0
+                                ),
                             };
                             availableQty[productId].lines[lUuid] -= takeQty;
                             qtyNeeded -= takeQty;
@@ -3057,15 +3069,78 @@ export class PosStore extends WithLazyGetterTrap {
                     }
                     if (combo.is_upsell) {
                         quantityTaken[comboId].upsell = true;
+                        quantityTaken[comboId].upsell_price = combo.base_price;
                     }
                 }
                 combinations.push(quantityTaken);
             }
+            let totalSplitedComboLinePrice = 0;
+            let totalComboUpsellPrice = 0;
 
+            const itemLines = combinations
+                .flatMap((items) => Object.values(items))
+                .flatMap((item) => Object.values(item))
+                .filter((val) => val && typeof val === "object");
+
+            const comboPrices = computeComboItems(
+                comboProduct,
+                itemLines.map((item) => ({
+                    combo_item_id: item.combo_item,
+                    configuration: {
+                        attribute_value_ids: item.attribute_value_ids,
+                        price_extra: item.attribute_value_extra_price,
+                    },
+                    qty: item.qty,
+                })),
+                this.selectedOrder.pricelist_id,
+                this.data.models["decimal.precision"].getAll(),
+                this.data.models["product.template.attribute.value"].getAllBy("id"),
+                [],
+                this.currency
+            );
+            const baseLines = comboPrices.map((comboPrice) =>
+                accountTaxHelpers.prepare_base_line_for_taxes_computation(
+                    {},
+                    {
+                        currency_id: this.currency,
+                        quantity: comboPrice.qty,
+                        price_unit: comboPrice.price_unit,
+                        discount: 0,
+                        tax_ids: comboPrice.combo_item_id.product_id.taxes_id,
+                        product_id: comboPrice.combo_item_id.product_id,
+                    }
+                )
+            );
+            accountTaxHelpers.add_tax_details_in_base_lines(baseLines, this.company);
+            accountTaxHelpers.round_base_lines_tax_details(baseLines, this.company);
+            const cashRounding = this.config.cash_rounding ? this.config.rounding_method : null;
+            const taxDetails = accountTaxHelpers.get_tax_totals_summary(
+                baseLines,
+                this.currency,
+                this.company,
+                {
+                    cash_rounding: cashRounding,
+                }
+            );
+
+            if (!hasUpsell) {
+                totalSplitedComboLinePrice = this.currency.round(
+                    itemLines.reduce((sum, line) => sum + line.line_price, 0)
+                );
+            } else {
+                totalComboUpsellPrice = this.currency.round(
+                    combinations
+                        .flatMap((items) => Object.values(items))
+                        .reduce((total, item) => total + (item.upsell ? item.upsell_price : 0), 0)
+                );
+            }
             matchingCombos.push({
                 productTmpl: comboProduct,
                 combinations,
                 combinationsQty: comboQty,
+                totalComboPrice: taxDetails.total_amount,
+                totalSplitedComboLinePrice,
+                totalComboUpsellPrice,
             });
         }
         return matchingCombos;

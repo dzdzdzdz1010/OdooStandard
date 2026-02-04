@@ -56,7 +56,7 @@ export class ComboConfiguratorPopup extends Component {
         } else if (this.props.values) {
             selected = Object.values(this.props.values).reduce((acc, value) => {
                 for (const [key, val] of Object.entries(value)) {
-                    if (key === "upsell") {
+                    if (["upsell", "upsell_price"].includes(key)) {
                         continue;
                     }
                     acc[val.combo_item.id] = (acc[val.combo_item.id] || 0) + val.qty;
@@ -102,7 +102,7 @@ export class ComboConfiguratorPopup extends Component {
         const conf = {};
         for (const comboId in values) {
             for (const lineUuid in values[comboId]) {
-                if (lineUuid === "upsell") {
+                if (["upsell", "upsell_price"].includes(lineUuid)) {
                     continue;
                 }
                 const line = this.pos.models["pos.order.line"].getBy("uuid", lineUuid);
@@ -125,7 +125,10 @@ export class ComboConfiguratorPopup extends Component {
         return (
             this.props.values &&
             this.isConfirmButtonEnabled() &&
-            !Object.values(this.props.values).some((acc) => Object.keys(acc).includes("upsell"))
+            !Object.values(this.props.values).some(
+                (acc) =>
+                    Object.keys(acc).includes("upsell") || Object.keys(acc).includes("upsell_price")
+            )
         );
     }
 

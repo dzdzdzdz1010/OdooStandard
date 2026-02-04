@@ -339,3 +339,45 @@ registry.category("web_tour.tours").add("test_combo_item_image_not_display", {
             Dialog.confirm(),
         ].flat(),
 });
+
+registry.category("web_tour.tours").add("test_convert_orderlines_to_combo_with_upsell", {
+    steps: () =>
+        [
+            Chrome.startPoS(),
+
+            // Add products that can be part of a first combo
+            ProductScreen.clickDisplayedProduct("Combo Product 2"),
+            ProductScreen.clickDisplayedProduct("Combo Product 4"),
+            ProductScreen.clickDisplayedProduct("Combo Product 6"),
+
+            // Add products that can be part of a second combo
+            ProductScreen.clickDisplayedProduct("Second Product 2"),
+            ProductScreen.clickDisplayedProduct("Second Product 4"),
+
+            inLeftSide([
+                {
+                    content: "Click apply combo button",
+                    trigger: ".combo-proposition button.btn",
+                    run: "click",
+                },
+                Dialog.is(),
+                {
+                    content: "Check first combo price",
+                    trigger: ".modal-body .combo-item:eq(0) .fw-bolder:contains('47.33')",
+                },
+                {
+                    content: "Check save price",
+                    trigger: ".modal-body .combo-item:eq(0) span:contains('24.67')",
+                },
+                {
+                    content: "Check second combo price",
+                    trigger: ".modal-body .combo-item:eq(1) span:contains('50.00')",
+                },
+                {
+                    content: "Check add price",
+                    trigger: ".modal-body .combo-item:eq(1) span:contains('30.00')",
+                },
+                Dialog.cancel(),
+            ]),
+        ].flat(),
+});

@@ -28,6 +28,7 @@ class CountdownOptionPlugin extends Plugin {
             PreviewEndMessageAction,
             SetLayoutAction,
             SelectCountdownInlineTemplateAction,
+            UpdateCountdownTitlePositionAction,
         },
         on_cloned_handlers: ({ cloneEl }) => {
             const countdownEls = getElementsWithOption(cloneEl, ".s_countdown");
@@ -193,6 +194,42 @@ export class SelectCountdownInlineTemplateAction extends BuilderAction {
 
     clean(action) {
         return this.getAction("selectTemplate").clean(action);
+    }
+}
+
+class UpdateCountdownTitlePositionAction extends BuilderAction {
+    static id = "updateCountdownTitlePosition";
+    apply({ editingElement, params: { position } }) {
+        if (this.isApplied(...arguments)) {
+            return;
+        }
+        const containerEl = editingElement.querySelector(":scope > .container");
+        let titleEl = editingElement.querySelector(".s_countdown_title");
+        if (!position) {
+            titleEl?.remove();
+            containerEl.classList.remove("d-flex", "justify-content-center");
+            containerEl.style.gap = "";
+        } else {
+            if (!titleEl) {
+                titleEl = renderToElement("website.s_countdown.title");
+                containerEl.insertAdjacentElement("afterbegin", titleEl);
+            }
+            containerEl.classList.toggle("d-flex", position == "side");
+            containerEl.classList.toggle("justify-content-center", position == "side");
+            containerEl.style.gap = position == "side" ? "10px" : "";
+        }
+    }
+    isApplied({ editingElement, params: { position } }) {
+        const containerEl = editingElement.querySelector(":scope > .container");
+        const titleEl = editingElement.querySelector(".s_countdown_title");
+        if (!position) {
+            return !titleEl;
+        } else if (!titleEl) {
+            return false;
+        } else {
+            const hasDisplayBlock = containerEl.matches(".d-flex");
+            return position === "side" ? hasDisplayBlock : !hasDisplayBlock;
+        }
     }
 }
 

@@ -58,7 +58,7 @@
                 <div class="col-md-2 o_mail_footer_links"><p class="mb-0"><a href="/unsubscribe_from_list">Unsubscribe</a></p></div>
                 <div class="col-md-2 o_mail_footer_links"><p class="mb-0"><a href="https://www.example.com">Contact</a></p></div>
                 <div class="col-md-8 d-inline-block">
-                    <p class="mb-0"><font style="color: rgb(99,102,105);"><t t-out="res_company.partner_id._display_address()"/></font></p>
+                    <p class="mb-0"><font style="color: rgb(99,102,105);"><t t-out="res_company.partner_id.contact_address"/></font></p>
                 </div>
             </div>
         </div>

@@ -400,6 +400,7 @@ class AccountMoveLine(models.Model):
         compute="_compute_price_unit", store=True, readonly=False, precompute=True,
         digits='Product Price',
     )
+    price_unit_discounted = fields.Float('Unit Price (Discounted)', compute='_compute_price_unit_discounted')
     price_subtotal = fields.Monetary(
         string='Subtotal',
         compute='_compute_totals', store=True,
@@ -412,8 +413,10 @@ class AccountMoveLine(models.Model):
     )
     discount = fields.Float(
         string='Discount (%)',
+        compute='_compute_discount',
         digits='Discount',
-        default=0.0,
+        store=True,
+        readonly=False
     )
     tax_calculation_rounding_method = fields.Selection(
         related='company_id.tax_calculation_rounding_method',
@@ -945,7 +948,7 @@ class AccountMoveLine(models.Model):
         for line in self.filtered(lambda l: l.parent_state == 'draft'):
             # vendor bills should have the product purchase UOM
             if line.move_id.is_purchase_document():
-                seller_ids = line.product_id.seller_ids._get_filtered_supplier(line.company_id, line.product_id, False)
+                seller_ids = line.product_id.seller_ids._get_filtered_supplier(line.company_id, line.product_id, {'partner_id': line.partner_id})
                 line.product_uom_id = seller_ids[:1].uom_id or line.product_id.uom_id
             else:
                 line.product_uom_id = line.product_id.uom_id
@@ -988,6 +991,15 @@ class AccountMoveLine(models.Model):
             line.price_total = base_line['tax_details']['total_included_currency']
 
     @api.depends('product_id', 'product_uom_id')
+    def _compute_discount(self):
+        for line in self:
+            if line.display_type != 'product' or line.is_imported:
+                continue
+            if line.move_id.is_purchase_document(include_receipts=True):
+                seller_ids = line.product_id.seller_ids._get_filtered_supplier(line.company_id, line.product_id, {'partner_id': line.partner_id})
+                line.discount = seller_ids[:1].discount
+
+    @api.depends('product_id', 'product_uom_id')
     def _compute_price_unit(self):
         for line in self:
             if not line.product_id or line.display_type in ('line_section', 'line_subsection', 'line_note') or line.is_imported:
@@ -998,14 +1010,34 @@ class AccountMoveLine(models.Model):
                 document_type = 'purchase'
             else:
                 document_type = 'other'
-            line.price_unit = line.product_id._get_tax_included_unit_price(
-                line.move_id.company_id,
-                line.move_id.currency_id,
-                line.move_id.date,
-                document_type,
-                fiscal_position=line.move_id.fiscal_position_id,
-                product_uom=line.product_uom_id,
-            )
+
+            seller = False
+            if document_type == 'purchase':
+                seller = line.product_id._select_seller(
+                    partner_id=line.partner_id,
+                    quantity=None,
+                    date=line.invoice_date or fields.Date.context_today(line),
+                    uom_id=line.product_uom_id,
+                )
+            if seller:
+                price_unit = line.env['account.tax']._fix_tax_included_price_company(
+                        seller.price, line.product_id.supplier_taxes_id, line.tax_ids, line.company_id)
+                price_unit = seller.currency_id._convert(price_unit, line.currency_id, line.company_id, line.invoice_date or fields.Date.context_today(line), False)
+                line.price_unit = price_unit
+            else:
+                line.price_unit = line.product_id._get_tax_included_unit_price(
+                    line.move_id.company_id,
+                    line.move_id.currency_id,
+                    line.move_id.date,
+                    document_type,
+                    fiscal_position=line.move_id.fiscal_position_id,
+                    product_uom=line.product_uom_id,
+                )
+
+    @api.depends('discount', 'price_unit')
+    def _compute_price_unit_discounted(self):
+        for line in self:
+            line.price_unit_discounted = line.price_unit * (1 - (line.discount / 100))
 
     @api.depends('product_id', 'product_uom_id')
     def _compute_tax_ids(self):
@@ -3649,24 +3681,22 @@ class AccountMoveLine(models.Model):
             {
                 'quantity': float,
                 'price': float,
+                'productUnitPrice': float
                 'readOnly': bool,
                 'min_qty': int, (optional)
+                'uomDisplayName': string,
+                'productUomDisplayName': string (optional)
             }
         """
         if self:
             self.product_id.ensure_one()
             return {
                 **self[0].move_id._get_product_price_and_data(self[0].product_id),
-                'quantity': sum(
-                    self.mapped(
-                        lambda line: line.product_uom_id._compute_quantity(
-                            qty=line.quantity,
-                            to_unit=line.product_id.uom_id,
-                        )
-                    )
-                ),
+                'quantity': sum(line.quantity for line in self),
                 'readOnly': self.move_id._is_readonly() or len(self) > 1,
                 'uomDisplayName': len(self) == 1 and self.product_uom_id.display_name or self.product_id.uom_id.display_name,
+                'productUomDisplayName': self.product_id.uom_id.display_name,
+                'productUnitPrice': self[0].product_uom_id._compute_price(self[0].price_unit_discounted, self[0].product_id.uom_id),
             }
         return {
             'quantity': 0,

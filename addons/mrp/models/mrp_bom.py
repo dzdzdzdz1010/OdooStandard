@@ -523,9 +523,12 @@ class MrpBom(models.Model):
             product_catalog[product.id] |= self._get_product_price_and_data(product)
         return product_catalog
 
-    def _get_product_price_and_data(self, product):
+    def _get_product_price_and_data(self, product, product_uom_id=False):
         self.ensure_one()
-        return {'price': product.standard_price}
+        price = product.standard_price
+        if product_uom_id:
+            price = product.uom_id._compute_price(product.standard_price, product_uom_id)
+        return {'price': price}
 
     def _get_product_catalog_record_lines(self, product_ids, *, child_field=False, **kwargs):
         if not child_field:
@@ -537,11 +540,15 @@ class MrpBom(models.Model):
         if not child_field:
             return 0
         entity = self[child_field].filtered(lambda line: line.product_id.id == product_id)
+        product = self.env['product.product'].browse(product_id)
+        bom_line_uom_id = entity.uom_id if entity else product.uom_id
+        price_unit = product.uom_id._compute_price(product.standard_price, bom_line_uom_id)
         if entity:
             if quantity != 0:
                 entity.product_qty = quantity
             else:
                 entity.unlink()
+                return {'price': product.standard_price, 'uomDisplayName': product.uom_id.name}
         elif quantity > 0:
             command = Command.create({
                 'product_qty': quantity,
@@ -550,7 +557,7 @@ class MrpBom(models.Model):
             })
             self.write({child_field: [command]})
 
-        return self.env['product.product'].browse(product_id).standard_price
+        return {'price': price_unit, 'productUnitPrice': product.standard_price}
 
     # -------------------------------------------------------------------------
     # DOCUMENT
@@ -833,7 +840,7 @@ class MrpBomLine(models.Model):
         if self and not default:
             self.product_id.ensure_one()
             return {
-                **self[0].bom_id._get_product_price_and_data(self[0].product_id),
+                **self[0].bom_id._get_product_price_and_data(self[0].product_id, self[0].uom_id),
                 'quantity': sum(
                     self.mapped(
                         lambda line: line.uom_id._compute_quantity(
@@ -844,6 +851,8 @@ class MrpBomLine(models.Model):
                 ),
                 'readOnly': len(self) > 1,
                 'uomDisplayName': len(self) == 1 and self.uom_id.display_name or self.product_id.uom_id.display_name,
+                'productUomDisplayName': self[0].product_id.uom_id.display_name,
+                'productUnitPrice': self[0].product_id.standard_price,
             }
         return {
             'quantity': 0,
@@ -914,7 +923,7 @@ class MrpBomByproduct(models.Model):
         if self and not default:
             self.product_id.ensure_one()
             return {
-                **self[0].bom_id._get_product_price_and_data(self[0].product_id),
+                **self[0].bom_id._get_product_price_and_data(self[0].product_id, self[0].uom_id),
                 'quantity': sum(
                     self.mapped(
                         lambda line: line.uom_id._compute_quantity(
@@ -925,6 +934,8 @@ class MrpBomByproduct(models.Model):
                 ),
                 'readOnly': len(self) > 1,
                 'uomDisplayName': len(self) == 1 and self.uom_id.display_name or self.product_id.uom_id.display_name,
+                'productUomDisplayName': self[0].product_id.uom_id.display_name,
+                'productUnitPrice': self[0].product_id.standard_price,
             }
         return {
             'quantity': 0,

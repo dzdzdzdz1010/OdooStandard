@@ -443,7 +443,6 @@ class PurchaseOrderLine(models.Model):
             elif line.selected_seller_id:
                 price_unit = line.env['account.tax']._fix_tax_included_price_company(line.selected_seller_id.price, line.product_id.supplier_taxes_id, line.tax_ids, line.company_id) if line.selected_seller_id else 0.0
                 price_unit = line.selected_seller_id.currency_id._convert(price_unit, line.currency_id, line.company_id, line.date_order or fields.Date.context_today(line), False)
-                price_unit = float_round(price_unit, precision_digits=max(line.currency_id.decimal_places, self.env['decimal.precision'].precision_get('Product Price')))
                 line.price_unit = line.technical_price_unit = line.selected_seller_id.uom_id._compute_price(price_unit, line.uom_id)
                 line.discount = line.selected_seller_id.discount or 0.0
 
@@ -548,8 +547,10 @@ class PurchaseOrderLine(models.Model):
             {
                 'quantity': float,
                 'price': float,
+                'productUnitPrice': float (optional),
                 'readOnly': bool,
                 'uomDisplayName': String,
+                'productUomDisplayName': string
                 'packaging': dict,
                 'warning': String,
             }
@@ -558,8 +559,11 @@ class PurchaseOrderLine(models.Model):
             catalog_info = self.order_id._get_product_price_and_data(self.product_id)
             catalog_info.update(
                 quantity=self.product_qty,
-                price=self.price_unit * (1 - self.discount / 100),
+                price=self.price_unit_discounted,
+                productUnitPrice=self.uom_id._compute_price(self.price_unit_discounted, self.product_id.uom_id),
                 readOnly=self.order_id._is_readonly(),
+                uomDisplayName=self.uom_id.display_name,
+                productUomDisplayName=self.product_id.uom_id.display_name,
             )
             if self.product_id.uom_id != self.uom_id:
                 catalog_info['uomDisplayName'] = self.uom_id.display_name

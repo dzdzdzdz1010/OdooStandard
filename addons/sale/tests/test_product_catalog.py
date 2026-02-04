@@ -177,7 +177,7 @@ class TestProductCatalog(HttpCase, SaleCommon):
 
         # Add product to order
         product = self.service_product
-        update_data = self.request_update_order_line_info(product=product)
+        update_data = self.request_update_order_line_info(product=product)['price']
         sol = self.empty_order.order_line
         self.assertEqual(sol.product_id, product)
         self.assertEqual(sol.product_uom_qty, 1.0)
@@ -194,7 +194,7 @@ class TestProductCatalog(HttpCase, SaleCommon):
 
         # Add first item --> no discount
         product = self.service_product
-        update_data = self.request_update_order_line_info(product=product)
+        update_data = self.request_update_order_line_info(product=product)['price']
         sol = self.empty_order.order_line
         self.assertRecordValues(
             sol, [{
@@ -207,7 +207,8 @@ class TestProductCatalog(HttpCase, SaleCommon):
         self.assertEqual(update_data, product.lst_price)
 
         # Add a second item --> should trigger the pricelist discount
-        update_data = self.request_update_order_line_info(product=product, quantity=2.0)
+        update_data = self.request_update_order_line_info(product=product, quantity=2.0)['price']
+
         self.assertRecordValues(
             sol, [{
                 'product_id': product.id,
@@ -224,7 +225,8 @@ class TestProductCatalog(HttpCase, SaleCommon):
             'group_product_pricelist': True,
             'group_discount_per_so_line': True,
         }).execute()
-        update_data = self.request_update_order_line_info(product=product, quantity=3.0)
+        update_data = self.request_update_order_line_info(product=product, quantity=3.0)['price']
+
         self.assertRecordValues(
             sol, [{
                 'product_id': product.id,
@@ -238,6 +240,6 @@ class TestProductCatalog(HttpCase, SaleCommon):
     def test_remove_product_from_catalog_without_sol(self):
         """Test that removing a product from the catalog right after clicking Add button"""
         product = self.service_product
-        update_data = self.request_update_order_line_info(product=product, quantity=0.0)
+        update_data = self.request_update_order_line_info(product=product, quantity=0.0)['price']
 
         self.assertEqual(update_data, product.lst_price)

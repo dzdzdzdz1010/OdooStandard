@@ -11,6 +11,7 @@
             - show_tokenize_input_mapping: For each provider, whether the tokenization checkbox is
                                            shown; used only in `payment` mode.
             - display_submit_button: Whether the submit button is displayed; default: `True`.
+            - submit_button_label: The label of the submit button; default: 'Pay'/'Save'.
         -->
         <!-- Payment context:
             - reference_prefix: The custom prefix to compute the full transaction reference.
@@ -44,6 +45,11 @@
         />
         <t t-set="display_submit_button"
            t-value="True if display_submit_button is None else display_submit_button"
+        />
+        <t t-set="pay_label">Pay</t> <!-- Allow translating the label. -->
+        <t t-set="save_label">Save</t> <!-- Allow translating the label. -->
+        <t t-set="submit_button_label"
+           t-value="submit_button_label or (pay_label if mode == 'payment' else save_label)"
         />
         <form t-if="payment_methods_sudo or tokens_sudo" id="o_payment_form"
               class="o_payment_form"
@@ -374,17 +380,14 @@
         -->
         <button name="o_payment_submit_button"
                 type="submit"
+                t-out="submit_button_label"
                 class="btn btn-primary w-100 w-md-auto ms-auto px-5"
                 disabled="true"
         >   
-            <t t-if="pay_later">
-                <span name="o_pay_now_label" class="d-none" t-field="res_company.pay_now_label"/>
-                <span name="o_pay_later_label" t-field="res_company.pay_later_label"/>
-            </t>
-            <t t-else="">
-                <span name="o_pay_now_label" t-field="res_company.pay_now_label"/>
-                <span name="o_pay_later_label" class="d-none" t-field="res_company.pay_later_label"/>
-            </t>
+        <t t-if="not submit_button_label">
+            <span name="o_pay_now_label" t-field="res_company.pay_now_label"/>
+            <span name="o_pay_later_label" class="d-none" t-field="res_company.pay_later_label"/>
+        </t>
         </button>
     </template>
 

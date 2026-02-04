@@ -2078,11 +2078,15 @@ class MailCommon(MailCase):
         """ Remove store user data dependant on other modules if they are not not installed.
         Not written in a modular way to avoid complex override for a simple test tool.
         """
+        result = list()
         for data in users_data:
-            if "hr.leave" not in self.env:
+            if "hr.leave" not in self.env and "hr.employee.location" not in self.env:
+                if data.keys() == {"id", "employee_ids"}:
+                    continue
                 data.pop("leave_date_to", None)
                 data.pop("employee_ids", None)
-        return list(users_data)
+            result.append(data)
+        return result
 
     def _filter_threads_fields(self, /, *threads_data):
         """ Remove store thread data dependant on other modules if they are not not installed.

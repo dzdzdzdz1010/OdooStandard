@@ -185,6 +185,7 @@ class DiscussChannelMember(models.Model):
         if self.livechat_member_type == "visitor":
             partner_res.extend(["offline_since", "email"])
         if partner_res.is_for_internal_users():
+            partner_res.one("main_user_id", ["share"])
             partner_res.from_method("_store_im_status_fields")
 
     def _store_guest_dynamic_fields(self, guest_res: Store.FieldList):

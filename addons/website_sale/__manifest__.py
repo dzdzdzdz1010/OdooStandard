@@ -70,6 +70,9 @@
         'views/website_sale_visitor_views.xml',
         'views/website_views.xml',
 
+        # Wizards
+        'wizard/choose_delivery_carrier_views.xml',
+
         # Website snippets
         'templates/snippets/snippets.xml',
         'templates/snippets/product_snippet_template_data.xml',
@@ -156,9 +159,6 @@
             'website_sale/static/src/js/product_row/*',
             'website_sale/static/src/js/product_comparison_bottom_bar/*',
 
-            # Location selector components are defined in `delivery` to share the codebase with the
-            # backend.
-            'delivery/static/src/js/location_selector/**/*',
             'website_sale/static/src/js/location_selector/**/*',
         ],
         'web._assets_primary_variables': [
@@ -177,6 +177,8 @@
             'website_sale/static/src/js/dashboard/dashboard.scss',
             'website_sale/static/src/js/date_filter_button/**/*',
             'website_sale/static/src/views/**/*',
+            'website_sale/static/src/js/location_selector/**/*',
+            'website_sale/static/src/js/pickup_location_many2one/**/*',
         ],
         'web.assets_web_dark': [
             'website_sale/static/src/js/dashboard/**/*.dark.scss',
@@ -210,7 +212,7 @@
             'website_sale/static/tests/builder/**/*',
         ],
         'web.assets_unit_tests_setup': [
-            'delivery/static/src/js/location_selector/**/*',
+            'website_sale/static/src/js/location_selector/**/*',
             'website_sale/static/src/interactions/**/*',
             'website_sale/static/src/js/product_row/*',
             'website_sale/static/src/js/product_comparison_bottom_bar/*',

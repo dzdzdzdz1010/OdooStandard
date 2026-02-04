@@ -14,10 +14,20 @@ class ProductProduct(models.Model):
     variant_ribbon_id = fields.Many2one(string="Variant Ribbon", comodel_name='product.ribbon')
     website_id = fields.Many2one(related='product_tmpl_id.website_id', readonly=False)
 
-    product_variant_image_ids = fields.One2many(
+    image_variant_1920 = fields.Image(
+        string="Variant Image",
+        max_width=1920,
+        max_height=1920,
+        compute='_compute_image_variant_1920',
+        store=True,
+        readonly=True,
+    )
+    product_variant_image_ids = fields.Many2many(
+        'product.image',
         string="Extra Variant Images",
-        comodel_name='product.image',
-        inverse_name='product_variant_id',
+        relation='product_image_product_variant_rel',
+        column1='product_variant_id',
+        column2='product_image_id',
     )
 
     base_unit_count = fields.Float(
@@ -49,6 +59,20 @@ class ProductProduct(models.Model):
     )
 
     #=== COMPUTE METHODS ===#
+
+    @api.depends(
+        'product_variant_image_ids',
+        'product_variant_image_ids.image_1920',
+    )
+    def _compute_image_variant_1920(self):
+        for product in self:
+            image = product.product_variant_image_ids.sorted('sequence')[:1]
+            image_variant_1920 = (
+                image.image_1920
+                if image and image.attribute_value_ids and image._is_applicable_to_variant(product)
+                else False
+            )
+            product.image_variant_1920 = image_variant_1920 or product.product_tmpl_id.image_1920
 
     def _get_base_unit_price(self, price):
         self.ensure_one()
@@ -119,8 +143,8 @@ class ProductProduct(models.Model):
         image of the template, if unset), the Variant Extra Images, and the Template Extra Images.
         """
         self.ensure_one()
-        variant_images = list(self.product_variant_image_ids)
-        template_images = list(self.product_tmpl_id.product_template_image_ids)
+        variant_images = list(self.product_variant_image_ids[1:])
+        template_images = list(self.product_tmpl_id.product_template_image_ids.filtered('is_template_image'))
         return [self] + variant_images + template_images
 
     def _get_combination_info_variant(self, **kwargs):
@@ -219,6 +243,7 @@ class ProductProduct(models.Model):
 
         :rtype: list[str]
         """
+        # TODO
         self.ensure_one()
         return [
             self.env['website'].image_url(extra_image, 'image_1920')

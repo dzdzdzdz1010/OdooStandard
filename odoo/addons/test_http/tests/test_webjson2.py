@@ -250,3 +250,69 @@ class TestHttpWebJson_2(TestHttpBase):
                 })
             url_search.assert_called()
             body_search.assert_not_called()
+
+    def test_renew_apikey(self):
+        self.env['ir.config_parameter'].set_param('base.enable_programmatic_api_keys', 1)
+        key = self.bearer_header['Authorization'][7:]
+        apikey = self.env['res.users.apikeys'].search([('user_id', '=', self.jackoneill.id)])
+
+        in_ten_minutes = (datetime.now() + timedelta(minutes=10)).replace(microsecond=0)
+        in_twenty_minutes = (datetime.now() + timedelta(minutes=20)).replace(microsecond=0)
+
+        # an API key can be used to create a new one
+        res = self.db_url_open(
+            '/json/2/res.users.apikeys/generate',
+            headers=self.bearer_header,
+            json={
+                'key': key,
+                'scope': None,
+                'name': 'Second key',
+                'expiration_date': in_ten_minutes.isoformat(sep=' '),
+            },
+        )
+        key2 = res.json()['result']
+
+        apikeys = self.env['res.users.apikeys'].search([('user_id', '=', self.jackoneill.id)])
+        self.assertIn(apikey, apikeys)
+        self.assertRecordValues(apikeys - apikey, [
+            {'name': 'Second key', 'scope': False, 'expiration_date': in_ten_minutes},
+        ])
+
+        # the new key can be used to create a new one
+        res = self.db_url_open(
+            '/json/2/res.users.apikeys/generate',
+            headers={'Authorization': f'Bearer {key2}'},
+            json={
+                'key': key2,
+                'scope': 'api',
+                'name': 'Third key',
+                'expiration_date': in_twenty_minutes.isoformat(sep=' '),
+            },
+        )
+        self.assertTrue(res.json()['result'])
+
+        # revoke the previous one
+        res = self.db_url_open(
+            '/json/2/res.users.apikeys/revoke',
+            headers={'Authorization': f'Bearer {key2}'},
+            json={'key': key2},
+        )
+        self.assertTrue(res.json()['result'])
+
+        # the second key is now revoked
+        res = self.db_url_open(
+            '/json/2/res.users/context_get',
+            headers={
+                **CT_JSON,
+                'Authorization': f'Bearer {key2}',
+            },
+            data='{}',
+        )
+        self.assertEqual(res.status_code, 401)
+        self.assertEqual(res.json()['message'], 'Invalid apikey')
+
+        apikeys = self.env['res.users.apikeys'].search([('user_id', '=', self.jackoneill.id)])
+        self.assertIn(apikey, apikeys)
+        self.assertRecordValues(apikeys - apikey, [
+            {'name': 'Third key', 'scope': 'api', 'expiration_date': in_twenty_minutes},
+        ])

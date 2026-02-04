@@ -13,5 +13,4 @@ class MailingTempplates(models.Model):
     description = fields.Char('Description')
     user_id = fields.Many2one(
         'res.users', string='Creator',
-        tracking=True,
         default=lambda self: self.env.user)

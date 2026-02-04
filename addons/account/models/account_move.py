@@ -5131,6 +5131,13 @@ class AccountMove(models.Model):
             if move.journal_id.autocheck_on_post:
                 move.checked = move.journal_id.autocheck_on_post
 
+            move_company_and_parents = move.company_id.sudo().parent_ids
+            if any(account.company_ids and not move_company_and_parents & account.company_ids for account in move.line_ids.mapped('account_id')):
+                validation_msgs.add(self.env._(
+                    "The entry '%(move_name)s' (id %(move_id)s) is using accounts from a different company.",
+                    move_name=move.name or 'Draft Entry', move_id=move.id
+                ))
+
         if validation_msgs:
             msg = "\n".join([line for line in validation_msgs])
             raise UserError(msg)

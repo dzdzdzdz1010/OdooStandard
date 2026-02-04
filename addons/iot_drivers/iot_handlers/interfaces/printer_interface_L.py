@@ -237,11 +237,15 @@ class PrinterInterface(Interface):
             if any(key in device_id for key in ['MDL', 'MODEL'])
         ), fallback_model)
         model = re.sub(r"[\(].*?[\)]", "", model).strip()
+        url = device['url']
 
-        ppdname_argument = next(({"ppdname": ppd} for ppd in self.PPDs if model and model in self.PPDs[ppd]['ppd-product']), {})
+        ppdname_argument = next(
+            ({"ppdname": ppd} for ppd in self.PPDs if model and model in self.PPDs[ppd]['ppd-product']),
+            {"ppdname": "everywhere"} if url.startswith("dnssd") else {}  # IPP Everywhere for dnssd printers if no driver found
+        )
 
         try:
-            self.conn.addPrinter(name=device['identifier'], device=device['url'], **ppdname_argument)
+            self.conn.addPrinter(name=device['identifier'], device=url, **ppdname_argument)
             self.conn.setPrinterInfo(device['identifier'], device['device-make-and-model'])
             self.conn.enablePrinter(device['identifier'])
             self.conn.acceptJobs(device['identifier'])

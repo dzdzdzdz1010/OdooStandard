@@ -2439,6 +2439,53 @@ class TestAccountMoveOutInvoiceOnchanges(AccountTestInvoicingCommon):
             'amount_total': 1430.0,
         })
 
+    def test_out_invoice_name_change(self):
+        ''' Check the invoice.name, payment_term and invoice_line.name.'''
+        # Create an invoice.
+        move1 = self.env['account.move'].create([{
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_a.id,
+            'invoice_date': fields.Date.from_string('2016-01-01'),
+            'invoice_line_ids': [
+                Command.create({'product_id': self.product_line_vals_1['product_id']}),
+                Command.create({'product_id': self.product_line_vals_2['product_id']}),
+            ],
+        }])
+
+        # Invoice of journal based on odoo invoice
+        # post the invoice to compute the payment reference and payment_term label
+        move1.action_post()
+        self.assertRecordValues(move1, [{'payment_reference': 'INV/2016/00001'}])
+        self.assertRecordValues(
+            move1.line_ids.filtered(lambda m: m.display_type == 'payment_term'),
+            [{'name': 'INV/2016/00001'}])
+
+        move1.button_draft()
+        with Form(move1) as move_form:
+            move_form.name = 'INV/2016/00003'
+        move1 = move_form.save()
+        move1.action_post()
+
+        self.assertRecordValues(move1, [{'payment_reference': 'INV/2016/00003'}])
+        self.assertRecordValues(
+            move1.line_ids.filtered(lambda m: m.display_type == 'payment_term'),
+            [{'name': 'INV/2016/00003'}])
+
+        move1.button_draft()
+        with Form(move1) as move_form:
+            move_form.payment_reference = 'MyCustomer - 00001'
+            move1 = move_form.save()
+            move_form.name = 'INV/2016/00002'
+            move1 = move_form.save()
+        move1.action_post()
+
+        self.assertRecordValues(move1, [{
+            'name': 'INV/2016/00002',
+            'payment_reference': 'MyCustomer - 00001'}])
+        self.assertRecordValues(
+            move1.line_ids.filtered(lambda m: m.display_type == 'payment_term'),
+            [{'name': 'MyCustomer - 00001'}])
+
     def test_out_invoice_switch_out_refund_1(self):
         # Test creating an account_move with an out_invoice_type and switch it in an out_refund.
         move = self.env['account.move'].create({

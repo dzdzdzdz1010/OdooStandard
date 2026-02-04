@@ -411,7 +411,7 @@ $offcanvas-horizontal-width: $o-offcanvas-horizontal-width !default;
 $--enable-no-overflow-of-text-columns: false !default;
 
 .carousel-instant {
-  .carousel-item {
-    transition-duration: 200ms !important;
-  }
+    .carousel-item {
+        transition: none;
+    }
 }

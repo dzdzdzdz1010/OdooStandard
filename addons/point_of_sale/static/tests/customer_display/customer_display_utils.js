@@ -184,3 +184,8 @@ export const PAID = {
     change: 0,
     onlinePaymentData: {},
 };
+
+export const SCREENSAVER = {
+    companyID: 1,
+    currentScreen: "SaverScreen",
+};

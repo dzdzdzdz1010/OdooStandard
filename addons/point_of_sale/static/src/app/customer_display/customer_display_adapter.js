@@ -52,6 +52,7 @@ export class CustomerDisplayPosAdapter {
             paymentLines: order.payment_ids.map((pl) => this.getPaymentData(pl)),
             lines: order.lines.map((l) => this.getOrderlineData(l)),
             qrPaymentData: this.getQrPaymentData(order),
+            currentScreen: order.getCurrentScreenData()?.name,
         };
     }
 

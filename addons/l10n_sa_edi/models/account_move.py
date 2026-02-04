@@ -20,13 +20,6 @@ class AccountMove(models.Model):
         string="ZATCA chain index", copy=False, readonly=True,
         help="Invoice index in chain, set if and only if an in-chain XML was submitted and did not error",
     )
-    l10n_sa_edi_chain_head_id = fields.Many2one(
-      'account.move',
-      string="ZATCA chain stopping move",
-      copy=False,
-      readonly=True,
-      help="Technical field to know if the chain has been stopped by a previous invoice",
-  )
 
     @api.ondelete(at_uninstall=False)
     def _prevent_zatca_rejected_invoice_deletion(self):
@@ -176,7 +169,8 @@ class AccountMove(models.Model):
         edi_format = self.env.ref('l10n_sa_edi.edi_sa_zatca')
         # Build the dict of values to be used for generating the Invoice XML content
         # Set Invoice field values required for generating the XML content, hash and signature
-        self.l10n_sa_uuid = uuid.uuid4()
+        if not self.l10n_sa_uuid:
+            self.l10n_sa_uuid = uuid.uuid4()
         # We generate the XML content
         xml_content = edi_format._l10n_sa_generate_zatca_template(self)
         # Once the required values are generated, we hash the invoice, then use it to generate a Signature
@@ -311,20 +305,6 @@ class AccountMove(models.Model):
             'total_amount': invoice_node['cac:LegalMonetaryTotal']['cbc:TaxInclusiveAmount']['_text'],
             'total_tax': invoice_node['cac:TaxTotal'][-1]['cbc:TaxAmount']['_text'],
         }
-
-    def _retry_edi_documents_error(self):
-        """
-            Hook to reset the chain head error prior to retrying the submission
-        """
-        self.filtered(lambda m: m.country_code == 'SA').write({'l10n_sa_edi_chain_head_id': False})
-        return super()._retry_edi_documents_error()
-
-    def action_show_chain_head(self):
-        """
-            Action to show the chain head of the invoice
-        """
-        self.ensure_one()
-        return self.l10n_sa_edi_chain_head_id._get_records_action(name=_("Chain Head"))
 
 
 class AccountMoveLine(models.Model):

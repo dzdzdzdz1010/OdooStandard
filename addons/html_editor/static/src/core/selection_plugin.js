@@ -1,5 +1,6 @@
 import { closestBlock } from "@html_editor/utils/blocks";
 import {
+    getDeepestEditablePosition,
     getDeepestPosition,
     isMediaElement,
     isProtected,
@@ -241,8 +242,8 @@ export class SelectionPlugin extends Plugin {
         const selection = this.getEditableSelection();
         const containerSelector = "#wrap > *, .oe_structure > *, [contenteditable]";
         const container = selection && closestElement(selection.anchorNode, containerSelector);
-        const [anchorNode, anchorOffset] = getDeepestPosition(container, 0);
-        const [focusNode, focusOffset] = getDeepestPosition(container, nodeSize(container));
+        const [anchorNode, anchorOffset] = getDeepestEditablePosition(container, 0);
+        const [focusNode, focusOffset] = getDeepestEditablePosition(container, nodeSize(container));
         this.setSelection({ anchorNode, anchorOffset, focusNode, focusOffset });
     }
 
@@ -1051,6 +1052,20 @@ export class SelectionPlugin extends Plugin {
             // we adjust the selection to the sibling of non editable element.
             const selectingBackward = ["ArrowLeft", "ArrowUp"].includes(ev.key);
             const currentBlock = closestBlock(focusNode);
+            let node, offset;
+
+            // If the editable is the focusNode, we need to move selection
+            // to the previous or next child based on the focusOffset.
+            if (currentBlock === this.editable) {
+                node = childNodes(this.editable)[selectingBackward ? focusOffset - 1 : focusOffset];
+                if (node) {
+                    offset = selectingBackward ? 0 : nodeSize(node);
+                    selection.extend(node, offset);
+                    ev.preventDefault();
+                    return;
+                }
+            }
+
             const isAtBoundary = selectingBackward
                 ? firstLeaf(currentBlock) === focusNode && focusOffset === 0
                 : lastLeaf(currentBlock) === focusNode && focusOffset === nodeSize(focusNode);
@@ -1060,10 +1075,40 @@ export class SelectionPlugin extends Plugin {
             const targetBlock = selectingBackward
                 ? adjacentBlock?.previousElementSibling
                 : adjacentBlock?.nextElementSibling;
-            if (!adjacentBlock?.isContentEditable && targetBlock && isAtBoundary) {
-                const leafNode = selectingBackward ? lastLeaf(targetBlock) : firstLeaf(targetBlock);
-                const offset = selectingBackward ? nodeSize(leafNode) : 0;
-                selection.extend(leafNode, offset);
+
+            if (!currentBlock.isContentEditable) {
+                if (!adjacentBlock) {
+                    node = currentBlock;
+                    offset = selectingBackward ? 0 : nodeSize(node);
+                } else if (!adjacentBlock.isContentEditable && isAtBoundary) {
+                    node = targetBlock || adjacentBlock;
+                    if (targetBlock) {
+                        offset = selectingBackward ? nodeSize(node) : 0;
+                    } else {
+                        offset = selectingBackward ? 0 : nodeSize(node);
+                    }
+                } else {
+                    node = adjacentBlock;
+                    offset = selectingBackward ? nodeSize(node) : 0;
+                }
+                selection.extend(node, offset);
+                ev.preventDefault();
+                return;
+            }
+
+            if (adjacentBlock?.isContentEditable === false && isAtBoundary) {
+                if (targetBlock) {
+                    node = targetBlock.isContentEditable
+                        ? selectingBackward
+                            ? lastLeaf(targetBlock)
+                            : firstLeaf(targetBlock)
+                        : targetBlock;
+                    offset = selectingBackward ? nodeSize(node) : 0;
+                } else {
+                    node = adjacentBlock;
+                    offset = selectingBackward ? 0 : nodeSize(node);
+                }
+                selection.extend(node, offset);
                 ev.preventDefault();
             }
         }

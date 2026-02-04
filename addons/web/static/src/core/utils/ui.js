@@ -61,18 +61,57 @@ export function isVisible(el) {
  * @returns {number}
  */
 export function getQuadrance(rect, pos) {
-    let q = 0;
-    if (pos.x < rect.x) {
-        q += (rect.x - pos.x) ** 2;
-    } else if (rect.x + rect.width < pos.x) {
-        q += (pos.x - (rect.x + rect.width)) ** 2;
+    const isPoint = !pos.width || !pos.height;
+
+    if (isPoint) {
+        // For a point, use standard point-to-rectangle distance
+        const dx = Math.max(rect.x - pos.x, 0, pos.x - (rect.x + rect.width));
+        const dy = Math.max(rect.y - pos.y, 0, pos.y - (rect.y + rect.height));
+
+        return dx ** 2 + dy ** 2;
     }
-    if (pos.y < rect.y) {
-        q += (rect.y - pos.y) ** 2;
-    } else if (rect.y + rect.height < pos.y) {
-        q += (pos.y - (rect.y + rect.height)) ** 2;
+
+    const rect_center = {
+        x: rect.x + rect.width / 2,
+        y: rect.y + rect.height / 2,
+    };
+    const pos_center = {
+        x: pos.x + pos.width / 2,
+        y: pos.y + pos.height / 2,
+    };
+
+    const combined_half_width = (rect.width + pos.width) / 2;
+    const combined_half_height = (rect.height + pos.height) / 2;
+
+    const dx = Math.abs(rect_center.x - pos_center.x);
+    const dy = Math.abs(rect_center.y - pos_center.y);
+
+    // Calculate gap (negative if overlapping, positive if separated)
+    const gap_x = dx - combined_half_width;
+    const gap_y = dy - combined_half_height;
+
+    // If rectangles don't overlap (at least one gap is positive)
+    if (gap_x >= 0 || gap_y >= 0) {
+        // Return squared Euclidean distance to nearest edge
+        return Math.max(0, gap_x) ** 2 + Math.max(0, gap_y) ** 2;
     }
-    return q;
+
+    // Rectangles overlap - calculate the overlap region
+    const leftPos = Math.max(rect.x, pos.x);
+    const rightPos = Math.min(rect.x + rect.width, pos.x + pos.width);
+    const topPos = Math.max(rect.y, pos.y);
+    const bottomPos = Math.min(rect.y + rect.height, pos.y + pos.height);
+
+    const width = rightPos - leftPos;
+    const height = bottomPos - topPos;
+    const overlapArea = width * height;
+    const rectArea = rect.width * rect.height;
+
+    // Normalize the overlap area by rect size to prefer smaller elements
+    // when overlap percentage is similar (e.g., nested dropdowns)
+    // Return negative value so larger overlap ratios are "closer"
+    // (more negative = better, works with standard min-distance logic)
+    return -(overlapArea / rectArea);
 }
 
 /**

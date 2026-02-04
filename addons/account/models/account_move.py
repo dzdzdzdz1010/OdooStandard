@@ -1499,13 +1499,27 @@ class AccountMove(models.Model):
     @api.depends('move_type', 'line_ids.amount_residual')
     def _compute_payments_widget_reconciled_info(self):
         for move in self:
-            payments_widget_vals = {'title': _('Less Payment'), 'outstanding': False, 'content': []}
-
+            payments_widget_vals = {
+                'title': _('Less Payment'),
+                'outstanding': False,
+                'content': [],
+                'exchange_info': {
+                    'line_ids': [],
+                }
+            }
+            total_exchange_amount = 0.0
             if move.state in {'draft', 'posted'} and move.is_invoice(include_receipts=True):
                 reconciled_vals = []
-                reconciled_partials = move.sudo()._get_all_reconciled_invoice_partials()
+                reconciled_partials = move.sudo()._get_all_reconciled_invoice_partials(include_caba=True)
                 for reconciled_partial in reconciled_partials:
                     counterpart_line = reconciled_partial['aml']
+
+                    if counterpart_line.move_id.tax_cash_basis_rec_id:
+                        continue
+                    if reconciled_partial['is_exchange']:
+                        payments_widget_vals['exchange_info']['line_ids'].append(counterpart_line.id)
+                        total_exchange_amount += counterpart_line.balance
+
                     if counterpart_line.move_id.ref:
                         reconciliation_ref = '%s (%s)' % (counterpart_line.move_id.name, counterpart_line.move_id.ref)
                     else:
@@ -1534,6 +1548,16 @@ class AccountMove(models.Model):
                         'amount_foreign_currency': foreign_currency and formatLang(self.env, abs(counterpart_line.amount_currency), currency_obj=foreign_currency)
                     })
                 payments_widget_vals['content'] = reconciled_vals
+                comparison = move.company_currency_id.compare_amounts(total_exchange_amount, 0)
+                if comparison == 0:
+                    exchange_label = _('See exchange information') if payments_widget_vals['exchange_info']['line_ids'] else ''
+                elif comparison == 1:
+                    exchange_label = _('Exchange Profit')
+                else:
+                    exchange_label = _('Exchange Loss')
+
+                payments_widget_vals['exchange_info']['label'] = exchange_label
+                payments_widget_vals['exchange_info']['exchange_amount_formatted'] = formatLang(self.env, abs(total_exchange_amount), currency_obj=move.company_currency_id)
 
             if payments_widget_vals['content']:
                 move.invoice_payments_widget = payments_widget_vals
@@ -5291,9 +5315,13 @@ class AccountMove(models.Model):
         """Helper used to retrieve the reconciled invoices on this journal entry"""
         return self._get_reconciled_amls().move_id.filtered(lambda move: move.is_invoice(include_receipts=True))
 
-    def _get_all_reconciled_invoice_partials(self):
+    def _get_all_reconciled_invoice_partials(self, include_caba=False):
         self.ensure_one()
-        reconciled_lines = self.line_ids.filtered(lambda line: line.account_id.account_type in ('asset_receivable', 'liability_payable'))
+        reconciled_lines = self.line_ids.filtered(lambda l:
+            l.account_type in ('asset_receivable', 'liability_payable')
+            or include_caba and l.tax_line_id.tax_exigibility == 'on_payment'
+        )
+
         if not reconciled_lines.ids:
             return {}
 
@@ -5783,6 +5811,12 @@ class AccountMove(models.Model):
 
     def open_reconcile_view(self):
         return self.line_ids.open_reconcile_view()
+
+    @api.model
+    def action_open_exchange_items(self, line_ids):
+        action = self.env['ir.actions.act_window']._for_xml_id('account.action_account_moves_all_grouped_matching')
+        action['domain'] = [('id', 'in', line_ids)]
+        return action
 
     def action_open_business_doc(self):
         self.ensure_one()

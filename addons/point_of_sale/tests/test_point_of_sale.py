@@ -1,7 +1,14 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo.fields import Command
+<<<<<<< 11b42e4fe94f01336090fbed39266e5f114286fa
 from odoo.tests.common import tagged, TransactionCase
+||||||| bf7dee8069f203095c44381708153865d3e8f19e
+from odoo.tests.common import TransactionCase
+=======
+from odoo.tests.common import TransactionCase
+from odoo.exceptions import UserError
+>>>>>>> f8980d581c9ff55111c3819aec6f5114436102e1
 
 
 @tagged('at_install', '-post_install')  # LEGACY at_install
@@ -145,3 +152,7 @@ class TestPointOfSale(TransactionCase):
         models_to_filter = {'product.template': products_to_display}
         products_to_display = list(set(products_to_display) - set(session.filter_local_data(models_to_filter)['product.template']))
         self.assertEqual(products_to_display, [])
+
+        # Cannot archive config while session is active
+        with self.assertRaises(UserError):
+            config.write({'active': False})

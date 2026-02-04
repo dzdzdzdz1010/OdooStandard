@@ -6,5 +6,8 @@
                 <t t-set="templateParams" t-value="{ livechatThread: channel.thread }"/>
             </t>
         </xpath>
+        <xpath expr="//CountryFlag" position="after">
+            <div t-if="channel.livechat_lang_id" class="text-uppercase o-ms-0_5 me-1 fs-5" t-out="channel.livechat_lang_id.baseCode" t-att-title="channel.livechat_lang_id.name"/>
+        </xpath>
     </t>
 </templates>

@@ -15,7 +15,7 @@ class ResourceCalendar(models.Model):
 
     def _get_global_attendances(self):
         global_attendances = super()._get_global_attendances()
-        return global_attendances.filtered_domain(
+        return global_attendances.sudo().filtered_domain(
             Domain.OR(
                 [
                     Domain('work_entry_type_id', '=', False),

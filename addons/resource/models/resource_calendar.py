@@ -51,8 +51,10 @@ class ResourceCalendar(models.Model):
     active = fields.Boolean("Active", default=True,
                             help="If the active field is set to false, it will allow you to hide the Working Time without removing it.")
     attendance_ids = fields.One2many(
-        'resource.calendar.attendance', 'calendar_id', 'Working Time',
+        'resource.calendar.attendance', 'calendar_id',
         compute='_compute_attendance_ids', store=True, readonly=False, copy=True)
+    filtered_attendance_ids = fields.One2many('resource.calendar.attendance', 'calendar_id', 'Working Time',
+        compute='_compute_filtered_attendance_ids', inverse='_inverse_filtered_attendance_ids', readonly=False)
     company_id = fields.Many2one(
         'res.company', 'Company', domain=lambda self: [('id', 'in', self.env.companies.ids)],
         default=lambda self: self.env.company, index='btree_not_null')
@@ -78,18 +80,10 @@ class ResourceCalendar(models.Model):
     work_resources_count = fields.Integer("Work Resources count", compute='_compute_work_resources_count')
     work_time_rate = fields.Float(string='Work Time Rate', compute='_compute_work_time_rate', search='_search_work_time_rate',
         help='Work time rate versus full time working schedule, should be between 0 and 100 %.')
-
-    # --------------------------------------------------
-    # Constrains
-    # --------------------------------------------------
-
-    @api.constrains('attendance_ids')
-    def _check_attendance_ids(self):
-        for res_calendar in self:
-            # Avoid superimpose in attendance
-            attendance_ids = res_calendar.attendance_ids.filtered(
-                lambda attendance: not attendance.display_type)
-            res_calendar._check_overlap(attendance_ids)
+    schedule_type = fields.Selection([
+        ('fixed', 'Fixed'),
+        ('variable', 'Variable')],
+        string='Calendar Type', default='fixed', required=True)
 
     # --------------------------------------------------
     # Compute Methods
@@ -108,6 +102,21 @@ class ResourceCalendar(models.Model):
                 'attendance_ids': [(5, 0, 0)] + [
                     (0, 0, attendance._copy_attendance_vals()) for attendance in company_calendar.attendance_ids],
             })
+
+    @api.depends("schedule_type")
+    def _compute_filtered_attendance_ids(self):
+        for calendar in self:
+            if calendar.schedule_type == 'fixed':
+                calendar.filtered_attendance_ids = calendar.attendance_ids.filtered(lambda a: not a.date)
+            else:
+                calendar.filtered_attendance_ids = calendar.attendance_ids.filtered(lambda a: a.date)
+
+    def _inverse_filtered_attendance_ids(self):
+        for calendar in self:
+            if calendar.schedule_type == 'fixed':
+                fixed_attendance_ids = calendar.attendance_ids.filtered(lambda a: not a.date)
+                calendar.attendance_ids |= calendar.filtered_attendance_ids.filtered(lambda a: a not in fixed_attendance_ids)
+                fixed_attendance_ids.filtered(lambda a: a not in calendar.filtered_attendance_ids).unlink()
 
     @api.depends('company_id')
     def _compute_global_leave_ids(self):
@@ -203,12 +212,12 @@ class ResourceCalendar(models.Model):
         all_duration_based_attendances = attendances.calendar_id.attendance_ids.filtered('duration_based')
         # Resource specific attendances
         # Calendar attendances per day of the week
-        attendances_per_day = [self.env['resource.calendar.attendance']] * 7
-        weekdays = set()
+        attendances_per_day = defaultdict(lambda: self.env['resource.calendar.attendance'])
         for attendance in attendances:
-            weekday = int(attendance.dayofweek)
-            weekdays.add(weekday)
-            attendances_per_day[weekday] |= attendance
+            if attendance.date:
+                attendances_per_day[attendance.date] |= attendance
+            else:
+                attendances_per_day[int(attendance.dayofweek)] |= attendance
 
         start = start_dt.astimezone(UTC)
         end = end_dt.astimezone(UTC)
@@ -221,10 +230,13 @@ class ResourceCalendar(models.Model):
             start = min(start, low.replace(tzinfo=UTC))
             end = max(end, high.replace(tzinfo=UTC))
         # Generate once with utc as timezone
-        days = rrule(DAILY, start.date(), until=end.date(), byweekday=weekdays)
+        days = rrule(DAILY, start.date(), until=end.date())
         base_result = []
         for day in days:
-            attendances = attendances_per_day[day.weekday()]
+            if self.schedule_type == 'variable':
+                attendances = attendances_per_day[day.date()]
+            else:
+                attendances = attendances_per_day[day.weekday()]
 
             # If all attendance lines are duration based, compute correct intervals
             if all(att.duration_based for att in attendances):
@@ -480,30 +492,6 @@ class ResourceCalendar(models.Model):
             result[resource.id] = full_interval_UTC - utc_work_intervals
         return result
 
-    # --------------------------------------------------
-    # Private Methods / Helpers
-    # --------------------------------------------------
-
-    def _check_overlap(self, attendance_ids):
-        """ attendance_ids correspond to attendance of a week,
-            will check for each day of week that there are no superimpose. """
-        result = []
-        hours_based_weekdays = set()
-        duration_based_weekdays = set()
-        for attendance in attendance_ids:
-            if attendance.duration_based and attendance.dayofweek in hours_based_weekdays or not attendance.duration_based and attendance.dayofweek in duration_based_weekdays:
-                raise ValidationError(self.env._("You cannot define hours and duration based attendances for the same day."))
-            if attendance.duration_based:
-                duration_based_weekdays.add(attendance.dayofweek)
-            else:
-                hours_based_weekdays.add(attendance.dayofweek)
-                # 0.000001 is added to each start hour to avoid to detect two contiguous intervals as superimposing.
-                # Indeed Intervals function will join 2 intervals with the start and stop hour corresponding.
-                result.append((int(attendance.dayofweek) * 24 + attendance.hour_from + 0.000001, int(attendance.dayofweek) * 24 + attendance.hour_to, attendance))
-
-        if len(Intervals(result)) != len(result):
-            raise ValidationError(self.env._("Attendances can't overlap."))
-
     def _get_attendance_intervals_days_data(self, attendance_intervals):
         """
         helper function to compute duration of `intervals` that have
@@ -575,17 +563,23 @@ class ResourceCalendar(models.Model):
         # If the employee didn't work a full day, it is still counted, i.e. 19h / week (M/T/W(half day)) -> 3 days
         self.ensure_one()
         attendances = self._get_global_attendances()
+        if self.schedule_type == 'variable' and attendances:
+            return len(set(attendances.mapped('date'))) / len({(att.date.toordinal() - 1) // 7 for att in attendances})
         return len(set(attendances.mapped('dayofweek')))
 
     def _get_hours_per_week(self):
         """ Calculate the average hours worked per week. """
         self.ensure_one()
         hour_count = 0.0
-        for attendance in self._get_global_attendances():
+        attendances = self._get_global_attendances()
+        for attendance in attendances:
             if attendance.duration_based:
                 hour_count += attendance.duration_hours
             else:
                 hour_count += attendance.hour_to - attendance.hour_from
+
+        if self.schedule_type == 'variable' and attendances:
+            hour_count /= len({(att.date.isocalendar().year, att.date.isocalendar().week) for att in attendances})
         return hour_count
 
     def _get_hours_per_day(self):
@@ -595,7 +589,8 @@ class ResourceCalendar(models.Model):
         return hour_per_week / number_of_days if number_of_days else 0
 
     def _get_global_attendances(self):
-        return self.attendance_ids.filtered(lambda attendance: not attendance.display_type)
+        return self.attendance_ids.filtered(lambda attendance: not attendance.display_type
+            and (attendance.date if self.schedule_type == 'variable' else not attendance.date))
 
     def _get_unusual_days(self, start_dt, end_dt, company_id=False, resource=None):
         if self:
@@ -784,24 +779,75 @@ class ResourceCalendar(models.Model):
         return revert(day_dt)
 
     def _works_on_date(self, date):
-        self.ensure_one()
-
-        working_days = self._get_working_hours()
-        dayofweek = str(date.weekday())
-        return working_days[dayofweek]
+        return bool(self._get_global_attendances()._get_attendances_on_date(date))
 
     def _is_duration_based_on_date(self, date):
         self.ensure_one()
-        return any(att.duration_based for att in self.attendance_ids.filtered(lambda a: int(a.dayofweek) == date.weekday()))
+        return any(att.duration_based for att in self._get_global_attendances()._get_attendances_on_date(date))
 
     def _get_duration_based_work_hours_on_date(self, date):
-        return sum(self.attendance_ids.filtered(lambda a: int(a.dayofweek) == date.weekday()).mapped('duration_hours'))
+        return sum(self._get_global_attendances()._get_attendances_on_date(date).mapped('duration_hours'))
 
-    @ormcache('self.id')
-    def _get_working_hours(self):
+    @ormcache('self.id', 'date_from', 'date_to', 'self.attendance_ids')
+    def _get_working_hours(self, date_from, date_to):
         self.ensure_one()
+        result = defaultdict(lambda: self.env['resource.calendar.attendance'])
 
-        working_days = defaultdict(lambda: False)
-        for attendance in self.attendance_ids:
-            working_days[attendance.dayofweek] = True
-        return working_days
+        if not (attendances := self._get_global_attendances()):
+            return result
+
+        if self.schedule_type == 'variable':
+            result.update(attendances.filtered(lambda att: att.date and date_from <= att.date <= date_to).grouped('date'))
+        else:
+            grouped_attendances = attendances.grouped('dayofweek')
+            result.update({
+                day.date(): grouped_attendances[str(day.weekday())]
+                for day in rrule(DAILY, date_from, until=date_to, byweekday=set(attendances.mapped(lambda att: int(att.dayofweek))))
+            })
+        return result
+
+    def copy_from(self, option, date_from, date_to, copy_type=False, force=False):
+        self.ensure_one()
+        date_from = fields.Date.from_string(date_from)
+        date_to = fields.Date.from_string(date_to)
+        assert option in ['WEEK', 'MONTH']
+        if option == 'MONTH':
+            assert copy_type in ['WEEKDAY', 'DATE']
+        assert self.schedule_type == 'variable'
+        week_start = int(self.env["res.lang"]._lang_get(self.env.user.lang).week_start) - 1
+        if option == 'WEEK':
+            source_start = date_from - timedelta(days=(date_from.weekday() - week_start) % 7)
+            target_start = date_to - timedelta(days=(date_to.weekday() - week_start) % 7)
+            source_end = source_start + timedelta(days=6)
+            target_end = target_start + timedelta(days=6)
+        else:  # option == 'MONTH'
+            source_start = date_from.replace(day=1)
+            target_start = date_to.replace(day=1)
+            source_end = (source_start + relativedelta(months=1)) - timedelta(days=1)
+            target_end = (target_start + relativedelta(months=1)) - timedelta(days=1)
+
+        source_attendances = self.attendance_ids.filtered(lambda att: att.date and source_start <= att.date <= source_end)
+        target_attendances = self.attendance_ids.filtered(lambda att: att.date and target_start <= att.date <= target_end)
+        if target_attendances and not force:
+            return False
+        target_attendances.unlink()
+
+        vals_list = []
+        for source_date, attendances in source_attendances.grouped('date').items():
+            if option == 'WEEK':
+                target_date = source_date + timedelta(days=(target_start - source_start).days)
+            else:  # option == 'MONTH'
+                offset = ((source_start.weekday() - week_start) % 7 - (target_start.weekday() - week_start) % 7) * (copy_type == 'WEEKDAY')
+                if not (0 < source_date.day + offset <= target_end.day):
+                    continue
+                target_date = target_start.replace(day=source_date.day + offset)
+
+            for att in attendances:
+                vals_list.append({
+                    **att._copy_attendance_vals(),
+                    'calendar_id': self.id,
+                    'date': target_date,
+                    'dayofweek': str(target_date.weekday()),
+                })
+
+        return self.env['resource.calendar.attendance'].create(vals_list)

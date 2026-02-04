@@ -1,5 +1,12 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
+from collections import defaultdict
+from datetime import datetime, date, timedelta
+
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+from odoo.tools import format_time
+from odoo.tools.date_utils import float_to_time
+from odoo.tools.intervals import Intervals
 
 
 class ResourceCalendarAttendance(models.Model):
@@ -15,7 +22,8 @@ class ResourceCalendarAttendance(models.Model):
         ('4', 'Friday'),
         ('5', 'Saturday'),
         ('6', 'Sunday')
-        ], 'Day of Week', required=True, index=True, default='0')
+        ], 'Day of Week', required=True, index=True, precompute=True,
+        compute="_compute_dayofweek", store=True, readonly=False)
     hour_from = fields.Float(string='Work from', default=0, required=True, index=True,
         help="Start and End time of working.\n"
              "A specific value of 24:00 is interpreted as 23:59:59.999999.")
@@ -34,6 +42,33 @@ class ResourceCalendarAttendance(models.Model):
         ('line_section', "Section")], default=False, help="Technical field for UX purpose.")
     sequence = fields.Integer(default=10,
         help="Gives the sequence of this line when displaying the resource calendar.")
+
+    # Variable
+    date = fields.Date()
+
+    @api.constrains('calendar_id', 'date', 'duration_hours', 'dayofweek')
+    def _check_attendance(self):
+        # will check for each day of week that there are no superimpose.
+        for calendar in self.mapped("calendar_id"):
+            intervals_attendances = []
+            duration_per_date = defaultdict(float)
+            for attendance in calendar.filtered_attendance_ids:
+                if attendance.date:
+                    date_to_combine = attendance.date
+                else:
+                    date_to_combine = date.min + timedelta(days=int(attendance.dayofweek))
+                if not attendance.duration_based:
+                    intervals_attendances.append((
+                        datetime.combine(date_to_combine, float_to_time(attendance.hour_from)) + timedelta(
+                            microseconds=1),
+                        datetime.combine(date_to_combine, float_to_time(attendance.hour_to)),
+                        attendance
+                    ))
+                duration_per_date[date_to_combine] += attendance.duration_hours
+                if duration_per_date[date_to_combine] > 24:
+                    raise ValidationError(self.env._("Attendance durations can't exceed 24 hours in the day."))
+            if len(Intervals(intervals_attendances)) != len(intervals_attendances):
+                raise ValidationError(self.env._("Attendances can't overlap."))
 
     @api.onchange('hour_from')
     def _onchange_hour_from(self):
@@ -81,22 +116,34 @@ class ResourceCalendarAttendance(models.Model):
             else:
                 attendance.day_period = 'morning'
 
+    @api.depends('date')
+    def _compute_dayofweek(self):
+        for attendance in self:
+            if attendance.date:
+                attendance.dayofweek = str(attendance.date.weekday())
+            elif not attendance.dayofweek:  # default value
+                attendance.dayofweek = '0'
+
     @api.depends('hour_from', 'hour_to')
     def _compute_duration_hours(self):
         for attendance in self.filtered(lambda att: att.hour_from or att.hour_to):
             attendance.duration_hours = max(0, attendance.hour_to - attendance.hour_from)
 
     def _compute_display_name(self):
-        super()._compute_display_name()
-        dayofweek_selection = dict(self._fields['dayofweek']._description_selection(self.env))
-        day_period_selection = dict(self._fields['day_period']._description_selection(self.env))
-        for record in self.filtered(lambda l: not l.display_type):
-            record.display_name = f"{dayofweek_selection[record.dayofweek]} ({day_period_selection[record.day_period]})"
+        for attendance in self:
+            if attendance.duration_based:
+                attendance.display_name = self.env._("%(duration)s hours Attendance", duration=format_time(self.env, float_to_time(attendance.duration_hours), time_format="HH:mm"))
+            else:
+                attendance.display_name = self.env._("%(hour_from)s - %(hour_to)s Attendance",
+                                                     hour_from=format_time(self.env, float_to_time(attendance.hour_from), time_format="short"),
+                                                     hour_to=format_time(self.env, float_to_time(attendance.hour_to), time_format="short"))
 
     def _copy_attendance_vals(self):
         self.ensure_one()
         return {
+            'date': self.date,
             'dayofweek': self.dayofweek,
+            'day_period': self.day_period,
             'duration_hours': self.duration_hours,
             'hour_from': self.hour_from,
             'hour_to': self.hour_to,
@@ -106,3 +153,6 @@ class ResourceCalendarAttendance(models.Model):
 
     def _is_work_period(self):
         return not self.display_type
+
+    def _get_attendances_on_date(self, date):
+        return self.filtered(lambda a: (not a.date and a.dayofweek == str(date.weekday())) or (a.date == date))

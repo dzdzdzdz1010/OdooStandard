@@ -3,7 +3,7 @@
 from odoo import Command
 from odoo.fields import Datetime
 from odoo.tests import Form, new_test_user, tagged
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools.safe_eval import safe_eval
 
 from .common import TestSaleProjectCommon
@@ -1970,3 +1970,16 @@ class TestSaleProject(TestSaleProjectCommon):
         self.assertFalse(optional_product_line.project_id)
         optional_product_line.write({'product_uom_qty': 1})
         self.assertEqual(optional_product_line.project_id.sale_order_id, sale_order_with_option)
+
+    def test_sale_order_items_of_the_project_without_customer(self):
+        """
+        Checks that an error is raised when trying to create a sale order
+        from a project without a customer set.
+        """
+        project = self.env['project.project'].create({
+            'name': 'Project Anonymous',
+            'allow_billable': True,
+        })
+        action = project.action_view_sols()
+        with self.assertRaises(ValidationError):
+            Form(self.env['sale.order.line'].with_context(**action['context']))

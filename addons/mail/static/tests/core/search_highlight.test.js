@@ -130,6 +130,9 @@ test("Display highlighted search in chatter", async () => {
     await insertText(".o_searchview_input", "empty");
     triggerHotkey("Enter");
     await contains(`.o-mail-SearchMessageResult .o-mail-Message span.${HIGHLIGHT_CLASS}`);
+    await insertText(".o_searchview_input", "mitchell", { replace: true });
+    triggerHotkey("Enter");
+    await contains(`.o-mail-SearchMessageResult .o-mail-Message-author span.${HIGHLIGHT_CLASS}`);
 });
 
 test("Display multiple highlighted search in chatter", async () => {
@@ -149,6 +152,9 @@ test("Display multiple highlighted search in chatter", async () => {
     await contains(`.o-mail-SearchMessageResult .o-mail-Message span.${HIGHLIGHT_CLASS}`, {
         count: 2,
     });
+    await insertText(".o_searchview_input", "mitchell", { replace: true });
+    triggerHotkey("Enter");
+    await contains(`.o-mail-SearchMessageResult .o-mail-Message-author span.${HIGHLIGHT_CLASS}`);
 });
 
 test("Display highlighted search in Discuss", async () => {
@@ -169,6 +175,9 @@ test("Display highlighted search in Discuss", async () => {
     await insertText(".o_searchview_input", "empty");
     triggerHotkey("Enter");
     await contains(`.o-mail-SearchMessagesPanel .o-mail-Message span.${HIGHLIGHT_CLASS}`);
+    await insertText(".o_searchview_input", "mitchell", { replace: true });
+    triggerHotkey("Enter");
+    await contains(`.o-mail-SearchMessagesPanel .o-mail-Message-author span.${HIGHLIGHT_CLASS}`);
 });
 
 test("Display multiple highlighted search in Discuss", async () => {
@@ -191,13 +200,17 @@ test("Display multiple highlighted search in Discuss", async () => {
     await contains(`.o-mail-SearchMessagesPanel .o-mail-Message span.${HIGHLIGHT_CLASS}`, {
         count: 2,
     });
+    await insertText(".o_searchview_input", "mitchell", { replace: true });
+    triggerHotkey("Enter");
+    await contains(`.o-mail-SearchMessagesPanel .o-mail-Message-author span.${HIGHLIGHT_CLASS}`);
 });
 
 test("Display highlighted with escaped character must ignore them", async () => {
     patchUiSize({ size: SIZES.XXL });
     const pyEnv = await startServer();
-    const partnerId = pyEnv["res.partner"].create({ name: "John Doe" });
+    const partnerId = pyEnv["res.partner"].create({ name: "John (Doe)" });
     pyEnv["mail.message"].create({
+        author_id: partnerId,
         body: "<p>&lt;strong&gt;test&lt;/strong&gt; hello</p>",
         model: "res.partner",
         res_id: partnerId,
@@ -211,4 +224,7 @@ test("Display highlighted with escaped character must ignore them", async () => 
         count: 2,
     });
     await contains(`.o-mail-Message-body:has(:text("<strong>test</strong> hello"))`);
+    await insertText(".o_searchview_input", "(Doe)", { replace: true });
+    triggerHotkey("Enter");
+    await contains(`.o-mail-SearchMessageResult .o-mail-Message-author span.${HIGHLIGHT_CLASS}`);
 });

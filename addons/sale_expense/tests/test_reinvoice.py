@@ -538,3 +538,28 @@ class TestReInvoice(TestExpenseCommon, TestSaleCommon):
                 'is_expense': True,
             },
         ])
+
+    def test_expenses_reinvoice_paid_by_company(self):
+        """ Test expense line paid by company is re-invoiced correctly """
+        expense = self.create_expenses({
+            'name': 'expense_1',
+            'date': '2016-01-01',
+            'product_id': self.company_data['service_order_cost_price'].id,
+            'quantity': 5,
+            'price_unit': 50,
+            'total_amount': 250,
+            'employee_id': self.expense_employee.id,
+            'sale_order_id': self.expense_sale_order.id,
+            'payment_mode': 'company_account',
+        })
+
+        expense.action_submit()
+        expense._do_approve()
+        self.post_expenses_with_wizard(expense)
+
+        self.assertRecordValues(self.expense_sale_order.order_line, [
+            # Original SO line:
+            {'qty_delivered': 0.0, 'product_uom_qty': 3.0, 'price_unit': 235.0, 'is_expense': False},
+            # Expense line:
+            {'qty_delivered': 5.0, 'product_uom_qty': 5.0, 'price_unit': 44.44, 'is_expense': True},
+        ])

@@ -118,12 +118,14 @@ class CalendarAttendee(models.Model):
             force_send=True,
         )
 
-    def _notify_attendees(self, mail_template, notify_author=False, force_send=False):
+    def _notify_attendees(self, mail_template, notify_author=False, force_send=False, events_notification=''):
         """ Notify attendees about event main changes (invite, cancel, ...) based
         on template.
 
         :param mail_template: a mail.template record
         :param force_send: if set to True, the mail(s) will be sent immediately (instead of the next queue processing)
+        :param events_notification: the value is used as description above the notified attendees' list in the
+            calendar.event log. If no value, the list is not displayed.
         """
         # TDE FIXME: check this
         if force_send:
@@ -157,6 +159,7 @@ class CalendarAttendee(models.Model):
             attendee_id_attachment_id_map = dict(zip(self.ids, split_every(template_attachment_count, attendee_attachment_ids, list)))
 
         mail_messages = self.env['mail.message']
+        events_to_notify = self.env['calendar.event']
         for attendee in notified_attendees:
             if attendee.email and attendee._should_notify_attendee(notify_author=notify_author):
                 event_id = attendee.event_id.id
@@ -201,9 +204,13 @@ class CalendarAttendee(models.Model):
                     attachment_ids=attachment_ids,
                     force_send=False,
                 )
+                if events_notification:
+                    events_to_notify |= attendee.event_id
+
         # batch sending at the end
         if force_send and len(notified_attendees) < force_send_limit:
             mail_messages.sudo().mail_ids.send_after_commit()
+            events_to_notify._message_log_batch(bodies={event.id: events_notification for event in events_to_notify})
 
     def _should_notify_attendee(self, notify_author=False):
         """ Utility method that determines if the attendee should be notified.

@@ -3,6 +3,7 @@ import { FormViewDialog } from "@web/views/view_dialogs/form_view_dialog";
 import { CalendarFormView } from "./calendar_form_view";
 import { CalendarFormController } from "./calendar_form_controller";
 import { serializeDate, serializeDateTime } from "@web/core/l10n/dates";
+import { useHotkey } from "@web/core/hotkeys/hotkey_hook";
 
 export const QUICK_CREATE_CALENDAR_EVENT_FIELDS = {
     name: { type: "string" },
@@ -36,6 +37,14 @@ function getDefaultValuesFromRecord(data) {
 }
 
 export class CalendarQuickCreateFormController extends CalendarFormController {
+
+    setup() {
+        super.setup();
+        useHotkey("Enter", () => this.save(), {
+            bypassEditableProtection: true,
+            isAvailable: (target) => !target.classList.contains("note-editable"),
+        });
+    }
 
     goToFullEvent() {
         const context = getDefaultValuesFromRecord(this.model.root.data);

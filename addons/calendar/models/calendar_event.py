@@ -72,7 +72,7 @@ class CalendarEvent(models.Model):
     _name = 'calendar.event'
     _description = "Calendar Event"
     _order = "start desc"
-    _inherit = ["mail.thread"]
+    _inherit = ["mail.thread", "mail.activity.mixin"]
     _mail_post_access = 'read'
     _systray_view = 'calendar'
 
@@ -96,6 +96,8 @@ class CalendarEvent(models.Model):
             )
 
         defaults = super(CalendarEvent, self.with_context(context)).default_get(fields)
+        if 'alarm_ids' in fields:
+            defaults['alarm_ids'] = [Command.set(self.env.ref('calendar.alarm_notif_1', raise_if_not_found=False).ids)]
 
         # support active_model / active_id as replacement of default_* if not already given
         if 'res_model_id' not in defaults and 'res_model_id' in fields and \
@@ -198,7 +200,7 @@ class CalendarEvent(models.Model):
         'Document Model Name', related='res_model_id.model', readonly=True, store=True)
     res_model_name = fields.Char(related='res_model_id.name')
     # messaging
-    activity_ids = fields.One2many('mail.activity', 'calendar_event_id', string='Activities')
+    meeting_activity_ids = fields.One2many('mail.activity', 'calendar_event_id', string='Meeting Activities')
     # attendees
     attendee_ids = fields.One2many(
         'calendar.attendee', 'event_id', 'Participant')
@@ -262,6 +264,7 @@ class CalendarEvent(models.Model):
     weekday = fields.Selection(WEEKDAY_SELECTION, compute='_compute_recurrence', readonly=False)
     byday = fields.Selection(BYDAY_SELECTION, string="By day", compute='_compute_recurrence', readonly=False)
     until = fields.Date(compute='_compute_recurrence', readonly=False)
+    until_placeholder = fields.Char(compute='_compute_until_placeholder')
     # UI Fields.
     display_description = fields.Boolean(compute='_compute_display_description')
     attendees_count = fields.Integer(compute='_compute_attendees_count')
@@ -402,6 +405,10 @@ class CalendarEvent(models.Model):
             event.stop = event.start and event.start + timedelta(minutes=round((event.duration or 1.0) * 60))
             if event.allday:
                 event.stop -= timedelta(seconds=1)
+
+    def _compute_until_placeholder(self):
+        for event in self:
+            event.until_placeholder = _('e.g. %s', fields.Date.today())
 
     @api.onchange('start_date', 'stop_date')
     def _onchange_date(self):
@@ -587,14 +594,14 @@ class CalendarEvent(models.Model):
         # Prevent sending update notification when _inverse_dates is called
         self = self.with_context(is_calendar_event_new=True)
         defaults = self.browse().default_get([
-            'activity_ids', 'allday', 'description', 'name', 'partner_ids',
+            'meeting_activity_ids', 'allday', 'description', 'name', 'partner_ids',
             'res_model_id', 'res_id', 'start', 'user_id',
         ])
 
         vals_list = [  # Else bug with quick_create when we are filter on an other user
             {
                 **vals,
-                'activity_ids': vals.get('activity_ids', defaults.get('activity_ids')),
+                'meeting_activity_ids': vals.get('meeting_activity_ids', defaults.get('meeting_activity_ids')),
                 'allday': vals.get('allday', defaults.get('allday')),
                 'description': vals.get('description', defaults.get('description')),
                 'name': vals.get('name', defaults.get('name')),
@@ -625,7 +632,7 @@ class CalendarEvent(models.Model):
         if meeting_activity_types:
             for values in vals_list:
                 # created from calendar: try to create an activity on the related record
-                if values['activity_ids'] and not existing_event:
+                if values['meeting_activity_ids'] and not existing_event:
                     continue
                 res_model = all_models.filtered(lambda m: m.id == values['res_model_id'])
                 res_id = values['res_id']
@@ -655,7 +662,7 @@ class CalendarEvent(models.Model):
                     activity_vals['date_deadline'] = self._get_activity_deadline_from_start(fields.Datetime.from_string(values['start']), values['allday'])
                 if values['user_id']:
                     activity_vals['user_id'] = values['user_id']
-                values['activity_ids'] = [(0, 0, activity_vals)]
+                values['meeting_activity_ids'] = [(0, 0, activity_vals)]
 
         self._set_videocall_location(vals_list)
 
@@ -720,7 +727,7 @@ class CalendarEvent(models.Model):
         # complete
         to_sync_activities = self.browse()
         for event, event_values in zip(events, vals_list):
-            if any(command[0] != 0 for command in event_values.get('activity_ids') or []):
+            if any(command[0] != 0 for command in event_values.get('meeting_activity_ids') or []):
                 to_sync_activities += event
         to_sync_activities._sync_activities(fields={f for vals in vals_list for f in vals})
 
@@ -1220,7 +1227,7 @@ class CalendarEvent(models.Model):
     def _sync_activities(self, fields):
         # update activities
         for event in self:
-            if event.activity_ids:
+            if event.meeting_activity_ids:
                 activity_values = {}
                 if 'name' in fields:
                     activity_values['summary'] = event.name
@@ -1232,7 +1239,7 @@ class CalendarEvent(models.Model):
                 if 'user_id' in fields:
                     activity_values['user_id'] = event.user_id.id
                 if activity_values.keys():
-                    event.activity_ids.write(activity_values)
+                    event.meeting_activity_ids.write(activity_values)
 
     @api.model
     def _get_activity_deadline_from_start(self, start, allday):

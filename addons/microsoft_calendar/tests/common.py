@@ -82,6 +82,9 @@ class TestCommon(HttpCase):
             "start": self.start_date,
             "stop": self.end_date,
             "partner_ids": [(4, self.organizer_user.partner_id.id), (4, self.attendee_user.partner_id.id)],
+            # Avoid notifications as self.call_post_commit_hooks copy the queue of functions to execute,
+            # so these are called multiple times as they are not removed from the original queue.
+            "alarm_ids": False,
         }
         self.recurrent_event_values = {
             'name': 'recurring_event',

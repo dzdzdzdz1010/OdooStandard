@@ -11,7 +11,6 @@
             - show_tokenize_input_mapping: For each provider, whether the tokenization checkbox is
                                            shown; used only in `payment` mode.
             - display_submit_button: Whether the submit button is displayed; default: `True`.
-            - submit_button_label: The label of the submit button; default: 'Pay'/'Save'.
         -->
         <!-- Payment context:
             - reference_prefix: The custom prefix to compute the full transaction reference.
@@ -382,9 +381,15 @@
                 type="submit"
                 class="btn btn-primary w-100 w-md-auto ms-auto px-5"
                 disabled="true"
-        >
-            <span name="o_pay_now_label" t-field="res_company.pay_now_label"/>
-            <span name="o_pay_later_label" class="d-none" t-field="res_company.pay_later_label"/>
+        >   
+            <t t-if="pay_later">
+                <span name="o_pay_now_label" class="d-none" t-field="res_company.pay_now_label"/>
+                <span name="o_pay_later_label" t-field="res_company.pay_later_label"/>
+            </t>
+            <t t-else="">
+                <span name="o_pay_now_label" t-field="res_company.pay_now_label"/>
+                <span name="o_pay_later_label" class="d-none" t-field="res_company.pay_later_label"/>
+            </t>
         </button>
     </template>
 

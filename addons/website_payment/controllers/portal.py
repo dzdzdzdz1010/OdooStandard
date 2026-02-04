@@ -122,7 +122,6 @@ class PaymentPortal(payment_portal.PaymentPortal):
             rendering_context.update({
                 'is_donation': True,
                 'partner': partner_sudo,
-                'submit_button_label': _("Donate"),
                 'transaction_route': '/donation/transaction/%s' % donation_options.get('minimumAmount', 0),
                 'partner_details': partner_details,
                 'error': {},

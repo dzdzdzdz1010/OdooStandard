@@ -21,7 +21,7 @@ export class PaymentForm extends Interaction {
         // Load the payment context from the payment form dataset.
         this.paymentContext = {};
         Object.assign(this.paymentContext, this.el.dataset);
-        
+
         this.defaultSubmitButtonLabel = document.querySelector(
             'button[name="o_payment_submit_button"]'
         )?.textContent;

@@ -789,6 +789,9 @@ patch(PosStore.prototype, {
     },
     async _postProcessLoyalty(order) {
         // Compile data for our function
+        if (order.state == "draft") {
+            return;
+        }
         const ProgramModel = this.models["loyalty.program"];
         const rewardLines = order._get_reward_lines();
         const partner = order.get_partner();

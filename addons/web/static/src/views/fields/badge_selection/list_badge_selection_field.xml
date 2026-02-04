@@ -6,7 +6,7 @@
             <attribute name="class">badge rounded-pill</attribute>
             <attribute name="t-att-class">getBadgeClassNames()</attribute>
         </xpath>
-        <xpath expr="//t[@t-if='props.readonly']/following-sibling::t[@t-else='']//span[@t-esc='option[1]']" position="attributes">
+        <xpath expr="//t[@t-if='props.readonly']/following-sibling::t[@t-else='']//span[contains(@class, 'o_selection_badge')]" position="attributes">
             <attribute name="class" separator=" " add="badge rounded-pill"/>
             <attribute name="t-att-class">getBadgeClassNames(option)</attribute>
         </xpath>

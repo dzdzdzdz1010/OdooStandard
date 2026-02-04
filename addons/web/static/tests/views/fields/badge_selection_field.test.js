@@ -1,5 +1,5 @@
 import { expect, test } from "@odoo/hoot";
-import { queryAllTexts } from "@odoo/hoot-dom";
+import { queryAllTexts, animationFrame } from "@odoo/hoot-dom";
 import {
     clickSave,
     contains,
@@ -22,13 +22,18 @@ class Partner extends models.Model {
         ],
         default: "red",
     });
+    allowed_colors = fields.Json();
+
     product_color_id = fields.Integer({
         relation: "product",
         related: "product_id.color",
         default: 20,
     });
 
-    _records = [{ id: 1 }, { id: 2, product_id: 37, product_color_id: 6 }];
+    _records = [
+        { id: 1 },
+        { id: 2, allowed_colors: "['red']", product_id: 37, product_color_id: 6 },
+    ];
 }
 
 class Product extends models.Model {
@@ -36,10 +41,11 @@ class Product extends models.Model {
 
     name = fields.Char("name");
     color = fields.Integer("color");
+    icon = fields.Char("icon");
 
     _records = [
-        { id: 37, display_name: "xphone", name: "xphone", color: 6 },
-        { id: 41, display_name: "xpad", name: "xpad", color: 7 },
+        { id: 37, display_name: "xphone", name: "xphone", color: 6, icon: "fa-mobile" },
+        { id: 41, display_name: "xpad", name: "xpad", color: 7, icon: "fa-check" },
     ];
 }
 
@@ -265,4 +271,108 @@ test("BadgeSelectionField widget in list without the color_field option", async 
     expect(`div.o_field_selection_badge span.btn-secondary`).toHaveCount(1);
     expect(`div.o_field_selection_badge span.btn-secondary:contains(xphone)`).toHaveCount(0);
     expect(`div.o_field_selection_badge span.btn-secondary:contains(xpad)`).toHaveCount(1);
+});
+
+test("BadgeSelectionField: verify icons are fetched via search_read and displayed", async () => {
+    onRpc("product", "search_read", ({ kwargs }) => {
+        expect.step("search_read_triggered");
+        expect(kwargs.fields).toInclude("icon");
+    });
+
+    await mountView({
+        resModel: "res.partner",
+        type: "form",
+        arch: `
+            <form>
+                <field name="product_id" widget="selection_badge" options="{'related_icon_field': 'icon'}"/>
+            </form>`,
+    });
+
+    // Check if icons are rendered
+    expect("span.o_selection_badge:eq(0) span.fa-mobile").toHaveCount(1);
+    expect("span.o_selection_badge:eq(1) span.fa-check").toHaveCount(1);
+
+    expect.verifySteps(["search_read_triggered"]);
+});
+
+test("BadgeSelectionField: selection type with icon_mapping and default_icon", async () => {
+    await mountView({
+        resModel: "res.partner",
+        type: "form",
+        arch: `
+            <form>
+                <field name="color" widget="selection_badge" options="{
+                    'icon_mapping': {'black': 'fa-moon-o'},
+                    'default_icon': 'fa-sun-o'
+                }"/>
+            </form>`,
+    });
+
+    // 'black' should use the mapping
+    expect("span.o_selection_badge:contains(Black) span.fa-moon-o").toHaveCount(1);
+    // 'red' should use the default_icon
+    expect("span.o_selection_badge:contains(Red) span.fa-sun-o").toHaveCount(1);
+});
+
+test("BadgeSelectionField: switching to SelectMenu when badgeLimit is exceeded", async () => {
+    await mountView({
+        resModel: "res.partner",
+        type: "form",
+        arch: `
+            <form>
+                <field id="color" name="color" widget="selection_badge" options="{'badgeLimit': 1}"/>
+            </form>`,
+    });
+
+    // Since Partner.color has 2 options and badgeLimit is 1, it should show a dropdown
+    expect(".o_select_menu").toHaveCount(1, {
+        message: "Should render SelectMenu instead of badges",
+    });
+    expect("span.o_selection_badge").toHaveCount(0, {
+        message: "Should not render individual badges",
+    });
+
+    // Open dropdown and check values
+    await contains(".o_select_menu input").click();
+    await animationFrame();
+    expect(".o-dropdown-item").toHaveCount(2);
+});
+
+test("BadgeSelectionField: verify options are filtered via the allowed_selection_field option", async () => {
+    await mountView({
+        resModel: "res.partner",
+        resId: 2,
+        type: "form",
+        arch: `
+                <form>
+                    <field name="allowed_colors" invisible="1"/>
+                    <field name="color" widget="selection_badge" 
+                        options="{'related_icon_field': 'icon', 'allowed_selection_field': 'allowed_colors'}"
+                    />
+                </form>`,
+    });
+
+    // Verify only the filterd option is rendered
+    expect("span.o_selection_badge:contains(red)").toHaveCount(1);
+    // Verify that the total number of badges is ONLY 1
+    expect("span.o_selection_badge").toHaveCount(1);
+});
+
+test("[Offline] BadgeSelectionField: verify badge default icon is displayed in offline mode", async () => {
+    onRpc("product", "search_read", () => {
+        new Response("", { status: 502 });
+    });
+    await mountView({
+        resModel: "res.partner",
+        type: "form",
+        arch: `
+                <form>
+                    <field id="color" name="color" widget="selection_badge" options="{'related_icon_field': 'icon'}"/>
+                </form>`,
+    });
+
+    // Verify the field doesn't crash and displays the fallback name
+    expect("span.o_selection_badge").toHaveCount(2);
+    // Ensure the default icon is used in the fallback state
+    expect("span.o_selection_badge span.fa-check").toHaveCount(2);
 });

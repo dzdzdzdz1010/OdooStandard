@@ -2,6 +2,8 @@ import { BuilderAction } from "@html_builder/core/builder_action";
 import { Plugin } from "@html_editor/plugin";
 import { registry } from "@web/core/registry";
 import { convertCSSColorToRgba } from "@web/core/utils/colors";
+import { getMimetype, isImageCorsProtected } from "@html_editor/utils/image";
+import { isGif, loadImageInfo } from "@html_editor/utils/image_processing";
 
 /**
  * @typedef { Object } ImageHoverShared
@@ -12,7 +14,7 @@ import { convertCSSColorToRgba } from "@web/core/utils/colors";
 export class ImageHoverPlugin extends Plugin {
     static id = "imageHover";
     static shared = ["setHoverEffect", "removeHoverEffect"];
-    static dependencies = ["imagePostProcess", "imageToolOption"];
+    static dependencies = ["imagePostProcess", "imageShapeOption", "imageToolOption"];
 
     /** @type {import("plugins").WebsiteResources} */
     resources = {
@@ -25,6 +27,7 @@ export class ImageHoverPlugin extends Plugin {
         system_attributes: ["data-original-src-before-hover"],
         default_shape_handlers: (dataset) =>
             dataset.hoverEffect && "html_builder/geometric/geo_square",
+        hover_effect_allowed_predicates: (el) => this.canHaveHoverEffect(el),
         post_compute_shape_handlers: async (svg, params) => {
             let rgba = null;
             let rbg = null;
@@ -202,6 +205,43 @@ export class ImageHoverPlugin extends Plugin {
             ...defaultEffectValues[hoverEffectId]?.(),
             hoverEffect: hoverEffectId,
         };
+    }
+    async canHaveHoverEffect(imgEl) {
+        // If the element is not an image, return false
+        if (imgEl.tagName !== "IMG") {
+            return false;
+        }
+
+        const [imageInfo, isCorsProtected] = await Promise.all([
+            loadImageInfo(imgEl),
+            isImageCorsProtected(imgEl),
+        ]);
+
+        // If the image is cors protected, return false
+        if (isCorsProtected) {
+            return false;
+        }
+
+        // If the image has a "device" shape, return false
+        const shapeName = imgEl.dataset.shape;
+        if (shapeName) {
+            const shapeCategory = shapeName.split("/")[1];
+            if (shapeCategory === "devices") {
+                return false;
+            }
+        }
+
+        const dataset = { ...imgEl.dataset, ...imageInfo };
+        // If the image does not support shapes, return false
+        if (!dataset.hoverEffect && !dataset.shape && !dataset.originalId) {
+            return false;
+        }
+        const mimetype = getMimetype(imgEl, dataset);
+        if (!isGif(mimetype) && !["image/jpeg", "image/png", "image/webp"].includes(mimetype)) {
+            return false;
+        }
+
+        return !this.dependencies.imageShapeOption.isAnimableShape(dataset.shape);
     }
 }
 export class SetHoverEffectAction extends BuilderAction {

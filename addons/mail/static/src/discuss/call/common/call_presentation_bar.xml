@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="discuss.CallPresentationBar">
+        <div class="o-discuss-callPresentationBar w-100 px-1 py-2">
+            <div class="o-discuss-callPresentationBar-container rounded-2 p-1 w-100 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2 ms-1 fw-medium overflow-hidden">
+                    <AvatarStack personas="presenterPersonas" max="2" containerClass="'z-0'"/>
+                    <p t-out="presenterText" t-att-title="presenterText" class="o-discuss-callPresentationBar-presenterLabel text-truncate" t-att-class="{'o-self-presenter': isSelfPresenting and rtc.screenAudioTrack}"/>
+                    <div t-if="isSelfPresenting and rtc.screenAudioTrack" class="o-presentationAudio-container d-flex align-items-center gap-2 overflow-hidden">
+                        <div class="o-discuss-callPresentationBar-divider"/>
+                        <p class="text-truncate" title="Presentation Audio">Presentation Audio</p>
+                        <div class="form-check form-switch" title="Toggle Presentation Audio">
+                            <input class="form-check-input" t-on-change="togglePresentationAudio" type="checkbox" role="switch" t-att-checked="rtc.screenAudioTrack.enabled"/>
+                        </div>
+                    </div>
+                </div>
+                <button t-if="isSelfPresenting" class="btn btn-danger rounded flex-shrink-0" title="Stop presenting" t-on-click="onClickStopPresentation">Stop presenting</button>
+            </div>
+        </div>
+    </t>
+</templates>

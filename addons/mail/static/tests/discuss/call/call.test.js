@@ -836,13 +836,9 @@ test("shows warning on infinite mirror effect (screen-sharing then fullscreen)",
     await contains("video");
     await triggerEvents(".o-discuss-Call-mainCards", ["mousemove"]); // show overlay
     await click("button[title='Fullscreen']");
-    await contains(".o-discuss-CallInfiniteMirroringWarning");
-    await contains(
-        ".o-discuss-CallInfiniteMirroringWarning:contains('To avoid the infinite mirror effect, please share a specific window or tab or another monitor.')"
-    );
-    await contains("button:contains('Stream paused') i.fa-pause-circle-o");
-    await hover(queryFirst("button:contains('Stream paused')"));
-    await contains("button:contains('Resume stream') i.fa-play-circle-o");
+    await contains(".o-discuss-Call-mainCards h1:contains('You are Presenting')");
+    await contains("button:contains('Show My Screen Anyway')");
+    await contains("button:contains('Stop Presenting')", { count: 2 }); // one in overlay, one in presentation bar
 });
 
 test("single 'join' (without camera) button when last call was audio-only", async () => {
@@ -1294,4 +1290,71 @@ test("open conversation from call invitation (discuss app)", async () => {
     await contains(".o-discuss-CallInvitation");
     await click("[title='Join Call']");
     await contains(".o-mail-DiscussContent-threadName[title=General]");
+});
+
+test("call presentation bar behavior for single presenter", async () => {
+    const pyEnv = await startServer();
+    const channelId = pyEnv["discuss.channel"].create({ name: "General" });
+    const partnerId = pyEnv["res.partner"].create({ name: "Member 1" });
+    const memberId = pyEnv["discuss.channel.member"].create({
+        channel_id: channelId,
+        partner_id: partnerId,
+    });
+    const env = await start();
+    const network = await makeMockRtcNetwork({ env, channelId });
+    const rtc = env.services["discuss.rtc"];
+    await openDiscuss(channelId);
+    await click("[title='Start Call']");
+    await contains(".o-discuss-Call");
+    await click("button[title='Share Screen']");
+    rtc.screenAudioTrack = streams.at(-1).getTracks()[0];
+    await contains(".o-discuss-callPresentationBar");
+    const remote = network.makeMockRemote(memberId);
+    await remote.updateConnectionState("connected");
+    await remote.updateUpload("screen", createVideoStream().getVideoTracks()[0]);
+    await contains(".o-discuss-callPresentationBar-presenterLabel:text('You are presenting')");
+    await contains(".o-presentationAudio-container input[role='switch']");
+    await click("button[title='Stop presenting']");
+    await contains(".o-discuss-callPresentationBar-presenterLabel:text('Member 1 is presenting')");
+    await contains(".o-presentationAudio-container input[role='switch']", { count: 0 });
+    await contains("button[title='Stop presenting']", { count: 0 });
+    await remote.updateUpload("screen", null);
+    await contains(".o-discuss-callPresentationBar", { count: 0 });
+});
+
+test("call presentation bar behavior for multiple presenters", async () => {
+    const pyEnv = await startServer();
+    const channelId = pyEnv["discuss.channel"].create({ name: "General" });
+    const partnerIds = pyEnv["res.partner"].create([
+        { name: "Member 1" },
+        { name: "Member 2" },
+        { name: "Member 3" },
+    ]);
+    const memberIds = pyEnv["discuss.channel.member"].create([
+        { channel_id: channelId, partner_id: partnerIds[0] },
+        { channel_id: channelId, partner_id: partnerIds[1] },
+        { channel_id: channelId, partner_id: partnerIds[2] },
+    ]);
+    const env = await start();
+    const network = await makeMockRtcNetwork({ env, channelId });
+    await openDiscuss(channelId);
+    await click("[title='Start Call']");
+    await contains(".o-discuss-Call");
+    const remotes = memberIds.map((memberId) => network.makeMockRemote(memberId));
+    for (const remote of remotes) {
+        await remote.updateConnectionState("connected");
+    }
+    await remotes[0].updateUpload("screen", createVideoStream().getVideoTracks()[0]);
+    await contains(".o-discuss-callPresentationBar-presenterLabel:text('Member 1 is presenting')");
+    await remotes[1].updateUpload("screen", createVideoStream().getVideoTracks()[0]);
+    await click(".o-discuss-CallParticipantCard:not(.o-inset)[aria-label='Member 2']");
+    await contains(
+        ".o-discuss-callPresentationBar-presenterLabel:text('Member 1 and Member 2 are presenting')"
+    );
+    await remotes[2].updateUpload("screen", createVideoStream().getVideoTracks()[0]);
+    await contains(".o-discuss-callPresentationBar-presenterLabel:text('Member 3 is presenting')");
+    await click(".o-discuss-CallParticipantCard:not(.o-inset)[aria-label='Member 3']");
+    await contains(
+        ".o-discuss-callPresentationBar-presenterLabel:text('Member 1, Member 2 and 1 more are presenting')"
+    );
 });

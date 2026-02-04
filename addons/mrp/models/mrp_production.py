@@ -489,7 +489,7 @@ class MrpProduction(models.Model):
     def _compute_is_planned(self):
         for production in self:
             if production.workorder_ids:
-                production.is_planned = any(wo.date_start and wo.date_finished for wo in production.workorder_ids)
+                production.is_planned = all(wo.date_start and wo.date_finished and wo.state != 'cancel' for wo in production.workorder_ids)
             else:
                 production.is_planned = False
 
@@ -919,6 +919,8 @@ class MrpProduction(models.Model):
     def _change_producing(self):
         if self.state in ['draft', 'cancel'] or (self.state == 'done' and self.is_locked):
             return False
+        if self.state == 'progress' and self._origin.state == 'confirmed':
+            self.date_start = fields.Datetime.now()
         if self.product_tracking == 'serial' and self.lot_producing_ids:
             self.qty_producing = len(self.lot_producing_ids)
         productions_bypass_qty_producting = self.filtered(lambda p: p.lot_producing_ids and p.product_tracking == 'lot' and p._origin and p._origin.qty_producing == p.qty_producing)
@@ -1692,7 +1694,7 @@ class MrpProduction(models.Model):
         for workorder in final_workorders:
             workorder._plan_workorder(replan)
 
-        workorders = self.workorder_ids.filtered(lambda w: w.state not in ['done', 'cancel'])
+        workorders = self.workorder_ids.filtered(lambda w: w.state not in ['cancel'])
         if not workorders:
             return
 
@@ -3027,7 +3029,10 @@ class MrpProduction(models.Model):
     def action_start(self):
         self.ensure_one()
         if self.state == "confirmed":
-            self.state = "progress"
+            self.write({
+                'state': 'progress',
+                'date_start': fields.Datetime.now(),
+            })
 
     def action_view_serial_numbers(self):
         action = self.env["ir.actions.actions"]._for_xml_id("stock.action_production_lot_form")

@@ -147,7 +147,10 @@
                                             <span>Actions</span>
                                         </h5>
                                         <div role="menuitem" name="plan_order">
-                                            <a name="action_work_order" type="object">Plan Orders</a>
+                                            <a name="action_open_workorders" type="object">Plan Orders</a>
+                                        </div>
+                                        <div role="menuitem" name="planning">
+                                            <a name="action_work_order" type="object" context="{'search_default_ready': 1, 'search_default_progress': 1, 'search_default_blocked': 1, 'desktop_list_view': 1, 'search_default_workcenter_id': id, 'view_mode':'gantt'}">Planning</a>
                                         </div>
                                     </div>
                                     <div class="col-6">

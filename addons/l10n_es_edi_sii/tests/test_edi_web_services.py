@@ -4,6 +4,7 @@ from datetime import datetime
 from odoo.tests import tagged
 from odoo import fields
 from .common import TestEsEdiCommon
+from unittest.mock import patch
 
 
 @tagged('external_l10n', 'post_install', '-at_install', '-standard', 'external')
@@ -50,20 +51,35 @@ class TestEdiWebServices(TestEsEdiCommon):
 
         cls.moves = cls.out_invoice + cls.in_invoice
 
-    def test_edi_gipuzkoa(self):
+    @patch(
+        'odoo.addons.l10n_es_edi_sii.models.sii_service.L10nEsSiiService._l10n_es_edi_call_web_service_sign',
+        side_effect=lambda invoice, info_list, **kwargs: {invoice: {'success': True}},
+    )
+    def test_edi_gipuzkoa(self, _mock):
         self.env.company.l10n_es_sii_tax_agency = 'gipuzkoa'
+        self.env['l10n_es.sii.service']._send_sii_invoice(self.out_invoice)
+        self.env['l10n_es.sii.service']._send_sii_invoice(self.in_invoice)
 
-        self.moves.action_process_edi_web_services(with_commit=False)
-        generated_files = self._process_documents_web_services(self.moves, {'es_sii'})
-        self.assertTrue(generated_files)
-        self.assertRecordValues(self.out_invoice, [{'edi_state': 'sent'}])
-        self.assertRecordValues(self.in_invoice, [{'edi_state': 'sent'}])
+        self.assertRecordValues(self.out_invoice, [
+            {'l10n_es_edi_sii_state': 'sent'}
+        ])
+        self.assertRecordValues(self.in_invoice, [
+            {'l10n_es_edi_sii_state': 'sent'}
+        ])
 
-    def test_edi_bizkaia(self):
+    @patch(
+        'odoo.addons.l10n_es_edi_sii.models.sii_service.L10nEsSiiService._l10n_es_edi_call_web_service_sign',
+        side_effect=lambda invoice, info_list, **kwargs: {invoice: {'success': True}},
+    )
+    def test_edi_bizkaia(self, _mock):
         self.env.company.l10n_es_sii_tax_agency = 'bizkaia'
 
-        self.moves.action_process_edi_web_services(with_commit=False)
-        generated_files = self._process_documents_web_services(self.moves, {'es_sii'})
-        self.assertTrue(generated_files)
-        self.assertRecordValues(self.out_invoice, [{'edi_state': 'sent'}])
-        self.assertRecordValues(self.in_invoice, [{'edi_state': 'sent'}])
+        self.env['l10n_es.sii.service']._send_sii_invoice(self.out_invoice)
+        self.env['l10n_es.sii.service']._send_sii_invoice(self.in_invoice)
+
+        self.assertRecordValues(self.out_invoice, [
+            {'l10n_es_edi_sii_state': 'sent'}
+        ])
+        self.assertRecordValues(self.in_invoice, [
+            {'l10n_es_edi_sii_state': 'sent'}
+        ])

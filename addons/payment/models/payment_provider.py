@@ -131,6 +131,17 @@ class PaymentProvider(models.Model):
              "to make it available for any payment amount.",
         currency_field='main_currency_id',
     )
+    minimum_amount = fields.Monetary(
+        string="Minimum Amount",
+        help="The minimum payment amount that this payment provider is available for. Leave blank "
+             "to make it available for any payment amount.",
+        currency_field='main_currency_id',
+    )
+    allowed_pricelist_ids = fields.Many2many(
+        'product.pricelist',
+        string="Pricelists",
+        help="Only allow this payment provider when the pricelist matches one of these."
+    )
 
     # Message fields
     pre_msg = fields.Html(
@@ -329,6 +340,16 @@ class PaymentProvider(models.Model):
                     "The following payment methods must be disabled in order to enable manual"
                     " capture: %s", ", ".join(incompatible_pms.mapped('name'))
                 ))
+
+    @api.constrains('minimum_amount', 'maximum_amount')
+    def _check_amount_range(self):
+        min_amt = self.minimum_amount
+        max_amt = self.maximum_amount
+
+        if min_amt > 0 and max_amt > 0 and min_amt > max_amt:
+            raise ValidationError(_(
+                "Minimum amount must not be greater than the maximum amount."
+            ))
 
     # === CRUD METHODS === #
 
@@ -610,17 +631,31 @@ class PaymentProvider(models.Model):
             date = fields.Date.context_today(self)
             converted_amount = currency._convert(amount, company.currency_id, company, date)
             unfiltered_providers = providers
-            providers = providers.filtered(
+            allowed_by_max_amount = providers.filtered(
                 lambda p: (
                     not p.maximum_amount
                     or currency.compare_amounts(p.maximum_amount, converted_amount) != -1
                 )
             )
+            allowed_by_min_amount = providers.filtered(
+                lambda p: (
+                    not p.minimum_amount
+                    or currency.compare_amounts(p.minimum_amount, converted_amount) != 1
+                )
+            )
+
+            providers = allowed_by_max_amount & allowed_by_min_amount
             payment_utils.add_to_report(
                 report,
-                unfiltered_providers - providers,
+                unfiltered_providers - allowed_by_max_amount,
                 available=False,
                 reason=REPORT_REASONS_MAPPING['exceed_max_amount'],
+            )
+            payment_utils.add_to_report(
+                report,
+                unfiltered_providers - allowed_by_min_amount,
+                available=False,
+                reason=REPORT_REASONS_MAPPING['below_min_amount'],
             )
 
         # Handle the available currencies; allow all currencies if the list is empty.
@@ -637,6 +672,22 @@ class PaymentProvider(models.Model):
                 unfiltered_providers - providers,
                 available=False,
                 reason=REPORT_REASONS_MAPPING['incompatible_currency'],
+            )
+
+        sale_order_id = kwargs.get('sale_order_id')
+        if sale_order_id:
+            sale_order = self.env['sale.order'].browse(sale_order_id).exists()
+            pricelist = sale_order.pricelist_id
+            if pricelist:
+                unfiltered_providers = providers
+                providers = providers.filtered(
+                    lambda p: not p.allowed_pricelist_ids or pricelist in p.allowed_pricelist_ids
+                )
+                payment_utils.add_to_report(
+                    report,
+                    unfiltered_providers - providers,
+                    available=False,
+                    reason=REPORT_REASONS_MAPPING['pricelist_not_allowed'],
             )
 
         # Handle tokenization support requirements.

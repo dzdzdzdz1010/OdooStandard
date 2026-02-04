@@ -162,6 +162,22 @@ registry.category("web_tour.tours").add("donation_snippet_use_2", {
             trigger: "input#other_amount",
             run: "click",
         },
+        // At this point, we are about to submit the donation form. However, the
+        // pre-filled fields such as name and email are still empty, which would
+        // cause an `is-invalid` error on the email field during submission. To
+        // avoid this, we manually fill in these fields before submitting the
+        // form. Since pre-filling via tour utils will take additional time to
+        // implement, we are temporarily handling it directly here.
+        {
+            content: "Fill partner name to avoid validation error on submit",
+            trigger: "#partner_name",
+            run: "edit hello",
+        },
+        {
+            content: "Fill partner email to avoid validation error on submit",
+            trigger: "#partner_email",
+            run: "edit hello@example.com",
+        },
         {
             content: "Submit the donation form",
             trigger: "button[name='o_payment_submit_button']",

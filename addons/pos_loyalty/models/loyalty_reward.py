@@ -1,14 +1,29 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-from odoo import models, api
-import ast
+from odoo import api, fields, models
+from odoo.fields import Domain
 import json
 
 
 class LoyaltyReward(models.Model):
     _name = 'loyalty.reward'
     _inherit = ['loyalty.reward', 'pos.load.mixin']
+
+    discount_pos_category_id = fields.Many2one(
+        string="Discounted Prod. POS Categories", comodel_name='pos.category'
+    )
+
+    def _get_discount_product_domain(self):
+        domain = super()._get_discount_product_domain()
+        if self.discount_pos_category_id:
+            pos_category_ids = self.discount_pos_category_id.ids
+            if self.discount_pos_category_id.child_ids:
+                pos_category_ids.extend(self.discount_pos_category_id.child_ids.ids)
+            if domain is Domain.TRUE:
+                return Domain('pos_categ_ids', 'in', pos_category_ids)
+            domain = Domain.OR([domain, Domain('pos_categ_ids', 'in', pos_category_ids)])
+        return domain
 
     def _get_discount_product_values(self):
         res = super()._get_discount_product_values()

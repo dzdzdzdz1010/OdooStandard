@@ -195,6 +195,7 @@ class WebsiteEventController(http.Controller):
             'range': range,
             'google_url': lazy(lambda: urls.get('google_url')),
             'iCal_url': lazy(lambda: urls.get('iCal_url')),
+            'outlook_url': lazy(lambda: urls.get('outlook_url')),
             'registration_error_code': post.get('registration_error_code'),
         }
 
@@ -406,7 +407,8 @@ class WebsiteEventController(http.Controller):
             'attendees': attendees_sudo,
             'event': event,
             'google_url': urls.get('google_url'),
-            'iCal_url': urls.get('iCal_url')
+            'iCal_url': urls.get('iCal_url'),
+            'outlook_url': urls.get('outlook_url'),
         }
 
     # ------------------------------------------------------------

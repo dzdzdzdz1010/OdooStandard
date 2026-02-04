@@ -49,7 +49,7 @@ export class HintPlugin extends Plugin {
     updateHints() {
         const selectionData = this.dependencies.selection.getSelectionData();
         const editableSelection = selectionData.editableSelection;
-        this.clearHints();
+        const hintsToApply = [];
         if (editableSelection.isCollapsed) {
             const hints = this.getResource("hints");
             for (const provideTargets of this.getResource("hint_targets_providers")) {
@@ -62,10 +62,14 @@ export class HintPlugin extends Plugin {
                         !isProtected(target) &&
                         !descendants(target).some(isEditorTab)
                     ) {
-                        this.makeHint(target, nodeHint);
+                        hintsToApply.push({ target, nodeHint });
                     }
                 }
             }
+        }
+        this.clearHints();
+        for (const { target, nodeHint } of hintsToApply) {
+            this.makeHint(target, nodeHint);
         }
     }
 

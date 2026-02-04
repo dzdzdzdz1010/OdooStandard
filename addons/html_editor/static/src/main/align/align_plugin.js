@@ -51,7 +51,7 @@ export class AlignPlugin extends Plugin {
         ],
 
         /** Handlers */
-        selectionchange_handlers: this.updateAlignmentParams.bind(this),
+        selectionchange_read_handlers: this.updateAlignmentParams.bind(this),
         post_undo_handlers: this.updateAlignmentParams.bind(this),
         post_redo_handlers: this.updateAlignmentParams.bind(this),
         remove_format_handlers: this.setAlignment.bind(this),

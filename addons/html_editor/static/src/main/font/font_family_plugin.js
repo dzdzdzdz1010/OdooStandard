@@ -52,7 +52,7 @@ export class FontFamilyPlugin extends Plugin {
             }),
         ],
         /** Handlers */
-        selectionchange_handlers: this.updateCurrentFontFamily.bind(this),
+        selectionchange_read_handlers: this.updateCurrentFontFamily.bind(this),
         post_undo_handlers: this.updateCurrentFontFamily.bind(this),
         post_redo_handlers: this.updateCurrentFontFamily.bind(this),
     };

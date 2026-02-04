@@ -14,4 +14,8 @@
 
 .att_container {
     font-variant-numeric: tabular-nums;
+
+    .o_wrap_btn_sign_out {
+        background: var(--#{$prefix}popover-bg);
+    }
 }

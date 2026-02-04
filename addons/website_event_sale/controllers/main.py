@@ -78,9 +78,4 @@ class WebsiteEventSaleController(WebsiteEventController):
             if order_sudo.amount_total:
                 request.session['sale_last_order_id'] = order_sudo.id
                 return request.redirect("/shop/checkout")
-            # free tickets -> order with amount = 0: auto-confirm, no checkout
-            elif order_sudo:
-                order_sudo.action_confirm()  # tde notsure: email sending ?
-                request.website.sale_reset()
-
         return res

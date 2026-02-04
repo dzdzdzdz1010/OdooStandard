@@ -283,14 +283,19 @@ patch(PosStore.prototype, {
         const rule = this.models["loyalty.rule"].find((rule) => {
             return rule.mode === "with_code" && (rule.promo_barcode === code || rule.code === code);
         });
-        const loyaltyCard = this.models["loyalty.card"].find(
-            (card) => card.code === code && card.program_id?.program_type === "loyalty"
-        );
+        const partnerId = await this.data.call("loyalty.card", "get_loyalty_card_partner_by_code", [
+            code,
+        ]);
         let claimableRewards = null;
         let coupon = null;
         // If the code belongs to a loyalty card we just set the partner
-        if (loyaltyCard && loyaltyCard.partner_id) {
-            order.set_partner(loyaltyCard.partner_id);
+        if (partnerId) {
+            if (!this.models["res.partner"].get(partnerId)) {
+                await this.data.read("res.partner", [partnerId]);
+            }
+            const partner = this.models["res.partner"].get(partnerId);
+            order.set_partner(partner);
+            await this.updateRewards();
         } else if (rule) {
             const date_order = DateTime.fromSQL(order.date_order);
             if (

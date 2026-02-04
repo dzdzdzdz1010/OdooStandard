@@ -14,8 +14,11 @@ TIMESHEET_INVOICE_TYPES = [
     ('non_billable', 'Non-Billable'),
     ('timesheet_revenues', 'Timesheet Revenues'),
     ('service_revenues', 'Service Revenues'),
-    ('other_revenues', 'Other revenues'),
-    ('other_costs', 'Other costs'),
+    ('other_revenues', 'Other Revenues'),
+    ('other_costs', 'Other Costs'),
+    ('revenues_fixed', 'Revenues Fixed Price'),
+    ('revenues_manual', 'Revenues Manual'),
+    ('revenues_milestones', 'Revenues Milestones'),
 ]
 
 
@@ -72,7 +75,14 @@ class AccountAnalyticLine(models.Model):
                     if timesheet.so_line and timesheet.so_line.product_id.type == 'service':
                         timesheet.timesheet_invoice_type = 'service_revenues'
                     else:
-                        timesheet.timesheet_invoice_type = 'other_revenues'
+                        if timesheet.product_id.invoice_policy == 'delivery':
+                            service_type = timesheet.product_id.service_type
+                            invoice_type = f'revenues_{service_type}' if service_type in ['milestones', 'manual'] else 'revenues_fixed'
+                        elif timesheet.product_id.invoice_policy == 'order':
+                            invoice_type = 'revenues_fixed'
+                        else:
+                            invoice_type = 'other_revenues'
+                        timesheet.timesheet_invoice_type = invoice_type
                 else:
                     timesheet.timesheet_invoice_type = 'other_costs'
 

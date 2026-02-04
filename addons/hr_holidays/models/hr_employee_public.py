@@ -76,3 +76,4 @@ class HrEmployeePublic(models.Model):
         res.attr("leave_date_to")
         res.attr("leave_date_from")
         res.attr("request_date_from_period")
+        res.attr("next_working_day")

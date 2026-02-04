@@ -12,8 +12,10 @@ patch(HrEmployee.prototype, {
         this.leave_date_from = fields.Datetime();
         /** @type {'am'|pm} */
         this.request_date_from_period;
+        this.next_working_day = fields.Datetime();
     },
     get outOfOfficeDateEndText() {
+        console.log(this.next_working_day.toLocaleString());
         if (!this.leave_date_to && !this.leave_date_from) {
             return "";
         }

@@ -568,6 +568,7 @@ class AccountAccount(models.Model):
         self.opening_debit = 0
         self.opening_credit = 0
         self.opening_balance = 0
+        self.env.cr.flush()
         opening_move = self.env.company.account_opening_move_id
         if not self.ids or not opening_move:
             return
@@ -1156,6 +1157,35 @@ class AccountAccount(models.Model):
             'res_model': 'account.tax',
             'views': [[False, 'list'], [False, 'form']],
             'domain': [('id', 'in', related_taxes_ids)],
+        }
+
+    def action_validate_opening_move(self):
+        company = self.env.company
+
+        domain = self.env.context.get('active_domain') or []
+        company_ids = next(
+            (d[2] for d in domain
+            if isinstance(d, (list, tuple)) and len(d) == 3 and d[0] == 'company_ids'),
+            [],
+        )
+
+        if company_ids and company.id not in company_ids:
+            raise UserError(self.env._(
+                "You cannot validate accounts from another company. "
+                "Please switch to the correct company."
+            ))
+
+        opening_move = company.account_opening_move_id
+        if not opening_move:
+            raise UserError(self.env._("Shouldn't you change some values before posting?"))
+
+        opening_move.action_post()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Chart of Accounts'),
+            'res_model': 'account.account',
+            'view_mode': 'list',
+            'context': {'no_breadcrumbs': True},
         }
 
     @api.model

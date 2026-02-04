@@ -76,7 +76,7 @@
                                         <img class="invoice-qr-code" t-att-src="image['invoice_qr_code']" />
                                     </td>
                                     <td class="text-start top w-75 ps-1" t-if="conditions['display_url']">
-                                        <p class="text-bold text-normal">Need an invoice?</p>
+                                        <div class="text-bold text-normal">Need an invoice?</div>
                                         <div class="text-small" t-out="extra_data['self_invoicing_url']" />
                                         <div class="text-small">Code: <t t-out="order['ticket_code']"/></div>
                                     </td>
@@ -113,7 +113,7 @@
 
         <template id="point_of_sale.pos_order_receipt_header">
             <div class="w-100 text-center mb-3" name="logo">
-                <img t-if="image['logo']" t-att-src="image['logo']" style="max-height: 75px" />
+                <img t-if="image['logo']" t-att-src="image['logo']" class="w-50" />
             </div>
             <div class="w-100 text-center">
                 <div name="ticket_reference">
@@ -178,10 +178,9 @@
                 <span class="line-note" t-out="line['customer_note']" />
             </div>
             <div t-if="line['lot_names']" class="text-small">
-                <strong>Lot number: </strong>
-                <span t-foreach="line['lot_names']" t-as="lot_name">
-                    <t t-out="lot_name" />
-                </span>
+                <ul t-foreach="line['lot_names']" t-as="lot_name" style="list-style: none; padding: 0; margin: 0;">
+                    <li t-out="lot_name" />
+                </ul>
             </div>
             <div name="extra-info" />
         </template>
@@ -196,26 +195,26 @@
                     <tbody name="company_info">
                         <tr>
                             <td class="text-start" t-out="company['name']" />
-                            <td class="text-end">
+                            <td t-if="company.get('phone')" class="text-end">
                                 Tel. <t t-out="company['phone']" />
                             </td>
                         </tr>
                         <tr>
                             <td class="text-start">
-                                <t t-out="company['street']" />
-                                <t t-if="company['street2']" t-out="company['street2']" />
+                                <t t-if="company.get('street')" t-out="company['street']" />
+                                <t t-if="company.get('street2')" t-out="company['street2']" />
                             </td>
-                            <td class="text-end" t-out="company['email']" />
+                            <td t-if="company.get('email')" class="text-end" t-out="company['email']" />
                         </tr>
                         <tr>
                             <td class="text-start">
-                                <t t-out="company['zip']" /> <t t-out="company['city']" />,
-                                <t t-out="extra_data['company_state_name']" />
+                                <t t-if="company.get('zip')" t-out="company['zip']" /> <t t-if="company.get('city')" t-out="', ' + company['city']" />
+                                <t t-if="company.get('company_state_name')" t-out="', ' + extra_data['company_state_name']" />
                             </td>
-                            <td class="text-end" t-out="company['website']" />
+                            <td t-if="company.get('website')" class="text-end" t-out="company['website']" />
                         </tr>
                         <tr>
-                            <td class="text-start" t-if="company.get('vat')" name="company_info_vat">
+                            <td t-if="company.get('vat')" class="text-start" name="company_info_vat">
                                 VAT: <t t-out="company['vat']" />
                             </td>
                         </tr>

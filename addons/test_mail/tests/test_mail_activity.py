@@ -54,6 +54,12 @@ class TestActivityRights(TestActivityCommon):
             {'name': 'Open RO', 'is_readonly': True},
             {'name': 'Locked', 'is_locked': True},
         ])
+        admin_activities = self.env['mail.activity']
+        for record in access_open + access_ro + access_locked:
+            admin_activities += record.with_user(self.user_admin).activity_schedule(
+                'test_mail.mail_act_test_todo_generic',
+            )
+
         # sanity checks on rule implementation
         (access_open + access_ro + access_locked).with_user(self.user_employee).check_access_rule('read')
         access_open.with_user(self.user_employee).check_access_rule('write')
@@ -72,6 +78,11 @@ class TestActivityRights(TestActivityCommon):
             access_locked.with_user(self.user_employee).activity_schedule(
                 'test_mail.mail_act_test_todo_generic',
             )
+
+        self.env.invalidate_all()
+        # check read access correctly uses '_mail_get_operation_for_mail_message_operation'
+        admin_activities[0].with_user(self.user_employee).read(['summary'])
+        admin_activities[1].with_user(self.user_employee).read(['summary'])
 
     @mute_logger('odoo.addons.mail.models.mail_mail')
     def test_activity_security_user_noaccess_automated(self):
@@ -916,6 +927,21 @@ class TestActivitySystray(TestActivityCommon):
             ('res_model', '=', self.test_lead_records._name),
         ])
         self.assertEqual(len(test_with_removed), 4, 'Without ACL check, activities linked to removed records are kept')
+
+        self.env.invalidate_all()
+        test_with_removed_as_admin = self.env['mail.activity'].with_user(self.user_admin).search([
+            ('id', 'in', self.test_activities.ids),
+            ('res_model', '=', self.test_lead_records._name),
+        ])
+        self.assertEqual(len(test_with_removed_as_admin), 3, 'With ACL check, activities linked to removed records are not kept is not assigned to the user')
+
+        self.env.invalidate_all()
+        # interestingly, has_access('read') works, but reading fails (see below). To check with ORM.
+        # self.assertFalse(
+        #     self.test_activities_removed.with_user(self.user_admin).has_access('read'),
+        #     'No access to an activity linked to someone and whose record has been removed '
+        #     '(considered as no access to record); and should not crash (no MissingError)'
+        # )
         test_with_removed = self.env['mail.activity'].search([
             ('id', 'in', self.test_activities.ids),
             ('res_model', '=', self.test_lead_records._name),
@@ -923,7 +949,13 @@ class TestActivitySystray(TestActivityCommon):
         self.assertEqual(len(test_with_removed), 4, 'Even with ACL check, activities linked to removed records are kept if assigned to the user (see odoo/odoo#112126)')
 
         # if not assigned -> should filter out
+        self.env.invalidate_all()
         self.test_activities_removed.write({'user_id': self.user_admin.id})
+        test_with_removed = self.env['mail.activity'].search([
+            ('id', 'in', self.test_activities.ids),
+            ('res_model', '=', self.test_lead_records._name),
+        ])
+        self.assertEqual(len(test_with_removed), 3, 'With ACL check, activities linked to removed records are not kept if assigned to the another user')
         self.test_activities_removed.write({'user_id': self.user_employee.id})
 
         # be sure activities on removed records do not crash when managed, and that

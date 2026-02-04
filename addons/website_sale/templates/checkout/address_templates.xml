@@ -74,15 +74,10 @@
                     <span name="o_delivery_method_name" t-field="dm.name"/>
                 </label>
             </div>
-            <div class="o_delivery_info_container flex-grow-1 flex-md-grow-0 d-flex justify-content-end align-items-center col-lg-5">
+            <div class="o_delivery_info_container flex-grow-1 flex-md-grow-0 d-flex justify-content-between align-items-center col-lg-5">
                 <!-- === Delivery estimated date === -->
-                <div class="d-flex align-items-center gap-2" t-if="dm.has_estimated_delivery">
-                    <i class="fa fa-info-circle"
-                        title="Estimated Date"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        data-bs-delay="0"
-                    />
+                <t t-if="dm.has_estimated_delivery">
+                    <t t-set="tooltip_title" t-value="'Estimated Delivery'"/>
                     <div
                         class="o_wsale_delivery_date_badge input-group w-75"
                         t-if="dm.estimated_delivery_min_days == dm.estimated_delivery_max_days"
@@ -94,6 +89,10 @@
                             class="form-control"
                             t-att-value="dm._get_first_available_delivery_date()"
                             disabled="1"
+                            t-att-title="tooltip_title"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="bottom"
+                            data-bs-delay="0"
                         />
                     </div>
                     <div
@@ -110,11 +109,15 @@
                         <label
                             t-attf-for="o_estimated_delivery_date_{{dm.id}}"
                             class="input-group-text input-group-text-subtle d-flex align-items-center"
+                            t-att-title="tooltip_title"
+                            data-bs-toggle="tooltip"
+                            data-bs-placement="top"
+                            data-bs-delay="0"
                         >
                             <i class="fa fa-edit" role="img"/>
                         </label>
                     </div>
-                </div>
+                </t>
                 <!-- === Delivery price badge === -->
                 <span class="o_wsale_delivery_price_badge text-muted fw-bold text-end" name="price">
                     <small class="fw-normal">Select to compute delivery rate</small>

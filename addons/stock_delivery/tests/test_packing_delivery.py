@@ -393,6 +393,45 @@ class TestPacking(TestPackingCommon):
         self.assertTrue(move_line_1.result_package_id, 'A package should have been created for the selected move line')
         self.assertFalse(move_line_2.result_package_id, 'The other move line should not be packed')
 
+    def test_package_shipping_weight(self):
+        self.warehouse.delivery_steps = 'ship_only'
+        self.productA.weight = 2
+        sbox_type = self.env['stock.package.type'].create([{
+            'name': "small box",
+            'base_weight': 5,
+        }])
+        boxA = self.env['stock.package'].create([{
+            'name': "box for product A",
+            'package_type_id': sbox_type.id,
+        }])
+
+        # Content of package:
+        # boxA              (base  5kg) -> 15kg
+        # └ 5x Product A      (5*2 =  10kg)
+        self.assertEqual(boxA.weight, 5)
+        self.env['stock.quant']._update_available_quantity(self.productA, self.stock_location, 5, package_id=boxA)
+        (boxA).parent_package_id
+        self.assertEqual(boxA.weight, 15)
+
+        # Now check that the weight is correctly computed for an ongoing picking
+        delivery = self.env['stock.picking'].create({
+            'picking_type_id': self.warehouse.out_type_id.id,
+            'location_id': self.stock_location.id,
+            'location_dest_id': self.customer_location.id,
+            'move_ids': [
+                Command.create({
+                    'location_id': self.stock_location.id,
+                    'location_dest_id': self.customer_location.id,
+                    'product_id': self.productA.id,
+                    'product_uom_qty': 5,
+                }),
+            ],
+        })
+        delivery.action_confirm()
+
+        self.assertEqual(delivery.move_line_ids.package_id.name, "box for product A")
+        self.assertEqual(delivery.shipping_weight, 15)
+
     def test_multi_level_package_weight(self):
         self.warehouse.delivery_steps = 'ship_only'
         self.productA.weight = 2

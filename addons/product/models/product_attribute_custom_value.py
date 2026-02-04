@@ -20,6 +20,7 @@ class ProductAttributeCustomValue(models.Model):
     def _compute_name(self):
         for record in self:
             name = (record.custom_value or '').strip()
-            if record.custom_product_template_attribute_value_id.display_name:
-                name = "%s: %s" % (record.custom_product_template_attribute_value_id.display_name, name)
+            ptav = record.custom_product_template_attribute_value_id
+            if ptav:
+                name = f"{ptav.attribute_id.name}: {ptav.name}: {name}"
             record.name = name

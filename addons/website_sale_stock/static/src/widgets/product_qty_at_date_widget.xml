@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<template id="template" xml:space="preserve">
+
+    <t t-name="website_sale_stock.ProductQtyAtDate">
+        <a tabindex="0"
+            t-on-click="showPopup"
+            class="fa fa-area-chart cursor-pointer ms-2"
+            t-attf-class="{{ calcData.forecasted_issue }}"
+        />
+    </t>
+
+    <t t-name="website_sale_stock.ProductQtyAtDatePopover">
+        <div class="p-2" style="min-width: 250px;">
+            <h6>Stock Availability</h6>
+            <table class="table table-borderless table-sm">
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong t-out="availableLabel"/>
+                            <br/>
+                        </td>
+                        <td class="text-end">
+                            <b t-out="props.calcData.qty_available"
+                               t-att-class="props.calcData.qty_available &lt;= 0 ? 'text-danger': ''"/>
+                            <t t-if="props.record.data.uom_name"> <t t-out="props.record.data.uom_name"/></t>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong t-out="forecastedLabel"/>
+                        </td>
+                        <td class="text-end">
+                            <b t-out="props.calcData.virtual_available"
+                               t-att-class="props.calcData.virtual_available &lt; 0 ? 'text-danger': ''"/>
+                            <t t-if="props.record.data.uom_name"> <t t-out="props.record.data.uom_name"/></t>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="text-center mt-2">
+                <button class="btn btn-sm btn-primary" t-on-click="viewForecast">
+                    <i class="fa fa-area-chart me-1"/>View Forecast
+                </button>
+            </div>
+        </div>
+    </t>
+</template>

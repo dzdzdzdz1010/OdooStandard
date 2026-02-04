@@ -17,6 +17,7 @@ Then it can be made specific at the product level.
     ],
     'data': [
         'views/product_template_views.xml',
+        'views/product_product_views.xml',
         'views/res_config_settings_views.xml',
         'views/sale_order_views.xml',
         'views/website_sale_stock_templates.xml',
@@ -29,6 +30,10 @@ Then it can be made specific at the product level.
     ],
     'auto_install': True,
     'assets': {
+        'web.assets_backend': [
+            'website_sale_stock/static/src/widgets/product_qty_at_date_widget.js',
+            'website_sale_stock/static/src/widgets/product_qty_at_date_widget.xml',
+        ],
         'web.assets_frontend': [
             'website_sale_stock/static/src/interactions/**/*',
             'website_sale_stock/static/src/js/combo_configurator_dialog/*',

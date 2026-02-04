@@ -1357,6 +1357,7 @@ class TestMrpOrder(TestMrpCommon):
         move_byproduct = mo2.move_finished_ids.filtered(lambda m: m.product_id != mo.product_id)
         details_operation_form = Form(move_byproduct, view=self.env.ref('stock.view_stock_move_operations'))
         with details_operation_form.move_line_ids.new() as ml:
+            ml.location_id = move_byproduct.location_dest_id  # Stock location where SN is
             ml.lot_id = sn
         details_operation_form.save()
         with self.assertRaises(UserError):

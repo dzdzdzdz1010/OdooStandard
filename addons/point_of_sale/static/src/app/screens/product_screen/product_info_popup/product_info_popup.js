@@ -18,9 +18,10 @@ export class ProductInfoPopup extends AbstractAwaitablePopup {
         this.pos = usePos();
         Object.assign(this, this.props.info);
     }
-    searchProduct(productName) {
+    searchProduct(variant, attributeValue) {
         this.pos.setSelectedCategoryId(0);
-        this.pos.searchProductWord = productName;
+        const attributeValueSearch = variant.values.length > 1 ? attributeValue.search : "";
+        this.pos.searchProductWord = `${attributeValueSearch};product_tmpl_id:${this.props.product.product_tmpl_id}`;
         this.cancel();
     }
     _hasMarginsCostsAccessRights() {

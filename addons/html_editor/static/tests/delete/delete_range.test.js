@@ -334,6 +334,13 @@ describe("deleteSelection", () => {
                 contentAfter: `<p>a[]</p><div class="oe_unremovable"><br></div><p>i</p>`,
             });
         });
+        test("should not remove nor clear content of unremovable contenteditable=false node", async () => {
+            await testEditor({
+                contentBefore: `<p>a[bc</p><div class="oe_unremovable" contenteditable="false">def</div><p>gh]i</p>`,
+                stepFunction: deleteSelection,
+                contentAfter: `<p>a[]</p><div class="oe_unremovable" contenteditable="false">def</div><p>i</p>`,
+            });
+        });
         test("should move the unremovable up the tree", async () => {
             await testEditor({
                 contentBefore: `<p>a[bc</p><div><div class="oe_unremovable">def</div></div><p>gh]i</p>`,

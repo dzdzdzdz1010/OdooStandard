@@ -35,3 +35,46 @@ test("drop beside dropzone inserts the snippet", async () => {
     <div class="test_a"></div>
     </section>`);
 });
+
+test("content snippets cannot be dropped next to elements inside oe_structure", async () => {
+    const snippetContent = [
+        `<div name="Image" data-oe-thumbnail="image.svg" data-oe-snippet-id="456">
+            <img src="/web/image/test.png" data-snippet="s_image" alt="Test Image"/>
+        </div>`,
+    ];
+
+    // This mimics the real dropzone selector for content snippets
+    const dropzoneSelectors = [
+        {
+            selector: "img",
+            dropNear: "p, h1, h2, h3",
+            excludeNearParent: ".oe_structure",
+        },
+    ];
+
+    const { getEditor } = await setupHTMLBuilder(
+        `<div class="oe_structure"><h1>Title</h1><p>Paragraph</p></div>`,
+        { snippetContent, dropzoneSelectors }
+    );
+
+    const editor = getEditor();
+    const disableSnippetsPlugin = editor.plugins.find(
+        (p) => p.constructor.id === "disableSnippets"
+    );
+    const setupEditorPlugin = editor.plugins.find(
+        (p) => p.constructor.id === "setup_editor_plugin"
+    );
+    const dropzonePlugin = editor.plugins.find((p) => p.constructor.id === "dropzone");
+
+    // Get drop areas using the plugin method that was fixed
+    const editableAreaEls = setupEditorPlugin.getEditableAreas();
+    const rootEl = dropzonePlugin.getDropRootElement();
+    const dropAreasBySelector = disableSnippetsPlugin.getDropAreas(editableAreaEls, rootEl);
+
+    // Find the drop areas for our image selector
+    const imageDropAreas = dropAreasBySelector.find((item) => item.selector === "img");
+
+    expect(imageDropAreas?.dropAreaEls || []).toHaveLength(0, {
+        message: "Content snippets should not have drop zones next to h1/p inside .oe_structure",
+    });
+});

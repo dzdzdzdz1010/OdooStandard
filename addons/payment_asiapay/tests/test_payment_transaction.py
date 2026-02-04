@@ -102,7 +102,10 @@ class TestPaymentTransaction(AsiaPayCommon, PaymentHttpCommon):
             'payMethod',
             'secureHash',
         ]
-        processing_values = tx._get_processing_values()
+        with patch(
+            'odoo.addons.payment.utils.generate_access_token', new=self._generate_test_access_token
+        ):
+            processing_values = tx._get_processing_values()
         form_info = self._extract_values_from_html_form(processing_values['redirect_form_html'])
         self.assertEqual(form_info['action'], tx.provider_id._asiapay_get_api_url())
         self.assertEqual(form_info['method'], 'post')

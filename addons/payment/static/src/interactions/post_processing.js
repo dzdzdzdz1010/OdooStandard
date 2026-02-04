@@ -1,4 +1,5 @@
-import { ConnectionLostError, rpc, RPCError } from '@web/core/network/rpc';
+import { browser } from "@web/core/browser/browser";
+import { rpc } from '@web/core/network/rpc';
 import { registry } from '@web/core/registry';
 import { Interaction } from '@web/public/interaction';
 
@@ -6,58 +7,41 @@ export class PaymentPostProcessing extends Interaction {
     static selector = 'div[name="o_payment_status"]';
 
     setup() {
-        this.timeout = 0;
-        this.pollCount = 0;
-    }
-
-    start() {
-        this.poll();
-    }
-
-    poll() {
-        this.updateTimeout();
-        this.waitForTimeout(async () => {
-            try {
-                // Fetch the post-processing values from the server.
-                const postProcessingValues = await this.waitFor(
-                    rpc('/payment/status/poll', { csrf_token: odoo.csrf_token })
-                );
-
-                // Redirect the user to the landing route if the transaction reached a final state.
-                const { provider_code, state, landing_route } = postProcessingValues;
-                if (PaymentPostProcessing.getFinalStates(provider_code).has(state)) {
-                    window.location = landing_route;
-                } else {
-                    this.poll();
-                }
-            } catch (error) {
-                const isRetryError = error instanceof RPCError && error.data.message === 'retry';
-                const isConnectionLostError = error instanceof ConnectionLostError;
-                if (isRetryError || isConnectionLostError) {
-                    this.poll();
-                }
-                if (!isRetryError) {
-                    throw error;
-                }
+        // Create a bus listener to trigger post processing
+        const notificationType = 'PAYMENT_TRIGGER_POST_PROCESSING';
+        const { notificationChannel, landingRoute } = this.el.dataset;
+        this.busService = this.services.bus_service;
+        this.busService.addChannel(notificationChannel);
+        this.busService.subscribe(notificationType, this.triggerPostProcessing.bind(this));
+        // Redirect automatically after 5 seconds
+        this.waitForTimeout(() => {
+            if (landingRoute) {
+                window.location = landingRoute;
             }
-        }, this.timeout);
+        }, 5000);
+        // Make sure bus listener is disposed properly when interaction is destroyed
+        this.registerCleanup(() => {
+            this.busService.unsubscribe(notificationType, this.triggerPostProcessing.bind(this));
+            this.busService.deleteChannel(notificationChannel);
+        });
+    }
+
+    async triggerPostProcessing() {
+        const postProcessingData = await rpc('/payment/post_process', { csrf_token: odoo.csrf_token });
+        const { provider_code, state, landing_route, status_message } = postProcessingData;
+        if (['cancel', 'error'].includes(state)) {
+            const defaultErrorMessage = "Payment was not successful, please try again.";
+            browser.sessionStorage.setItem("errorMessage", status_message || defaultErrorMessage);
+        }
+        if (PaymentPostProcessing.getFinalStates(provider_code).has(state)) {
+            window.location = landing_route;
+        }
     }
 
     static getFinalStates(providerCode) {
         return new Set(['authorized', 'done', 'cancel', 'error']);
     }
 
-    updateTimeout() {
-        if (this.pollCount >= 1 && this.pollCount < 10) {
-            this.timeout = 3000;
-        }
-        if (this.pollCount >= 10 && this.pollCount < 20) {
-            this.timeout = 10000;
-        } else if (this.pollCount >= 20) {
-            this.timeout = 30000;
-        }
-        this.pollCount++;
-    }
 }
 
 registry

@@ -1,9 +1,11 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from markupsafe import Markup
 from odoo import _, models
 
 from odoo.addons.payment.logging import get_payment_logger
 from odoo.addons.payment_custom.controllers.main import CustomController
+from odoo.tools import is_html_empty
 
 
 _logger = get_payment_logger(__name__)
@@ -84,3 +86,16 @@ class PaymentTransaction(models.Model):
                 provider_name=self.provider_id.name
             )
         return message
+
+    def _get_transaction_status_message(self, order=None):
+        """ Override of `payment` to add a custom message to `payment_custom` if message is empty.
+        :param sale.order order: The order linked to the transaction.
+        """
+        status_message = super()._get_transaction_status_message(order=order)
+        if (
+            self.provider_id.sudo().code == 'custom' and
+            self.state == 'pending' and
+            is_html_empty(status_message)
+        ):
+            status_message = Markup('<h4>Finalize your payment</h4>')
+        return status_message

@@ -1018,19 +1018,3 @@ class PaymentProvider(models.Model):
         """
         self.ensure_one()
         return self.code
-
-    def _get_status_message(self, status):
-        match status:
-            case 'pending':
-                status_message = self.pending_msg
-            case 'authorized':
-                status_message = self.auth_msg
-            case 'done':
-                status_message = self.done_msg
-            case 'cancel':
-                status_message = self.cancel_msg
-            case _:
-                status_message = ''
-        if not is_html_empty(status_message):
-            return status_message
-        return ''

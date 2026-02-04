@@ -23,5 +23,8 @@ class WebsitePartnerPage(http.Controller):
                     'partner': partner_sudo,
                     'edit_page': False
                 }
-                return request.render("website_partner.partner_page", values)
+                if additional_values := post.get('additional_render_values'):
+                    values = values | additional_values
+                template = post.get('template') or "website_partner.partner_page"
+                return request.render(template, values)
         raise request.not_found()

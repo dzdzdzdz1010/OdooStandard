@@ -5,7 +5,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from freezegun import freeze_time
 
-from odoo import fields, SUPERUSER_ID
+from odoo import fields, SUPERUSER_ID, Command
 
 from odoo.exceptions import UserError
 from odoo.tests import common, new_test_user
@@ -365,3 +365,33 @@ class TestTimesheetHolidays(TestCommonTimesheet):
         time_off.with_user(SUPERUSER_ID).action_validate()
 
         self.assertEqual(time_off.state, 'validate', "The time off for a fully flexible employee should be validated")
+
+    @freeze_time("2019-5-28 08:00:00")
+    def test_date_to_assign_project(self):
+        company_0, company_1 = self.env['res.company'].create([{
+            "name": "Test company 0",
+        },
+            {
+                "name": "Test company 1",
+            }])
+
+        self.env['resource.calendar.leaves'].create([{
+            'name': "Public Holiday for company 0",
+            'company_id': company_0.id,
+            'date_from': datetime(2019, 5, 27, 0, 0, 0),
+            'date_to': datetime(2019, 5, 29, 23, 0, 0),
+            'resource_id': False,
+            'time_type': "leave",
+        }])
+        project = self.env['project.project'].with_company(company_1).create({'name': 'Project for company 1'})
+        task = self.env['project.task'].with_company(company_1).create({
+            'name': 'Task for company 1',
+            'project_id': project.id,
+            'create_date': datetime(2019, 5, 28, 10, 0, 0),
+            'user_ids': False
+        })
+        with freeze_time("2019-05-28 14:00:00"):
+            task.user_ids = [Command.set([self.user_employee.id])]
+            task.date_assign = fields.Datetime.now()
+            self.assertEqual(task.working_hours_open, 3.0)
+            self.assertEqual(task.working_days_open, 0.375)

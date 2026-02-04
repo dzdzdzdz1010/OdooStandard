@@ -42,6 +42,9 @@ export class DiscussChannel extends models.ServerModel {
         relation: "discuss.category",
         string: "Discuss Category",
     });
+    display_name_mode = fields.Selection({
+        selection: [["meeting_channel", "Meeting channel name"]],
+    });
     group_public_id = fields.Generic({
         default: () => serverState.groupId,
     });
@@ -258,8 +261,10 @@ export class DiscussChannel extends models.ServerModel {
         return [
             "avatar_cache_key",
             "channel_type",
+            "create_date",
             "create_uid",
             "default_display_mode",
+            "display_name_mode",
             "description",
             "group_public_id",
             "last_interest_dt",
@@ -508,12 +513,20 @@ export class DiscussChannel extends models.ServerModel {
      * @param {number[]} partners_to
      * @param {string} [default_display_mode=undefined]
      * @param {string} name
+     * @param {string} [display_name_mode=undefined]
      * */
-    _create_group(partners_to, default_display_mode, name) {
-        const kwargs = getKwArgs(arguments, "partners_to", "default_display_mode", "name");
+    _create_group(partners_to, default_display_mode, name, display_name_mode) {
+        const kwargs = getKwArgs(
+            arguments,
+            "partners_to",
+            "default_display_mode",
+            "name",
+            "display_name_mode"
+        );
         partners_to = kwargs.partners_to || [];
         default_display_mode = kwargs.default_display_mode;
         name = kwargs.name || "";
+        display_name_mode = kwargs.display_name_mode;
 
         /** @type {import("mock_models").DiscussChannel} */
         const DiscussChannel = this.env["discuss.channel"];
@@ -527,6 +540,7 @@ export class DiscussChannel extends models.ServerModel {
                 Command.create({ partner_id: partner.id })
             ),
             default_display_mode,
+            display_name_mode,
             name,
         });
         this._broadcast(

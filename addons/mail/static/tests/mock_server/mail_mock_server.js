@@ -1143,7 +1143,8 @@ function _process_request_for_all(store, name, params, context = {}) {
         const channelId = DiscussChannel._create_group(
             params.partners_to,
             params.default_display_mode,
-            params.name
+            params.name,
+            params.display_name_mode
         );
         store.resolve_data_request({ channel: mailDataHelpers.Store.one(channelId) });
     }

@@ -274,6 +274,7 @@ export class Store extends BaseStore {
         /** @type {import("models").DiscussChannel} */
         const channel = await this.createGroupChat({
             default_display_mode: "video_full_screen",
+            display_name_mode: "meeting_channel",
             partners_to: [this.self.id],
         });
         await this.chatHub.initPromise;

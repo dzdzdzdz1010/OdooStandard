@@ -87,6 +87,7 @@ class DiscussChannelWebclientController(WebclientController):
                 params["partners_to"],
                 params.get("default_display_mode", False),
                 params.get("name", ""),
+                params.get("display_name_mode", False),
             )
         store.resolve_data_request(
             lambda res: res.one("channel", "_store_channel_fields", value=resolve_channel),

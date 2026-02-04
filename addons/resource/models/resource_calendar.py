@@ -561,6 +561,17 @@ class ResourceCalendar(models.Model):
         for resource in resources_list:
             if resource and resource._is_fully_flexible():
                 continue
+            if resource and resource._is_flexible():
+                leaves = self.env['resource.calendar.leaves'].search([
+                    ('resource_id', 'in', [False, resource.id]),
+                    ('date_from', '<', end_dt),
+                    ('date_to', '>', start_dt),
+                    ('calendar_id', 'in', [False, resource.calendar_id.id]),
+                    ('company_id', '=', resource.company_id.id)
+                ])
+                if leaves:
+                    result[resource.id] = [(ph.date_from.astimezone(utc), ph.date_to.astimezone(utc)) for ph in leaves]
+                continue
             work_intervals = [(start, stop) for start, stop, meta in resources_work_intervals[resource.id]]
             # start + flatten(intervals) + end
             work_intervals = [start_dt] + list(chain.from_iterable(work_intervals)) + [end_dt]

@@ -1,6 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models
+from odoo.fields import Domain
 
 
 class ProductPricelistReport(models.AbstractModel):
@@ -32,10 +33,13 @@ class ProductPricelistReport(models.AbstractModel):
         ProductClass = self.env[active_model]
 
         products = ProductClass.browse(active_ids) if active_ids else []
-        products_data = [
-            self._get_product_data(is_product_tmpl, product, pricelist, quantities, date)
-            for product in products
-        ]
+
+        products_data = []
+
+        for product in products:
+            products_data.extend(
+                self._get_product_data(is_product_tmpl, product, pricelist, quantities, date),
+            )
 
         # We display a row with the category name in the xml every time
         # the category changes, so we need to make sure that the products list
@@ -54,24 +58,49 @@ class ProductPricelistReport(models.AbstractModel):
             'date': date,
         }
 
-    def _get_product_data(self, is_product_tmpl, product, pricelist, quantities, date):
+    def _get_product_data(self, is_product_tmpl, product, pricelist, quantities, date, uom=None):
         product = product.with_context(display_default_code=False)
-        data = {
-            'id': product.id,
-            'name': (is_product_tmpl and product.name) or product.display_name,
-            'price': dict.fromkeys(quantities, 0.0),
-            'uom': product.uom_id.name,
-            'default_code': product.default_code,
-            'barcode': product.barcode,
-            'category': product.categ_id.name,
-        }
-        for qty in quantities:
-            data['price'][qty] = pricelist._get_product_price(product, qty, date=date)
 
-        if is_product_tmpl and product.product_variant_count > 1:
-            data['variants'] = [
-                self._get_product_data(False, variant, pricelist, quantities, date)
-                for variant in product.product_variant_ids
-            ]
+        data = []
+
+        product_uoms = uom or set(
+            self._get_related_uoms(pricelist, product, is_product_tmpl)
+            + product.uom_id
+        )
+
+        for uom in product_uoms:
+            data_dict = {
+                'id': product.id,
+                'name': (is_product_tmpl and product.name) or product.display_name,
+                'price': dict.fromkeys(quantities, 0.0),
+                'uom': uom.name,
+                'default_code': product.default_code,
+                'barcode': product.barcode,
+                'category': product.categ_id.name,
+            }
+
+            for qty in quantities:
+                data_dict['price'][qty] = pricelist._get_product_price(product, qty, date=date, uom=uom)
+
+            if is_product_tmpl and product.product_variant_count > 1:
+                data_dict['variants'] = []
+
+                for variant in product.product_variant_ids:
+                    data_dict['variants'].extend(
+                        self._get_product_data(False, variant, pricelist, quantities, date, uom),
+                    )
+
+            data.append(data_dict)
 
         return data
+
+    def _get_related_uoms(self, pricelist, product, is_product_tmpl):
+        applied_on_value = '1_product' if is_product_tmpl else '0_product_variant'
+        product_field = 'product_tmpl_id' if is_product_tmpl else 'product_id'
+
+        domain = (
+            Domain('applied_on', '=', applied_on_value)
+            & Domain(product_field, '=', product.id)
+        ) | Domain('applied_on', '=', '3_global')
+
+        return pricelist.item_ids.filtered_domain(domain).mapped('uom_ids')

@@ -1,0 +1,33 @@
+<templates>
+    <t t-inherit="mass_mailing.dynamicRecordOption" t-inherit-mode="extension">
+        <xpath expr="." position="inside">
+            <t t-if="getElementDataModel() === 'event.event'">
+                <t t-if="getElementFragmentId() === '1-column'">
+                    <t t-set="fragmentTemplateName" t-value="'website_mass_mailing_event.s_dynamic_event_card_fragment'"/>
+                </t>
+                <t t-elif="getElementFragmentId() === 'x-column'">
+                    <t t-set="fragmentTemplateName" t-value="'website_mass_mailing_event.s_dynamic_events_fragment'"/>
+                </t>
+                <t t-elif="getElementFragmentId() === '1-aside'">
+                    <t t-set="fragmentTemplateName" t-value="'website_mass_mailing_event.s_dynamic_event_aside_fragment'"/>
+                </t>
+
+                <BuilderRow label.translate="Event">
+                    <BuilderMany2One
+                        id="'select_event_opt'"
+                        fields="[]"
+                        action="'selectRecordAction'"
+                        model="'event.event'"
+                        domain="[]"
+                        preview="false"
+                        allowUnselect="false"
+                        actionParam="{
+                            model: 'event.event',
+                            fragmentTemplate: fragmentTemplateName,
+                            }"
+                        />
+                </BuilderRow>
+            </t>
+        </xpath>
+    </t>
+</templates>

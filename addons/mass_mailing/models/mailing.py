@@ -1167,6 +1167,15 @@ class MailingMailing(models.Model):
             if mailings:
                 mailings._action_send_statistics()
 
+    @api.model
+    def render_dynamic_template(self, template_key, model, id):
+        if template_key.startswith('.s_dynamic') or not template_key.endswith('_fragment'):
+            return ''
+        record = self.env[model].browse([id])
+        return self.env['ir.qweb'].with_context(inherit_branding=False)._render(template_key, dict(
+            record=record,
+        ))
+
     # ------------------------------------------------------
     # STATISTICS
     # ------------------------------------------------------

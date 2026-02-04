@@ -1,0 +1,180 @@
+<odoo>
+    <template id="s_products" name="Products (Mailing)">
+        <section class="s_mail_block_event o_mail_snippet_general">
+            <div class="container">
+                <div class="row align-items-stretch">
+                    <t t-foreach="[1,2,3]" t-as="key">
+                        <div class="col-md-4 col-12 s_dynamic_record d-flex flex-column pt16 pb16"
+                            data-model="product.template" data-fragment-id="x-column"
+                            style="padding-left: 16px !important; padding-right: 16px !important;">
+                            <div class="card rounded d-flex flex-column h-100">
+                                <img class="card-img-top o_editable_media rounded" alt="Example Image" style="object-fit: cover;
+                                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                                    t-attf-src="/website_sale/static/src/img/product_previews/product_{{key}}.jpg"
+                                    t-attf-data-original-src="/website_sale/static/src/img/product_previews/product_{{key}}.jpg"/>
+                                <div class="card-body" aria-label="Product information">
+                                    <h3 class="card-title text-break">Select the products you want to display!</h3>
+                                    <p><span class="text-600">Click on this block, then select products using the panel on the right.</span></p>
+                                    <div class="mt-auto">
+                                        <p aria-label="Price information">
+                                            <strong class="mb-0">$40</strong>
+                                            <s class="text-600">$50</s>
+                                        </p>
+                                        <a class="w-100 d-block btn btn-primary text-center" href="#" target="_blank" role="button">
+                                            Buy Now
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_product_card">
+        <section class="s_text_image o_mail_snippet_general">
+            <div class="container s_dynamic_record s_text_block o_cc" data-model="product.template" data-fragment-id="1-column">
+                <div class="card d-flex flex-column">
+                    <div class="o_not_editable">
+                        <img class="card-img-top o_editable_media rounded" style="max-height: 250px; object-fit: cover;
+                            --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                            src="/website_sale/static/src/img/product_previews/product_1.jpg" alt="Example Image"
+                            data-original-src="/website_sale/static/src/img/product_previews/product_1.jpg"/>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title text-break">Select the products you want to display!</h3>
+                        <p><span class="text-600">Click on this block, then select products using the panel on the right.</span></p>
+                        <p aria-label="Price information">
+                            <strong class="mb-0">
+                                $20
+                            </strong>
+                            <s class="text-600 mx-1 mb-0">
+                                $25
+                            </s>
+                        </p>
+                        <a class="w-100 d-block btn btn-primary text-center" href="#" target="_blank" role="button">
+                            Buy Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_product_aside">
+        <section class="s_text_image o_mail_snippet_general o_colored_level">
+            <div class="container s_dynamic_record s_text_block o_cc" contenteditable="true" data-model="product.template" data-fragment-id="1-aside">
+                <div class="card d-flex flex-row align-items-stretch">
+                    <div class="o_not_editable" style="max-width: 40%">
+                        <img class="card-img-top o_editable_media rounded" data-name="Example Image" style="object-fit: cover;
+                            --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                            src="/website_sale/static/src/img/product_previews/product_2.jpg"
+                            data-original-src="/website_sale/static/src/img/product_previews/product_2.jpg"/>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title text-break">Select the products you want to display!</h3>
+                        <p><span class="text-600">Click on this block, then select products using the panel on the right.</span></p>
+                        <p class="mt-auto" aria-label="Price information">
+                            <strong class="mb-0">
+                                $20
+                            </strong>
+                            <s class="text-600 mx-1 mb-0">
+                                $25
+                            </s>
+                        </p>
+                        <a class="d-block btn btn-primary" href="#" target="_blank" role="button">
+                            Buy Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="mass_mailing_sale.s_dynamic_products_fragment">
+        <div class="card rounded d-flex flex-column h-100" t-att-data-product-id="record.id">
+            <div class="o_not_editable">
+                <img class="card-img-top o_editable_media rounded" t-attf-data-name="{{record.display_name}} Image"
+                    t-att-src="record.image_1024 and image_data_uri(record.image_1024) or '/web/static/img/placeholder.png'" t-attf-alt="{{record.name}} Image"
+                    style="object-fit: cover;
+                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"/>
+            </div>
+            <div class="card-body" aria-label="Product information">
+                <h3 class="card-title text-break" t-out="record.name or 'Product Name'"/>
+                <p>
+                    <span class="text-600" t-out="record.description_sale or 'Add a description...'"/>
+                </p>
+                <div class="text-600 mt-auto">
+                    <p aria-label="Price information">
+                        <strong class="mb-0">
+                            <t t-out="record.list_price" t-options="{'widget': 'monetary', 'display_currency': record.currency_id}"/>
+                        </strong>
+                        <s class="text-600 mx-1 mb-0" t-if="record.standard_price">
+                            <t t-out="record.standard_price" t-options="{'widget': 'monetary', 'display_currency': record.currency_id}"/>
+                        </s>
+                    </p>
+                    <a class="w-100 d-block btn btn-primary text-center" href="#" target="_blank" role="button">
+                        Buy Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="mass_mailing_sale.s_dynamic_product_card_fragment">
+        <div class="card d-flex flex-column">
+            <div class="card-header o_not_editable">
+                <img class="card-img-top o_editable_media rounded" style="max-height: 250px; object-fit: cover;
+                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                    t-attf-data-name="{{record.display_name}} Image"
+                    t-att-src="record.image_1024 and image_data_uri(record.image_1024) or '/web/static/img/placeholder.png'" t-attf-alt="{{record.name}} Image"/>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="card-title text-break" t-out="record.name or 'Product Name'"/>
+                <p>
+                    <span class="text-600" t-out="record.description_sale or 'Add a description...'"/>
+                </p>
+                <p aria-label="Price information">
+                    <strong class="mb-0">
+                        <t t-out="record.list_price" t-options="{'widget': 'monetary', 'display_currency': record.currency_id}"/>
+                    </strong>
+                    <s class="text-600 mx-1 mb-0" t-if="record.standard_price">
+                        <t t-out="record.standard_price" t-options="{'widget': 'monetary', 'display_currency': record.currency_id}"/>
+                    </s>
+                </p>
+                <a class="w-100 d-block btn btn-primary text-center" href="#" target="_blank" role="button">
+                    Buy Now
+                </a>
+            </div>
+        </div>
+    </template>
+
+    <template id="mass_mailing_sale.s_dynamic_products_aside_fragment">
+        <div class="card d-flex flex-row align-items-stretch">
+            <div class="o_not_editable"  style="max-width: 40%;">
+                <img class="card-img-top o_editable_media rounded" style="object-fit: cover; 
+                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                    t-att-src="record.image_1024 and image_data_uri(record.image_1024) or '/web/static/img/placeholder.png'" t-attf-alt="{{record.name}} Image"/>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <h3 class="card-title text-break" t-out="record.name or 'Product Name'"/>
+                <p>
+                    <span class="text-600" t-out="record.description_sale or 'Add a description...'"/>
+                </p>
+                <p class="mt-auto" aria-label="Price information">
+                    <strong class="mb-0">
+                        <t t-out="record.list_price" t-options="{'widget': 'monetary', 'display_currency': record.currency_id}"/>
+                    </strong>
+                    <s class="text-600 mx-1 mb-0" t-if="record.standard_price">
+                        <t t-out="record.standard_price" t-options="{'widget': 'monetary', 'display_currency': record.currency_id}"/>
+                    </s>
+                </p>
+                <a class="d-block btn btn-primary" href="#" target="_blank" role="button">
+                    Buy Now
+                </a>
+            </div>
+        </div>
+    </template>
+</odoo>

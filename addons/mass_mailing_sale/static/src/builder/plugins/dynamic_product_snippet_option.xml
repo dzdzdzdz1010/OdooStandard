@@ -1,0 +1,32 @@
+<templates>
+    <t t-inherit="mass_mailing.dynamicRecordOption" t-inherit-mode="extension">
+        <xpath expr="." position="inside">
+            <t t-if="getElementDataModel() === 'product.template'">
+                <t t-if="getElementFragmentId() === '1-column'">
+                    <t t-set="fragmentTemplateName" t-value="'mass_mailing_sale.s_dynamic_product_card_fragment'"/>
+                </t>
+                <t t-elif="getElementFragmentId() === 'x-column'">
+                    <t t-set="fragmentTemplateName" t-value="'mass_mailing_sale.s_dynamic_products_fragment'"/>
+                </t>
+                <t t-elif="getElementFragmentId() === '1-aside'">
+                    <t t-set="fragmentTemplateName" t-value="'mass_mailing_sale.s_dynamic_products_aside_fragment'"/>
+                </t>
+            </t>
+            <BuilderRow label.translate="Product" t-if="getElementDataModel() == 'product.template'">
+                <BuilderMany2One
+                    id="'select_product_opt'"
+                    fields="[]"
+                    action="'selectRecordAction'"
+                    model="'product.template'"
+                    domain="[]"
+                    preview="false"
+                    allowUnselect="false"
+                    actionParam="{
+                        model: 'product.template',
+                        fragmentTemplate: fragmentTemplateName,
+                    }"
+                />
+            </BuilderRow>
+        </xpath>
+    </t>
+</templates>

@@ -1,0 +1,167 @@
+<odoo>
+    <template id="s_events" name="Events (Mailing)">
+        <section class="s_mail_block_event o_mail_snippet_general">
+            <div class="container">
+                <div class="row align-items-stretch">
+                    <t t-foreach="[1,2]" t-as="key">
+                        <div class="col-md-6 col-12 pt32 pb32 d-flex flex-column s_dynamic_record"
+                            data-model="event.event" data-fragment-id="x-column"
+                            style="padding-left: 16px !important; padding-right: 16px !important;">
+                            <div class="card rounded d-flex flex-column h-100" style="border-radius: 5px !important; border-color: rgb(233, 236, 239) !important;">
+                                <img class="card-img-top o_editable_media rounded" alt="Example Image" style="object-fit: cover;
+                                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                                    t-attf-src="/web/image/mass_mailing.s_event_default_image_{{key}}"
+                                    t-attf-data-original-src="/web/image/mass_mailing.s_event_default_image_{{key}}"/>
+                                <div class="card-body d-flex flex-column">
+                                    <h3 class="card-title">
+                                        <strong>Pick an event to promote it.</strong>
+                                    </h3>
+                                    <p><span class="text-o-color-1">Click on this block and select your events in the right-hand menu.</span></p>
+                                    <p><span class="text-o-color-1">Details will appear here</span></p>
+                                    <div class="mt-auto">
+                                        <a href="#" target="_blank" class="btn btn-primary">Register Now</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_event_card" name="Event (Mailing)">
+        <section class="s_text_image o_mail_snippet_general">
+            <div class="container s_dynamic_record s_text_block o_cc" data-model="event.event" data-fragment-id="1-column">
+                <div class="card d-flex flex-column">
+                    <div class="o_not_editable">
+                        <img class="card-img-top o_editable_media rounded" style="max-height: 250px; object-fit: cover;
+                            --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                            src="/web/image/mass_mailing.s_event_default_image_2" alt="Example Image"
+                            data-original-src="/web/image/mass_mailing.s_event_default_image_2"/>
+                    </div>
+                    <div class="card-body text-center">
+                        <h3 class="card-title"><strong>Pick an event to promote it!</strong></h3>
+                        <p><span class="text-o-color-1">Click on this block and select your events in the right-hand menu.</span></p>
+                        <p><span class="text-o-color-1">Details will appear here</span></p>
+                        <div class="mt-auto">
+                            <a href="#" target="_blank" class="btn btn-primary">Register Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="s_event_aside" name="Event (Mailing)">
+        <section class="s_text_image o_mail_snippet_general">
+            <div class="container s_dynamic_record s_text_block o_cc" data-model="event.event" data-fragment-id="1-aside">
+                <div class="card d-flex flex-row align-items-stretch">
+                    <div class="o_not_editable" style="min-width: 40%">
+                        <img class="card-img-top o_editable_media h-100 rounded" data-name="Example Image" style="object-fit: cover;
+                            --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                            src="/web/image/mass_mailing.s_event_default_image_1"
+                            data-original-src="/web/image/mass_mailing.s_event_default_image_1"/>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <h3 class="card-title"><strong>Pick an event to promote it!</strong></h3>
+                        <p><span class="text-o-color-1">Click on this block and select your events in the right-hand menu.</span></p>
+                        <p class="pb-5"><span class="text-o-color-1">Details will appear here</span></p>
+                        <div class="mt-auto">
+                            <a href="#" target="_blank" class="btn btn-primary">Register Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </template>
+
+    <template id="website_mass_mailing_event.s_dynamic_events_fragment">
+        <div class="card rounded d-flex flex-column h-100" style="border-radius: 5px !important; border-color: rgb(233, 236, 239) !important;">
+            <div class="o_not_editable">
+                <img class="card-img-top o_editable_media rounded" t-attf-data-name="{{record.display_name}} Image"
+                    t-att-src="record._get_cover_url()" t-attf-alt="{{record.name}} Image"
+                    t-att-data-original-src="record._get_cover_url()"
+                    style="object-fit: cover;
+                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"/>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title">
+                    <strong t-out="record.display_name"/>
+                </h3>
+                <p>
+                    <span class="text-o-color-1" t-out="record.subtitle or 'Add a description...'"/>
+                </p>
+                <p class="mb-0 me-3">
+                    <span class="h4-fs">
+                        <span t-out="record.date_begin" t-options="{'widget': 'datetime', 'date_only': 'true', 'format': 'long', 'tz_name': record.date_tz}"/> at 
+                        <span t-out="record.date_begin" t-options="{'widget': 'datetime', 'time_only': 'true', 'format': 'short', 'tz_name': record.date_tz}"/>
+                    </span>
+                </p>
+                <p t-out="record.address_id" t-options="{'widget': 'contact', 'fields': ['city'], 'no_marker': 'true'}"/>
+                <div class="mt-auto">
+                    <a t-attf-href="{{record.event_share_url}}/register" target="_blank" class="btn btn-primary">Register Now</a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="website_mass_mailing_event.s_dynamic_event_card_fragment">
+        <div class="card d-flex flex-column">
+            <div class="card-header o_not_editable">
+                <img class="card-img-top o_editable_media rounded" style="max-height: 250px; object-fit: cover;
+                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                    t-attf-data-name="{{record.display_name}} Image"
+                    t-att-src="record._get_cover_url()" t-attf-alt="{{record.name}} Image"
+                    t-att-data-original-src="record._get_cover_url()"/>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="card-title"><strong t-out="record.display_name"/></h3>
+                <p>
+                    <span class="text-o-color-1" t-out="record.subtitle or 'Add a description...'"/>
+                </p>
+                <p class="mb-0 me-3">
+                    <span class="h4-fs">
+                        <span t-out="record.date_begin" t-options="{'widget': 'datetime', 'date_only': 'true', 'format': 'long', 'tz_name': record.date_tz}"/> at 
+                        <span t-out="record.date_begin" t-options="{'widget': 'datetime', 'time_only': 'true', 'format': 'short', 'tz_name': record.date_tz}"/>
+                    </span>
+                </p>
+                <p class="d-flex justify-content-center">
+                    <p t-out="record.address_id" t-options="{'widget': 'contact', 'fields': ['city'], 'no_marker': 'true'}"/>
+                </p>
+                <div class="mt-auto">
+                    <a t-attf-href="{{record.event_share_url}}/register" target="_blank" class="btn btn-primary">Register Now</a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="website_mass_mailing_event.s_dynamic_event_aside_fragment">
+        <div class="card d-flex flex-row align-items-stretch">
+            <div class="o_not_editable"  style="width: 40%;">
+                <img class="card-img-top o_editable_media rounded h-100" style="object-fit: cover;
+                    --box-border-bottom-left-radius: 0px; --box-border-bottom-right-radius: 0px; --box-border-top-right-radius: 0px; --box-border-top-left-radius: 0px;"
+                    t-att-src="record._get_cover_url()" t-attf-alt="{{record.name}} Image"
+                    t-att-data-original-src="record._get_cover_url()"/>
+            </div>
+            <div class="card-body">
+                <h3 class="card-title"><strong t-out="record.display_name"/></h3>
+                <p>
+                    <span class="text-o-color-1" t-out="record.subtitle or 'Add a description...'"/>
+                </p>
+                <p class="mb-0 me-3">
+                    <span class="h4-fs">
+                        <span t-out="record.date_begin" t-options="{'widget': 'datetime', 'date_only': 'true', 'format': 'long', 'tz_name': record.date_tz}"/> at 
+                        <span t-out="record.date_begin" t-options="{'widget': 'datetime', 'time_only': 'true', 'format': 'short', 'tz_name': record.date_tz}"/>
+                    </span>
+                </p>
+                <div itemprop="location">
+                    <p t-out="record.address_id" itemprop="location" t-options="{'widget': 'contact', 'fields': ['city'], 'no_marker': 'true'}"/>
+                </div>
+                <div class="mt-auto">
+                    <a t-attf-href="{{record.event_share_url}}/register" target="_blank" class="btn btn-primary">Register Now</a>
+                </div>
+            </div>
+        </div>
+    </template>
+</odoo>

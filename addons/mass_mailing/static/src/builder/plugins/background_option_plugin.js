@@ -4,7 +4,7 @@ import { registry } from "@web/core/registry";
 
 export class MailingBackgroundOption extends BackgroundOption {
     static selector =
-        ".s_masonry_block > .container > .row > div:not(:has(.row)), .s_cover > .container > .row > div, .s_reviews_wall";
+        ".s_masonry_block > .container > .row > div:not(:has(.row)), .s_cover > .container > .row > div, .s_reviews_wall, .s_dynamic_record .oe_img_bg";
     static props = {
         ...BackgroundOption.props,
         withColors: { type: Boolean, optional: true },

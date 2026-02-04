@@ -368,6 +368,7 @@ class DiscussChannelMember(models.Model):
             res,
             partner_fields=lambda res: (
                 res.attr("name"),
+                res.one("main_user_id", ["share"]),
                 res.from_method("_store_avatar_fields"),
                 res.from_method("_store_im_status_fields"),
                 res.from_method("_store_mention_fields"),

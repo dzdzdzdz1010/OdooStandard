@@ -78,6 +78,8 @@ import { selectElements } from "@html_editor/utils/dom_traversal";
  * @typedef {((el: HTMLElement) => boolean)[]} is_draggable_handlers
  */
 
+const quoteCarouselSelector =
+    "section[data-name='Quotes'] > div, section[data-name='Quotes Minimal'] > div";
 export class DragAndDropPlugin extends Plugin {
     static id = "dragAndDrop";
     static dependencies = ["dropzone", "history", "operation", "builderOptions"];
@@ -465,6 +467,14 @@ export class DragAndDropPlugin extends Plugin {
 
                 dragAndDropResolve();
                 this.dependencies.builderOptions.updateContainers(this.overlayTarget);
+                // Update index of each quote carousel slide after reordering.
+                const quoteCarouselEl = this.overlayTarget.closest(quoteCarouselSelector);
+                if (quoteCarouselEl) {
+                    const carouselSlideEls = quoteCarouselEl.querySelectorAll(".carousel-slide");
+                    carouselSlideEls.forEach((carouselSlideEl, index) => {
+                        carouselSlideEl.dataset.index = index;
+                    });
+                }
             },
         };
 

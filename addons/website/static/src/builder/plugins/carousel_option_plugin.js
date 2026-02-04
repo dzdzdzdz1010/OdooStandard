@@ -8,7 +8,11 @@ import { withSequence } from "@html_editor/utils/resource";
 import { between } from "@html_builder/utils/option_sequence";
 import { WEBSITE_BACKGROUND_OPTIONS, BOX_BORDER_SHADOW } from "@website/builder/option_sequence";
 import { selectElements } from "@html_editor/utils/dom_traversal";
-import { BaseOptionComponent } from "@html_builder/core/utils";
+import { BaseOptionComponent, useDomState } from "@html_builder/core/utils";
+import { patch } from "@web/core/utils/patch";
+import { MovePlugin } from "@html_builder/core/move_plugin";
+import { RemovePlugin } from "@html_builder/core/remove_plugin";
+import { ClonePlugin } from "@html_builder/core/clone_plugin";
 
 /**
  * @typedef { Object } CarouselOptionShared
@@ -18,6 +22,9 @@ import { BaseOptionComponent } from "@html_builder/core/utils";
  */
 
 export const CAROUSEL_CARDS_SEQUENCE = between(WEBSITE_BACKGROUND_OPTIONS, BOX_BORDER_SHADOW);
+
+export const quoteCarouselSelector =
+    "section[data-name='Quotes'] > div, section[data-name='Quotes Minimal'] > div";
 
 const carouselWrapperSelector =
     ".s_carousel_wrapper, .s_carousel_intro_wrapper, .s_carousel_cards_wrapper, .s_quotes_carousel_wrapper";
@@ -33,6 +40,12 @@ export class CarouselOption extends BaseOptionComponent {
     static exclude =
         ".s_carousel_intro_wrapper, .s_carousel_cards_wrapper, .s_quotes_carousel_wrapper:has(>.s_quotes_carousel_compact)";
     static applyTo = ":scope > .carousel";
+    setup() {
+        super.setup();
+        this.state = useDomState((el) => ({
+            isSingleMode: el.closest(quoteCarouselSelector) && el.dataset.scrollMode === "single",
+        }));
+    }
 }
 
 export class CarouselBottomControllersOption extends BaseOptionComponent {
@@ -47,6 +60,12 @@ export class CarouselCardsOption extends BaseOptionComponent {
     static applyTo = ".s_carousel_cards";
 }
 
+export class CarouselQuotesLayoutOption extends BaseOptionComponent {
+    static template = "website.CarouselQuotesLayoutOptions";
+    static selector = "section[data-name='Quotes'], section[data-name='Quotes Minimal']";
+    static applyTo = ".s_quotes_carousel";
+}
+
 export class CarouselOptionPlugin extends Plugin {
     static id = "carouselOption";
     static dependencies = ["clone", "builderOptions", "builderActions"];
@@ -58,6 +77,7 @@ export class CarouselOptionPlugin extends Plugin {
             CarouselOption,
             CarouselBottomControllersOption,
             withSequence(CAROUSEL_CARDS_SEQUENCE, CarouselCardsOption),
+            CarouselQuotesLayoutOption,
         ],
         builder_header_middle_buttons: {
             Component: CarouselItemHeaderMiddleButtons,
@@ -83,6 +103,7 @@ export class CarouselOptionPlugin extends Plugin {
             SlideCarouselAction,
             ToggleControllersAction,
             ToggleCardImgAction,
+            UpdateCarouselLayoutAction,
         },
         on_cloned_handlers: this.onCloned.bind(this),
         on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
@@ -121,16 +142,36 @@ export class CarouselOptionPlugin extends Plugin {
     }
 
     /**
+     * Return the active or focused slide element.
+     *
+     * @param {HTMLElement} editingElement the carousel element.
+     */
+    getActiveOrFocusedSlide(editingElement) {
+        const className =
+            editingElement.dataset.scrollMode === "single" ? "o-focused-slide" : "active";
+        return editingElement.querySelector(`.carousel-item.${className}`);
+    }
+
+    /**
      * Adds a slide.
      *
      * @param {HTMLElement} editingElement the carousel element.
      */
     async addSlide(editingElement) {
         // Clone the active item and remove the "active" class.
-        const activeItemEl = editingElement.querySelector(".carousel-item.active");
+        const activeItemEl = this.getActiveOrFocusedSlide(editingElement);
         const newItemEl = await this.dependencies.clone.cloneElement(activeItemEl, {
             activateClone: false,
         });
+        // No additional handling is required for the Quotes carousel, except
+        // for the compact variant, since the remaining cases are already
+        // covered by the patched Clone plugin.
+        if (
+            editingElement.closest(quoteCarouselSelector) ||
+            newItemEl.classList.contains("s_blockquote")
+        ) {
+            return;
+        }
         newItemEl.classList.remove("active");
 
         // Show the controllers (now that there is always more than one item).
@@ -141,13 +182,15 @@ export class CarouselOptionPlugin extends Plugin {
 
         // Add the new indicator.
         const indicatorsEl = editingElement.querySelector(".carousel-indicators");
-        const newIndicatorEl = this.document.createElement("button");
-        newIndicatorEl.setAttribute("data-bs-target", "#" + editingElement.id);
-        newIndicatorEl.setAttribute("aria-label", _t("Carousel indicator"));
-        indicatorsEl.appendChild(newIndicatorEl);
+        addIndicatorButton("", editingElement.id, indicatorsEl);
 
         // Slide to the new item.
-        await this.slide(editingElement, "next");
+        await slide(
+            editingElement,
+            this.dependencies["builderOptions"],
+            this.slideTimestamp,
+            "next"
+        );
     }
 
     /**
@@ -157,24 +200,46 @@ export class CarouselOptionPlugin extends Plugin {
      */
     async removeSlide(editingElement) {
         const itemEls = [...editingElement.querySelectorAll(".carousel-item")];
+        const scrollMode = editingElement.dataset.scrollMode;
+        const numberOfElements = parseInt(editingElement.dataset.numberOfElements);
+        const shouldSlide = scrollMode === "all" || itemEls.length > numberOfElements;
+        const isQuoteCarousel = editingElement.closest(quoteCarouselSelector);
         const newLength = itemEls.length - 1;
         if (newLength > 0) {
-            const activeItemEl = editingElement.querySelector(".carousel-item.active");
+            const selectedItemEl = this.getActiveOrFocusedSlide(editingElement);
             const activeIndicatorEl = editingElement.querySelector(
                 ".carousel-indicators > .active"
             );
-            // Slide to the previous item.
-            await this.slide(editingElement, "prev");
+            // Should not slide if carousel items count is less than or equal
+            // to numberOfElements especially in single scroll mode.
+            if (shouldSlide || !isQuoteCarousel) {
+                // Slide to the previous item.
+                await slide(
+                    editingElement,
+                    this.dependencies["builderOptions"],
+                    this.slideTimestamp,
+                    "prev"
+                );
+            }
 
             // Remove the carousel item and the indicator.
-            activeItemEl.remove();
-            activeIndicatorEl.remove();
+            selectedItemEl.remove();
+            activeIndicatorEl?.remove();
 
-            // Hide the controllers if there is only one slide left.
+            // If we didn't slide and the removed item was active, then we need
+            // to manually activate the first slide for quote carousel.
+            if (!shouldSlide && selectedItemEl.classList.contains("active") && isQuoteCarousel) {
+                const firstSlideEl = editingElement.querySelector(".carousel-slide");
+                firstSlideEl.classList.add("active");
+            }
+
+            // Hide the controllers if the slide count is one or less than
+            // numberOfElements as per scrollMode.
             const controlEls = editingElement.querySelectorAll(carouselControlsSelector);
-            controlEls.forEach((controlEl) =>
-                controlEl.classList.toggle("d-none", newLength === 1)
-            );
+            const isSingleMode = editingElement.dataset.scrollMode === "single";
+            const shouldHide = isSingleMode ? newLength <= numberOfElements : newLength <= 1;
+            controlEls.forEach((controlEl) => controlEl.classList.toggle("d-none", shouldHide));
+            updateSlideIndex(editingElement);
         }
     }
 
@@ -185,67 +250,12 @@ export class CarouselOptionPlugin extends Plugin {
      * @param {String} direction "prev" or "next".
      */
     async slideCarousel(editingElement, direction) {
-        await this.slide(editingElement, direction);
-    }
-
-    /**
-     * Slides the carousel in the given direction.
-     *
-     * @param {String|Number} direction the direction in which to slide:
-     *     - "prev": the previous slide;
-     *     - "next": the next slide;
-     *     - number: a slide number.
-     * @param {Element} editingElement the carousel element.
-     * @returns {Promise}
-     */
-    slide(editingElement, direction) {
-        editingElement.addEventListener("slide.bs.carousel", () => {
-            this.slideTimestamp = window.performance.now();
-        });
-
-        return new Promise((resolve) => {
-            editingElement.addEventListener(
-                "slid.bs.carousel",
-                () => {
-                    // slid.bs.carousel is most of the time fired too soon by
-                    // bootstrap since it emulates the transitionEnd with a
-                    // setTimeout. We wait here an extra 20% of the time before
-                    // retargeting edition, which should be enough...
-                    const slideDuration = window.performance.now() - this.slideTimestamp;
-                    setTimeout(() => {
-                        // Setting the active indicator manually, as Bootstrap
-                        // could not do it because the `data-bs-slide-to`
-                        // attribute is not here in edit mode anymore.
-                        const itemEls = editingElement.querySelectorAll(".carousel-item");
-                        const activeItemEl = editingElement.querySelector(".carousel-item.active");
-                        const activeIndex = [...itemEls].indexOf(activeItemEl);
-                        const indicatorEls = editingElement.querySelectorAll(
-                            ".carousel-indicators > *"
-                        );
-                        const activeIndicatorEl = [...indicatorEls][activeIndex];
-                        activeIndicatorEl.classList.add("active");
-                        activeIndicatorEl.setAttribute("aria-current", "true");
-
-                        // Activate the active item.
-                        this.dependencies["builderOptions"].setNextTarget(activeItemEl);
-
-                        resolve();
-                    }, 0.2 * slideDuration);
-                },
-                { once: true }
-            );
-
-            const carouselInstance = window.Carousel.getOrCreateInstance(editingElement, {
-                ride: false,
-                pause: true,
-                keyboard: false,
-            });
-            if (typeof direction === "number") {
-                carouselInstance.to(direction);
-            } else {
-                carouselInstance[direction]();
-            }
-        });
+        await slide(
+            editingElement,
+            this.dependencies["builderOptions"],
+            this.slideTimestamp,
+            direction
+        );
     }
 
     onCloned({ cloneEl }) {
@@ -308,19 +318,30 @@ export class CarouselOptionPlugin extends Plugin {
         if (optionName === "Carousel") {
             const carouselEl = activeItemEl.closest(".carousel");
 
+            itemEls.forEach((itemEl, index) => {
+                itemEl.dataset.index = index;
+            });
+            const scrollMode = carouselEl.dataset.scrollMode;
+            const newPosition = itemEls.indexOf(activeItemEl);
+
             // Replace the content with the new slides.
             const carouselInnerEl = carouselEl.querySelector(".carousel-inner");
-            const newCarouselInnerEl = document.createElement("div");
-            newCarouselInnerEl.classList.add("carousel-inner");
-            newCarouselInnerEl.append(...itemEls);
-            carouselInnerEl.replaceWith(newCarouselInnerEl);
+            carouselInnerEl.replaceChildren(...itemEls);
 
-            // Update the indicators.
-            const newPosition = itemEls.indexOf(activeItemEl);
-            updateCarouselIndicators(carouselEl, newPosition);
-
-            // Activate the active slide.
-            this.dependencies.builderOptions.setNextTarget(activeItemEl);
+            // Update the index of each element.
+            updateSlideIndex(carouselInnerEl);
+            if (scrollMode === "single") {
+                itemEls.forEach((itemEl) => {
+                    itemEl.classList.remove("active", "o-focused-slide");
+                });
+                itemEls[0].classList.add("active", "o-focused-slide");
+                this.dependencies.builderOptions.setNextTarget(itemEls[0]);
+            } else {
+                // Update the indicators.
+                updateCarouselIndicators(carouselEl, newPosition);
+                // Activate the active slide.
+                this.dependencies.builderOptions.setNextTarget(activeItemEl);
+            }
         }
     }
 }
@@ -395,5 +416,271 @@ export class ToggleCardImgAction extends BuilderAction {
         return !!cardImgEl;
     }
 }
+
+export class UpdateCarouselLayoutAction extends BuilderAction {
+    static id = "updateQuotesCarouselLayout";
+
+    apply({ editingElement }) {
+        triggerQuotesCarouselRebuild(editingElement);
+    }
+}
+
+/**
+ * Update the index of each slide.
+ *
+ * @param {HTMLElement} editingElement the carousel element.
+ */
+function updateSlideIndex(editingElement) {
+    const carouselSlideEls = editingElement.querySelectorAll(".carousel-slide");
+    carouselSlideEls.forEach((carouselSlideEl, index) => {
+        carouselSlideEl.dataset.index = index;
+    });
+}
+
+/**
+ * Adds an indicator button to the carousel’s indicator container.
+ *
+ * @param {number} index – The slide index that this indicator represents.
+ * @param {string} editingElementId – The ID of the carousel root element.
+ * @param {HTMLElement} indicatorEl – The indicator container to append button.
+ */
+function addIndicatorButton(index, editingElementId, indicatorEl) {
+    const btnEl = document.createElement("button");
+    btnEl.type = "button";
+    btnEl.dataset.bsTarget = `#${editingElementId}`;
+    btnEl.dataset.bsSlideTo = index.toString();
+    btnEl.setAttribute("aria-label", _t("Carousel indicator"));
+    btnEl.classList.add(...(index === 0 ? ["active"] : []));
+    indicatorEl.appendChild(btnEl);
+}
+
+/**
+ * Replaces all classes on the element that start with given prefix and adds
+ * the provided class.
+ *
+ * @param {HTMLElement} el - The element whose classes will be updated.
+ * @param {string} classToAdd - The class to add to the element.
+ * @param {string} classPrefix - The prefix used to identify classes to remove.
+ */
+function modifyElementClass(el, classToAdd, classPrefix) {
+    const classesToRemove = Array.from(el.classList).filter((cls) => cls.startsWith(classPrefix));
+    el.classList.remove(...classesToRemove);
+    el.classList.add(classToAdd);
+}
+
+/**
+ * Rebuilds the Quotes Carousel Snippet after a layout level changes.
+ *
+ * @param {HTMLElement} editingElement the carousel root element.
+ * @param {string} numberOfElements the number of items per slide.
+ * @param {string} scrollMode the carousel scrolling mode ("single" or "all")
+ */
+function regenerateCarouselLayout(editingElement, numberOfElements, scrollMode) {
+    const carouselInnerEl = editingElement.querySelector(".carousel-inner");
+    const indicatorEl = editingElement.querySelector(".indicators-container");
+    const prevButtonEl = editingElement.querySelector(".carousel-control-prev");
+    const nextButtonEl = editingElement.querySelector(".carousel-control-next");
+    const carouselSlideEls = Array.from(editingElement.querySelectorAll(".carousel-slide"));
+    carouselSlideEls.sort(
+        (slideA, slideB) => parseInt(slideA.dataset.index) - parseInt(slideB.dataset.index)
+    );
+    const layoutSize = parseInt(numberOfElements);
+    const totalSlideCount = carouselSlideEls.length;
+    const colClass = `col-lg-${12 / layoutSize}`;
+
+    // Some necessary cleanup
+    carouselInnerEl.replaceChildren();
+    indicatorEl.replaceChildren();
+    editingElement.style.removeProperty("--o-carousel-item-width-percentage");
+    editingElement.classList.remove("o_carousel_multi_items");
+    indicatorEl.classList.remove("d-none");
+    if (editingElement.classList.contains("o_container_small") && layoutSize > 2) {
+        editingElement.classList.replace("o_container_small", "container");
+    }
+    carouselSlideEls.forEach((carouselSlideEl) =>
+        carouselSlideEl.classList.remove("carousel-item", "active")
+    );
+
+    // It's a workaround to get w-* class based on numberOfElements
+    const widthClass = `w-${Math.min((1 + layoutSize) * 25, 100)}`;
+
+    carouselSlideEls.forEach((carouselSlideEl) => {
+        // To cover all blockquote in single carousel-slide.
+        const blockquoteEls = carouselSlideEl.querySelectorAll(".s_blockquote");
+        blockquoteEls.forEach((blockquoteEl) => modifyElementClass(blockquoteEl, widthClass, "w-"));
+    });
+
+    if (scrollMode === "all" && layoutSize > 1) {
+        const groups = [];
+        for (let i = 0; i < carouselSlideEls.length; i += layoutSize) {
+            groups.push(carouselSlideEls.slice(i, i + layoutSize));
+        }
+        groups.forEach((group, index) => {
+            const carouselItemEl = document.createElement("div");
+            carouselItemEl.className = "carousel-item";
+            carouselItemEl.dataset.name = "Slide";
+            const rowEl = document.createElement("div");
+            rowEl.classList.add("row");
+            group.forEach((carouselSlideEl) => {
+                modifyElementClass(carouselSlideEl, colClass, "col-lg-");
+                carouselSlideEl.dataset.name = "";
+                rowEl.appendChild(carouselSlideEl);
+            });
+            carouselItemEl.appendChild(rowEl);
+            carouselInnerEl.appendChild(carouselItemEl);
+            indicatorEl.classList.add("carousel-indicators");
+            addIndicatorButton(index, editingElement.id, indicatorEl);
+        });
+    } else {
+        carouselSlideEls.forEach((carouselSlideEl, index) => {
+            carouselSlideEl.dataset.name = "Slide";
+            modifyElementClass(carouselSlideEl, colClass, "col-lg-");
+            carouselSlideEl.classList.add("carousel-item");
+            carouselInnerEl.appendChild(carouselSlideEl);
+            addIndicatorButton(index, editingElement.id, indicatorEl);
+        });
+        if (layoutSize !== 1) {
+            editingElement.classList.add("o_carousel_multi_items");
+            editingElement.style.setProperty(
+                "--o-carousel-item-width-percentage",
+                `${100 / numberOfElements}%`
+            );
+            indicatorEl.classList.add("d-none");
+            indicatorEl.classList.remove("carousel-indicators");
+        }
+    }
+    const hideArrows = totalSlideCount <= numberOfElements;
+    [prevButtonEl, nextButtonEl].forEach((btn) => btn?.classList.toggle("d-none", hideArrows));
+    editingElement.dispatchEvent(new CustomEvent("content_changed"));
+}
+
+/**
+ * Function to trigger carousel regeneration.
+ *
+ * @param {HTMLElement} carouselEl the carousel root element.
+ */
+function triggerQuotesCarouselRebuild(carouselEl) {
+    const carouselItemEls = carouselEl.querySelectorAll(".carousel-item");
+    const activeItemEl = carouselEl.querySelector(".carousel-item.active");
+    const oldIndex = [...carouselItemEls].indexOf(activeItemEl);
+    updateSlideIndex(carouselEl);
+    const { numberOfElements, scrollMode } = carouselEl.dataset;
+    regenerateCarouselLayout(carouselEl, numberOfElements, scrollMode);
+    const newCarouselItemEls = carouselEl.querySelectorAll(".carousel-item");
+    const targetIndex = Math.min(oldIndex, newCarouselItemEls.length - 1);
+    newCarouselItemEls[targetIndex].classList.add("active");
+    updateCarouselIndicators(carouselEl, targetIndex);
+}
+
+/**
+ * Slides the carousel in the given direction.
+ *
+ * @param {String|Number} direction the direction in which to slide:
+ *     - "prev": the previous slide;
+ *     - "next": the next slide;
+ *     - number: a slide number.
+ * @param {Element} editingElement the carousel element.
+ * @returns {Promise}
+ */
+async function slide(editingElement, builderOptions, slideTimestamp, direction) {
+    editingElement.addEventListener("slide.bs.carousel", () => {
+        slideTimestamp = window.performance.now();
+    });
+
+    return new Promise((resolve) => {
+        editingElement.addEventListener(
+            "slid.bs.carousel",
+            () => {
+                // slid.bs.carousel is most of the time fired too soon by
+                // bootstrap since it emulates the transitionEnd with a
+                // setTimeout. We wait here an extra 20% of the time before
+                // retargeting edition, which should be enough...
+                const slideDuration = window.performance.now() - slideTimestamp;
+                setTimeout(() => {
+                    // Setting the active indicator manually, as Bootstrap
+                    // could not do it because the `data-bs-slide-to`
+                    // attribute is not here in edit mode anymore.
+                    const itemEls = editingElement.querySelectorAll(".carousel-item");
+                    const activeItemEl = editingElement.querySelector(".carousel-item.active");
+                    const activeIndex = [...itemEls].indexOf(activeItemEl);
+                    updateCarouselIndicators(editingElement, activeIndex);
+
+                    // Activate the active item.
+                    builderOptions.setNextTarget(activeItemEl);
+
+                    resolve();
+                }, 0.2 * slideDuration);
+            },
+            { once: true }
+        );
+
+        const carouselInstance = window.Carousel.getOrCreateInstance(editingElement, {
+            ride: false,
+            pause: true,
+            keyboard: false,
+        });
+        if (typeof direction === "number") {
+            carouselInstance.to(direction);
+        } else {
+            carouselInstance[direction]();
+        }
+    });
+}
+
+patch(MovePlugin.prototype, {
+    onMoveClick(direction) {
+        super.onMoveClick(direction);
+        const parentEl = this.overlayTarget.closest(".row");
+        if (parentEl && parentEl.closest(quoteCarouselSelector)) {
+            updateSlideIndex(parentEl);
+        }
+    },
+});
+
+patch(RemovePlugin.prototype, {
+    removeCurrentTarget(toRemoveEl, optionsTargetEls) {
+        const carouselEl = toRemoveEl.closest(quoteCarouselSelector);
+        const nextTarget = super.removeCurrentTarget(toRemoveEl, optionsTargetEls);
+        if (!carouselEl || toRemoveEl.classList.contains("s_blockquote")) {
+            return nextTarget;
+        }
+        triggerQuotesCarouselRebuild(carouselEl);
+        this.dependencies.builderOptions.setNextTarget(nextTarget);
+        if (carouselEl) {
+            carouselEl.querySelector(".o-focused-slide")?.classList.remove("o-focused-slide");
+            nextTarget.classList.add("o-focused-slide");
+        }
+        return nextTarget;
+    },
+});
+
+patch(ClonePlugin.prototype, {
+    async cloneElement(el, options = {}) {
+        const cloneEl = await super.cloneElement(el, options);
+        const carouselEl = cloneEl.closest(quoteCarouselSelector);
+        // Skip rebuild for non-carousel and for blockquote clone
+        if (!carouselEl || cloneEl.classList.contains("s_blockquote")) {
+            return cloneEl;
+        }
+        const { numberOfElements, scrollMode } = carouselEl.dataset;
+        triggerQuotesCarouselRebuild(carouselEl);
+        const totalSlideCount = carouselEl.querySelectorAll(".carousel-item").length;
+        const isFirstInSlide = Number(cloneEl.dataset.index) % Number(numberOfElements) === 0;
+        const isNotSlide = !cloneEl.classList.contains("carousel-slide");
+        const isSingleMode = scrollMode === "single" && numberOfElements < totalSlideCount;
+        const shouldSlideNext =
+            (isFirstInSlide || isNotSlide || isSingleMode) && totalSlideCount !== 1;
+        if (shouldSlideNext) {
+            await slide(carouselEl, this.dependencies.builderOptions, this.slideTimestamp, "next");
+        }
+        // Focus the cloned element when not sliding or 'isNotSlide' is true.
+        if (!shouldSlideNext || !isNotSlide) {
+            this.dependencies.builderOptions.setNextTarget(cloneEl);
+        }
+        carouselEl.querySelector(".o-focused-slide")?.classList.remove("o-focused-slide");
+        cloneEl.classList.add("o-focused-slide");
+        return cloneEl;
+    },
+});
 
 registry.category("website-plugins").add(CarouselOptionPlugin.id, CarouselOptionPlugin);

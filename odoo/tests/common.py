@@ -368,6 +368,7 @@ class BaseCase(case.TestCase, metaclass=MetaCase):
                 _logger.warning("A patcher (targeting %s.%s) was remaining active at the end of %s, disabling it...", patcher.target, patcher.attribute, cls.__name__)
                 patcher.stop()
         cls.addClassCleanup(check_remaining_patchers)
+
         super().setUpClass()
         if 'standard' in cls.test_tags or 'click_all' in cls.test_tags:
             # if the method is passed directly `patch` discards the session
@@ -831,6 +832,16 @@ class BaseCase(case.TestCase, metaclass=MetaCase):
                 additional_tags.append('is_query_count')
         return additional_tags
 
+# maps a function name to a file in which it can exist for the setattr it
+# triggers to be allowed
+SETATTR_SOURCES = {
+    # model attributes being set from a patcher are fine
+    '__enter__': ('unittest/mock.py',),
+    '__exit__': ('unittest/mock.py',),
+    # lazy_classproperty sets an attribute for itself
+    '__get__': ('odoo/tools/func.py',),
+}
+
 class Like:
     """
         A string-like object comparable to other strings but where the substring
@@ -945,6 +956,31 @@ class TransactionCase(BaseCase):
         cls.registry_start_sequence = cls.registry.registry_sequence
         cls.registry_cache_sequences = dict(cls.registry.cache_sequences)
 
+        actual_setattr = odoo.models.MetaModel.__setattr__
+        def metamodel_setattr(model, key, value):
+            caller = inspect.currentframe().f_back
+            filename = inspect.getsourcefile(caller)
+
+            # specia case / fastpath because this does model alterations everywhere
+            if filename.endswith('odoo/models.py'):
+                actual_setattr(model, key, value)
+                return
+
+            valid_paths = SETATTR_SOURCES.get(caller.f_code.co_name)
+            if not (valid_paths and filename.endswith(valid_paths)):
+                _logger.runbot(
+                    "%s:%s:%s setting %s.%s to %s",
+                    filename,
+                    caller.f_lineno,
+                    caller.f_code.co_name,
+                    model.__name__,
+                    key,
+                    value,
+                    stack_info=True,
+                )
+            actual_setattr(model, key, value)
+        cls.classPatch(odoo.models.MetaModel, '__setattr__', metamodel_setattr)
+
         def reset_changes():
             if (cls.registry_start_sequence != cls.registry.registry_sequence) or cls.registry.registry_invalidated:
                 with cls.registry.cursor() as cr:
@@ -972,6 +1008,33 @@ class TransactionCase(BaseCase):
 
         cls._signal_changes_patcher = patch.object(cls.registry, 'signal_changes', signal_changes)
         cls.startClassPatcher(cls._signal_changes_patcher)
+
+        attrs_before = {
+            model: {
+                *vars(model),
+                # __annotations__ pops up during testing on *some* models
+                '__annotations__',
+                # if model is transient & transient fields are accessed
+                '_transient_max_count',
+                '_transient_max_hours',
+            }
+            for model in cls.registry.values()
+        }
+        def check_models():
+            for model in cls.registry.values():
+                extras = set(vars(model)) - attrs_before[model]
+                if extras:
+                    extras = {
+                        f for f in extras
+                        # creating a custom field in a test will update the
+                        # registry in place, adding fields on leaf classes
+                        if not (f.startswith('x_') and f in model._fields)
+                    }
+                if extras:
+                    raise AssertionError(
+                        f"Found unexpected attributes on {model._name}: {' '.join(extras)}"
+                    )
+        cls.addClassCleanup(check_models)
 
         cls.cr = cls.registry.cursor()
         cls.addClassCleanup(cls.cr.close)

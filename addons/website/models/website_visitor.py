@@ -137,6 +137,38 @@ class WebsiteVisitor(models.Model):
             visitor.visitor_page_count = visitor_info['visitor_page_count']
             visitor.page_count = visitor_info['page_count']
 
+    def _compute_visitor_agg(self, field_name, rel_field, count_field, extra_domain=None):
+        """
+        Generic aggregator for website.track statistics.
+
+        :param field_name: m2m field to write on visitor
+        :param rel_field: field on website.track
+        :param count_field: integer field to store count
+        :param extra_domain: optional extra domain
+        """
+        domain = [
+            ('visitor_id', 'in', self.ids),
+            (rel_field, '!=', False),
+        ]
+        if extra_domain:
+            domain += extra_domain
+        # breakpoint()
+        results = self.env['website.track']._read_group(
+            domain, ['visitor_id'], [f'{rel_field}:array_agg', '__count'],
+        )
+        # breakpoint()
+        mapped_data = {
+            visitor.id: {
+                'count': count or 0,
+                'ids': ids or [],
+            }
+            for visitor, ids, count in results
+        }
+        for visitor in self:
+            data = mapped_data.get(visitor.id, {'ids': [], 'count': 0})
+            visitor[field_name] = [(6, 0, data['ids'])]
+            visitor[count_field] = data['count']
+
     def _search_page_ids(self, operator, value):
         return [('website_track_ids.page_id.name', operator, value)]
 

@@ -145,6 +145,8 @@ class MrpWorkorder(models.Model):
                                      column1="blocked_by_id", column2="workorder_id", string="Blocks",
                                      domain="[('allow_workorder_dependencies', '=', True), ('id', '!=', id), ('production_id', '=', production_id)]",
                                      copy=False)
+    production_is_delayed = fields.Boolean(related='production_id.is_delayed', readonly=True)  # Technical field used in views only
+    production_delay_alert_date = fields.Datetime(related='production_id.delay_alert_date', readonly=True)  # Technical field used in views only
 
     @api.depends('qty_ready')
     def _compute_state(self):
@@ -274,6 +276,10 @@ class MrpWorkorder(models.Model):
     def _set_dates(self):
         for wo in self.sudo():
             if wo.leave_id:
+                # gantt unschedule write False on date_start and date_finished
+                if not wo.date_start and not wo.date_finished:
+                    wo.leave_id.unlink()
+                    continue
                 if (not wo.date_start or not wo.date_finished):
                     raise UserError(_("It is not possible to unplan one single Work Order. "
                               "You should unplan the Manufacturing Order instead in order to unplan all the linked operations."))
@@ -578,6 +584,10 @@ class MrpWorkorder(models.Model):
         # Plan only suitable workorders
         if not replan:
             return
+        self._internal_plan_workorder(date_start)
+
+    def _internal_plan_workorder(self, date_start):
+        self.ensure_one()
         # Consider workcenter and alternatives
         workcenters = self.workcenter_id | self.workcenter_id.alternative_workcenter_ids
         best_date_finished = datetime.max
@@ -889,6 +899,28 @@ class MrpWorkorder(models.Model):
             if wo.duration == 0.0:
                 wo.duration = wo.duration_expected
                 wo.duration_percent = 100
+
+    def action_plan(self):
+        for workorder in self:
+            if workorder.state in ['done', 'cancel']:
+                continue
+            workorder.leave_id.unlink()
+            date_to_plan_on = datetime.now()
+            if 'date_to_plan_on' in self.env.context:
+                date_to_plan_on = fields.Datetime.from_string(self.env.context.get('date_to_plan_on'))
+            workorder._internal_plan_workorder(date_to_plan_on)
+            if not workorder.blocked_by_workorder_ids:
+                initial_workorders = workorder.production_id.workorder_ids.filtered(lambda wo: not wo.blocked_by_workorder_ids)
+                workorder.production_id.with_context(force_date=True).write({
+                    'date_start': min((wo.leave_id.date_from for wo in initial_workorders if wo.leave_id), default=None),
+                })
+
+    def action_unplan(self):
+        self.leave_id.unlink()
+        self.write({
+            'date_start': False,
+            'date_finished': False,
+        })
 
     def _compute_expected_operation_cost(self, without_employee_cost=False):
         return (self.duration_expected / 60.0) * (self.costs_hour or self.workcenter_id.costs_hour)

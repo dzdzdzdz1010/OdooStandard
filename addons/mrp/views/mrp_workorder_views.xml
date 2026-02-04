@@ -274,11 +274,15 @@
                 <field name="finished_lot_ids"/>
                 <field name="product_variant_attributes"/>
                 <field name="move_raw_ids" string="Component" filter_domain="[('move_raw_ids.product_id', 'ilike', self)]"/>
-                <filter string="In Progress" name="progress" domain="[('state', '=', 'progress')]"/>
                 <filter string="To Do" name="ready" domain="[('state', '=', 'ready')]"/>
                 <filter string="Blocked" name="blocked" domain="[('state', '=', 'blocked')]"/>
-                <filter string="Finished" name="finish" domain="[('state', '=', 'done')]"/>
+                <filter string="In Progress" name="progress" domain="[('state', '=', 'progress')]"/>
+                <filter string="Done" name="finish" domain="[('state', '=', 'done')]"/>
                 <filter string="Cancelled" name="cancel" domain="[('state', '=', 'cancel')]"/>
+                <separator/>
+                <filter string="Planned" name="filter_planned" domain="[('production_state', 'not in', ('done', 'cancel')), ('date_start', '!=', False)]"/>
+                <filter string="To Plan" name="filter_to_plan" domain="[('production_state', '=', 'confirmed'), ('date_start', '=', False)]"/>
+                <separator/>
                 <separator/>
                 <filter string="Late" name="late" domain="['&amp;', ('date_start', '&lt;', 'now'), ('state', '=', 'ready')]"
                     help="Production started late"/>
@@ -411,6 +415,23 @@
         </field>
     </record>
 
+    <record model="ir.actions.act_window" id="action_mrp_workorder_employee">
+        <field name="name">Work Orders Planning</field>
+        <field name="res_model">mrp.workorder</field>
+        <field name="path">employee-planning</field>
+        <field name="view_mode">list,form,calendar,pivot,graph</field>
+        <field name="search_view_id" ref="view_mrp_production_workorder_form_view_filter"/>
+        <field name="context">{'search_default_ready': True, 'search_default_blocked': True, 'search_default_progress': True}</field>
+        <field name="help" type="html">
+          <p class="o_view_nocontent_smiling_face">
+            No work orders to do!
+          </p><p>
+            Work orders are operations to do as part of a manufacturing order.
+            Operations are defined in the bill of materials or added in the manufacturing order directly.
+          </p>
+        </field>
+    </record>
+
     <record model="ir.actions.act_window" id="mrp_workorder_mrp_production_form">
         <field name="name">Work Orders</field>
         <field name="res_model">mrp.workorder</field>
@@ -496,4 +517,23 @@
         <field name="state">code</field>
         <field name="code">action = records.button_pending()</field>
     </record>
+
+    <record id="action_plan_workorders" model="ir.actions.server">
+        <field name="name">Plan</field>
+        <field name="model_id" ref="mrp.model_mrp_workorder"/>
+        <field name="binding_model_id" ref="mrp.model_mrp_workorder"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">records.action_plan()</field>
+    </record>
+
+    <record id="action_unplan_workorders" model="ir.actions.server">
+        <field name="name">Unplan</field>
+        <field name="model_id" ref="mrp.model_mrp_workorder"/>
+        <field name="binding_model_id" ref="mrp.model_mrp_workorder"/>
+        <field name="binding_view_types">list,kanban</field>
+        <field name="state">code</field>
+        <field name="code">records.action_unplan()</field>
+    </record>
+
 </odoo>

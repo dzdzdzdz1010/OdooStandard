@@ -127,7 +127,7 @@ class IrUiView(models.Model):
             return
 
         try:
-            tree = html.fromstring(lang_value)
+            tree = html.fromstring("<div>%s</div>" % lang_value)
         except etree.ParserError as e:
             raise ValidationError(str(e))
 

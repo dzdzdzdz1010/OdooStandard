@@ -1,6 +1,5 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
-
 """
 The PostgreSQL connector is a connectivity layer between the OpenERP code and
 the database, *not* a database abstraction toolkit. Database abstraction is what
@@ -21,7 +20,7 @@ from datetime import datetime, timedelta
 from inspect import currentframe
 
 import psycopg2
-import psycopg2.errorcodes
+import psycopg2.errorcodes  # noqa: F401
 import psycopg2.errors
 import psycopg2.extensions
 import psycopg2.extras
@@ -39,8 +38,6 @@ from .tools.func import frame_codeinfo, locked
 from .tools.misc import Callbacks, real_time
 
 if typing.TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
-
     from odoo.orm.environments import Transaction
 
     # when type checking, the BaseCursor exposes methods of the psycopg cursor
@@ -402,7 +399,8 @@ class Cursor(BaseCursor):
             else:
                 msg += "Please enable sql debugging to trace the caller."
             _logger.warning(msg)
-            self._close(True)
+            self._cnx.close()
+            self._close()
 
     def _format(self, query, params=None) -> str:
         encoding = psycopg2.extensions.encodings[self.connection.encoding]
@@ -515,9 +513,9 @@ class Cursor(BaseCursor):
 
     def close(self) -> None:
         if not self.closed:
-            self._close(False)
+            self._close()
 
-    def _close(self, leak: bool = False) -> None:
+    def _close(self) -> None:
         if not self._obj:
             return
 
@@ -541,12 +539,14 @@ class Cursor(BaseCursor):
 
         self._closed = True
 
-        if leak:
-            self._cnx.leaked = True  # type: ignore
-        else:
-            chosen_template = tools.config['db_template']
-            keep_in_pool = self.dbname not in ('template0', 'template1', config['db_system'], chosen_template)
-            self.__pool.give_back(self._cnx, keep_in_pool=keep_in_pool)
+        # Forget already closed connections an system-related databases
+        keep_in_pool = not self._cnx.closed and self.dbname not in (
+            'template0', 'template1',
+            # keep open if one of preloaded databases
+            config['db_system'] if config['db_system'] not in config['db_name'] else '',
+            config['db_template'],
+        )
+        self.__pool.give_back(self._cnx, keep_in_pool=keep_in_pool)
 
     def commit(self) -> None:
         """ Perform an SQL `COMMIT` """
@@ -582,7 +582,6 @@ class Cursor(BaseCursor):
 
 
 class PsycoConnection(psycopg2.extensions.connection):
-    _pool_in_use: bool = False
     _pool_last_used: float = 0
 
     def lobject(*args, **kwargs):
@@ -597,6 +596,22 @@ class PsycoConnection(psycopg2.extensions.connection):
                     pass
             return PsycoConnectionInfo(self)
 
+    def _matches_dsn(self, dsn: dict) -> bool:
+        # check the database (alias dbname)
+        db1 = self.info.dbname
+        db2 = dsn.get('database', dsn.get('dbname', ''))
+        if db1 != str(db2):
+            return False
+        # check the rest of the keys
+        keys = set(dsn)
+        keys.difference_update(('password', 'dbname', 'database'))
+        info = self.info.dsn_parameters
+        return all(
+            (v1 := info.get(key)) == (v2 := dsn.get(key))
+            or str(v1) == str(v2)
+            for key in keys
+        )
+
 
 class ConnectionPool:
     """ The pool of connections to database(s)
@@ -607,17 +622,19 @@ class ConnectionPool:
         The connections are *not* automatically closed. Only a close_db()
         can trigger that.
     """
-    _connections: list[PsycoConnection]
 
     def __init__(self, maxconn: int = 64, readonly: bool = False):
-        self._connections = []
+        # most recently used connections are at the end of the queue
+        self._free_connections: list[PsycoConnection] = []
+        self._used_connections: dict[PsycoConnection, None] = {}
+        self._check_free_at: float = 0.0
         self._maxconn = max(maxconn, 1)
         self._readonly = readonly
         self._lock = threading.Lock()
 
     def __repr__(self):
-        used = sum(1 for c in self._connections if c._pool_in_use)
-        count = len(self._connections)
+        used = len(self._used_connections)
+        count = used + len(self._free_connections)
         mode = 'read-only' if self._readonly else 'read/write'
         return f"ConnectionPool({mode};used={used}/count={count}/max={self._maxconn})"
 
@@ -633,49 +650,41 @@ class ConnectionPool:
         """
         Borrow a PsycoConnection from the pool. If no connection is available, create a new one
         as long as there are still slots available. Perform some garbage-collection in the pool:
-        idle, dead and leaked connections are removed.
+        idle and dead connections are removed.
 
         :param dict connection_info: dict of psql connection keywords
         :rtype: PsycoConnection
         """
-        # free idle, dead and leaked connections
-        for i, cnx in tools.reverse_enumerate(self._connections):
-            if not cnx._pool_in_use and not cnx.closed and time.time() - cnx._pool_last_used > MAX_IDLE_TIMEOUT:
+        # find a connection, free idle and dead connections
+        now = time.time()
+        check_all = self._check_free_at < now
+        self._check_free_at = now + MAX_IDLE_TIMEOUT / 10
+        close_used_before = now - MAX_IDLE_TIMEOUT
+        selected_cnx = None
+        for i, cnx in tools.reverse_enumerate(self._free_connections):
+            if not cnx.closed and cnx._pool_last_used < close_used_before:
                 self._debug('Close connection at index %d: %r', i, cnx.dsn)
                 cnx.close()
             if cnx.closed:
-                self._connections.pop(i)
+                self._free_connections.pop(i)
                 self._debug('Removing closed connection at index %d: %r', i, cnx.dsn)
-                continue
-            if getattr(cnx, 'leaked', False):
-                delattr(cnx, 'leaked')
-                cnx._pool_in_use = False
-                _logger.info('%r: Free leaked connection to %r', self, cnx.dsn)
-
-        for i, cnx in enumerate(self._connections):
-            if not cnx._pool_in_use and self._dsn_equals(cnx.dsn, connection_info):
-                try:
-                    cnx.reset()
-                except psycopg2.OperationalError:
-                    self._debug('Cannot reset connection at index %d: %r', i, cnx.dsn)
-                    cnx.close()
-                    continue
-                cnx._pool_in_use = True
+            elif selected_cnx is None and cnx._matches_dsn(connection_info):
                 self._debug('Borrow existing connection to %r at index %d', cnx.dsn, i)
+                self._free_connections.pop(i)
+                self._used_connections[cnx] = None
+                if not check_all:
+                    return cnx
+                selected_cnx = cnx
+        if selected_cnx is not None:
+            return selected_cnx
 
-                return cnx
-
-        if len(self._connections) >= self._maxconn:
-            # try to remove the oldest connection not used
-            for i, cnx in enumerate(self._connections):
-                if not cnx._pool_in_use:
-                    self._connections.pop(i)
-                    if not cnx.closed:
-                        cnx.close()
-                    self._debug('Removing old connection at index %d: %r', i, cnx.dsn)
-                    break
+        if len(self._free_connections) + len(self._used_connections) >= self._maxconn:
+            # pool is full, try to close the oldest connection
+            if self._free_connections:
+                cnx = self._free_connections.pop(0)
+                cnx.close()
+                self._debug('Removing old connection at index %d: %r', 0, cnx.dsn)
             else:
-                # note: this code is called only if the for loop has completed (no break)
                 raise PoolError('The Connection Pool Is Full')
 
         try:
@@ -687,8 +696,7 @@ class ConnectionPool:
             raise
         if result.server_version < MIN_PG_VERSION * 10000:
             warnings.warn(f"Postgres version is {result.server_version}, lower than minimum required {MIN_PG_VERSION * 10000}")
-        result._pool_in_use = True
-        self._connections.append(result)
+        self._used_connections[result] = None
         self._debug('Create new connection backend PID %d', result.get_backend_pid())
 
         return result
@@ -696,43 +704,45 @@ class ConnectionPool:
     @locked
     def give_back(self, connection: PsycoConnection, keep_in_pool: bool = True):
         self._debug('Give back connection to %r', connection.dsn)
-        try:
-            index = self._connections.index(connection)
-        except ValueError:
+        if self._used_connections.pop(connection, False) is False:
+            if connection in self._free_connections:
+                raise PoolError("Closing a free connection")
             raise PoolError('This connection does not belong to the pool')
 
-        if keep_in_pool:
+        if keep_in_pool and not connection.closed:
             # Release the connection and record the last time used
-            connection._pool_in_use = False
-            connection._pool_last_used = time.time()
             self._debug('Put connection to %r in pool', connection.dsn)
-        else:
-            cnx = self._connections.pop(index)
-            self._debug('Forgot connection to %r', cnx.dsn)
-            cnx.close()
+            try:
+                connection.reset()
+            except psycopg2.OperationalError as e:
+                self._debug('Cannot reset connection: %r (%s)', connection.dsn, e)
+            else:
+                connection._pool_last_used = time.time()
+                self._free_connections.append(connection)
+                return
+        self._debug('Forget connection to %r', connection.dsn)
+        connection.close()
 
     @locked
     def close_all(self, dsn: dict | str | None = None):
         count = 0
         last = None
-        for i, cnx in tools.reverse_enumerate(self._connections):
-            if dsn is None or self._dsn_equals(cnx.dsn, dsn):
+        if isinstance(dsn, str):
+            dsn = psycopg2.extensions.parse_dsn(dsn)
+        for i, cnx in tools.reverse_enumerate(self._free_connections):
+            if dsn is None or cnx._matches_dsn(dsn):
                 cnx.close()
-                last = self._connections.pop(i)
+                last = self._free_connections.pop(i)
+                count += 1
+        for cnx in list(self._used_connections):
+            if dsn is None or cnx._matches_dsn(dsn):
+                cnx.close()
+                last = cnx
+                del self._used_connections[cnx]
                 count += 1
         if count:
             _logger.info('%r: Closed %d connections %s', self, count,
                         (dsn and last and 'to %r' % last.dsn) or '')
-
-    def _dsn_equals(self, dsn1: dict | str, dsn2: dict | str) -> bool:
-        alias_keys = {'dbname': 'database'}
-        ignore_keys = ['password']
-        dsn1, dsn2 = ({
-            alias_keys.get(key, key): str(value)
-            for key, value in (psycopg2.extensions.parse_dsn(dsn) if isinstance(dsn, str) else dsn).items()
-            if key not in ignore_keys
-        } for dsn in (dsn1, dsn2))
-        return dsn1 == dsn2
 
 
 class Connection:

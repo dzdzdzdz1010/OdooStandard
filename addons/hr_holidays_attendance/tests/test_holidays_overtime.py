@@ -48,16 +48,18 @@ class TestHolidaysOvertime(TransactionCase):
             'company_id': cls.company.id,
         })
 
-        cls.leave_type_no_alloc = cls.env['hr.leave.type'].create({
+        cls.work_entry_type_no_alloc = cls.env['hr.work.entry.type'].create({
             'name': 'Overtime Compensation No Allocation',
+            'code': 'Overtime Compensation No Allocation',
             'company_id': cls.company.id,
             'requires_allocation': False,
             'overtime_deductible': True,
             'request_unit': 'day',
             'unit_of_measure': 'day',
         })
-        cls.leave_type_employee_allocation = cls.env['hr.leave.type'].create({
+        cls.work_entry_type_employee_allocation = cls.env['hr.work.entry.type'].create({
             'name': 'Overtime Compensation Employee Allocation',
+            'code': 'Overtime Compensation Employee Allocation',
             'company_id': cls.company.id,
             'requires_allocation': True,
             'employee_requests': True,
@@ -105,7 +107,7 @@ class TestHolidaysOvertime(TransactionCase):
                 self.env['hr.leave'].create({
                     'name': 'no overtime',
                     'employee_id': self.employee.id,
-                    'holiday_status_id': self.leave_type_no_alloc.id,
+                    'work_entry_type_id': self.work_entry_type_no_alloc.id,
                     'request_date_from': datetime(2021, 1, 4),
                     'request_date_to': datetime(2021, 1, 4),
                     'state': 'confirm',
@@ -121,7 +123,7 @@ class TestHolidaysOvertime(TransactionCase):
         leave = self.env['hr.leave'].create({
             'name': 'no overtime',
             'employee_id': self.employee.id,
-            'holiday_status_id': self.leave_type_no_alloc.id,
+            'work_entry_type_id': self.work_entry_type_no_alloc.id,
             'request_date_from': datetime(2021, 1, 4),
             'request_date_to': datetime(2021, 1, 4),
         })
@@ -138,7 +140,7 @@ class TestHolidaysOvertime(TransactionCase):
         leave = self.env['hr.leave'].create({
             'name': 'no overtime',
             'employee_id': self.employee.id,
-            'holiday_status_id': self.leave_type_no_alloc.id,
+            'work_entry_type_id': self.work_entry_type_no_alloc.id,
             'request_date_from': '2021-01-04',
             'request_date_to': '2021-01-04',
         })
@@ -158,7 +160,7 @@ class TestHolidaysOvertime(TransactionCase):
             with self.assertRaises(ValidationError):
                 self.env['hr.leave.allocation'].create({
                     'name': 'test allocation',
-                    'holiday_status_id': self.leave_type_employee_allocation.id,
+                    'work_entry_type_id': self.work_entry_type_employee_allocation.id,
                     'employee_id': self.employee.id,
                     'number_of_days': 1,
                     'state': 'confirm',
@@ -171,7 +173,7 @@ class TestHolidaysOvertime(TransactionCase):
 
             self.env['hr.leave.allocation'].sudo().create({
                 'name': 'test allocation',
-                'holiday_status_id': self.leave_type_employee_allocation.id,
+                'work_entry_type_id': self.work_entry_type_employee_allocation.id,
                 'employee_id': self.employee.id,
                 'number_of_days': 1,
                 'state': 'confirm',
@@ -180,8 +182,9 @@ class TestHolidaysOvertime(TransactionCase):
             })
             self._check_deductible(0)
 
-            leave_type = self.env['hr.leave.type'].sudo().create({
+            work_entry_type = self.env['hr.work.entry.type'].sudo().create({
                 'name': 'Overtime Compensation Employee Allocation',
+                'code': 'Overtime Compensation Employee Allocation',
                 'company_id': self.company.id,
                 'requires_allocation': True,
                 'employee_requests': True,
@@ -194,7 +197,7 @@ class TestHolidaysOvertime(TransactionCase):
             # User can request another allocation even without overtime
             self.env['hr.leave.allocation'].create({
                 'name': 'test allocation',
-                'holiday_status_id': leave_type.id,
+                'work_entry_type_id': work_entry_type.id,
                 'employee_id': self.employee.id,
                 'number_of_days': 1,
                 'state': 'confirm',
@@ -210,7 +213,7 @@ class TestHolidaysOvertime(TransactionCase):
 
         alloc = self.env['hr.leave.allocation'].create({
             'name': 'test allocation',
-            'holiday_status_id': self.leave_type_employee_allocation.id,
+            'work_entry_type_id': self.work_entry_type_employee_allocation.id,
             'employee_id': self.employee.id,
             'number_of_days': 1,
             'state': 'confirm',
@@ -234,7 +237,7 @@ class TestHolidaysOvertime(TransactionCase):
         leave = self.env['hr.leave'].create({
             'name': 'no overtime',
             'employee_id': self.employee.id,
-            'holiday_status_id': self.leave_type_no_alloc.id,
+            'work_entry_type_id': self.work_entry_type_no_alloc.id,
             'request_date_from': '2022-01-06',
             'request_date_to': '2022-01-06',
         })
@@ -307,7 +310,7 @@ class TestHolidaysOvertime(TransactionCase):
         self.assertEqual(self.employee.total_overtime, 0, 'Should have 0 hours of overtime')
         self.assertEqual(self.manager.total_overtime, 8, "Should have 8 hours of overtime (because of the quantity rule)")
 
-    def test_worked_leave_type_overtime(self):
+    def test_worked_work_entry_type_overtime(self):
         """ Test that an attendance during a worked time off doesn't count as overtime. """
         calendar = self.env['resource.calendar'].create({'name': 'Calendar'})
         self.env['hr.version'].create({
@@ -320,18 +323,19 @@ class TestHolidaysOvertime(TransactionCase):
             'employee_id': self.employee.id,
         })
 
-        leave_type_worked = self.env['hr.leave.type'].create({
+        work_entry_type_worked = self.env['hr.work.entry.type'].create({
             'name': 'Worked Leave Type',
+            'code': 'Worked Leave Type',
             'company_id': self.company.id,
             'requires_allocation': False,
             'overtime_deductible': False,
-            'time_type': 'other',
+            'count_as': 'working_time',
         })
 
         leave = self.env['hr.leave'].create({
             'name': 'no overtime',
             'employee_id': self.employee.id,
-            'holiday_status_id': leave_type_worked.id,
+            'work_entry_type_id': work_entry_type_worked.id,
             'request_date_from': datetime(2021, 1, 5),
             'request_date_to': datetime(2021, 1, 5),
         })
@@ -363,7 +367,7 @@ class TestHolidaysOvertime(TransactionCase):
         leave = self.env['hr.leave'].create({
             'name': 'no overtime',
             'employee_id': self.employee.id,
-            'holiday_status_id': self.leave_type_no_alloc.id,
+            'work_entry_type_id': self.work_entry_type_no_alloc.id,
             'request_date_from': '2022-1-6',
             'request_date_to': '2022-1-6',
         })
@@ -446,7 +450,7 @@ class TestHolidaysOvertime(TransactionCase):
             {
                 'name': 'no overtime',
                 'employee_id': self.employee.id,
-                'holiday_status_id': self.leave_type_no_alloc.id,
+                'work_entry_type_id': self.work_entry_type_no_alloc.id,
                 'request_date_from': '2022-1-6',
                 'request_date_to': '2022-1-6',
             }

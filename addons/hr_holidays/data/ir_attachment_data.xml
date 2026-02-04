@@ -3,7 +3,7 @@
     <data>
         <record id="icon_1" model="ir.attachment">
             <field name="name">Annual_Time_Off.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>
@@ -11,7 +11,7 @@
         </record>
         <record id="icon_4" model="ir.attachment">
             <field name="name">Compensatory_Time_Off.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>
@@ -19,7 +19,7 @@
         </record>
         <record id="icon_14" model="ir.attachment">
             <field name="name">Paid_Time_Off.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>
@@ -27,7 +27,7 @@
         </record>
         <record id="icon_17" model="ir.attachment">
             <field name="name">Parental_Time_Off.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>
@@ -35,7 +35,7 @@
         </record>
         <record id="icon_19" model="ir.attachment">
             <field name="name">Recovery_Bank_Holiday.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>
@@ -43,7 +43,7 @@
         </record>
         <record id="icon_21" model="ir.attachment">
             <field name="name">Sick_Time_Off.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>
@@ -51,7 +51,7 @@
         </record>
         <record id="icon_26" model="ir.attachment">
             <field name="name">Training_Time_Off.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>
@@ -59,7 +59,7 @@
         </record>
         <record id="icon_28" model="ir.attachment">
             <field name="name">Unpaid_Time_Off.svg</field>
-            <field name="res_model">hr.leave.type</field>
+            <field name="res_model">hr.work.entry.type</field>
             <field name="res_field">icon_id</field>
             <field name="public" eval="True"/>
             <field name="type">url</field>

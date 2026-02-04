@@ -16,8 +16,9 @@ class TestNegative(TestHrHolidaysCommon):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.leave_type = cls.env['hr.leave.type'].create({
+        cls.work_entry_type = cls.env['hr.work.entry.type'].create({
             'name': 'Limited with negative',
+            'code': 'Limited with negative',
             'leave_validation_type': 'no_validation',
             'requires_allocation': True,
             'company_id': cls.company.id,
@@ -29,7 +30,7 @@ class TestNegative(TestHrHolidaysCommon):
 
         cls.allocation_2022 = cls.env['hr.leave.allocation'].create({
             'employee_id': cls.employee_emp_id,
-            'holiday_status_id': cls.leave_type.id,
+            'work_entry_type_id': cls.work_entry_type.id,
             'date_from': '2022-01-01',
             'date_to': '2022-12-31',
             'number_of_days': 1,
@@ -38,7 +39,7 @@ class TestNegative(TestHrHolidaysCommon):
 
         cls.allocation_2023 = cls.env['hr.leave.allocation'].create({
             'employee_id': cls.employee_emp_id,
-            'holiday_status_id': cls.leave_type.id,
+            'work_entry_type_id': cls.work_entry_type.id,
             'date_from': '2023-01-01',
             'number_of_days': 5,
         })
@@ -50,7 +51,7 @@ class TestNegative(TestHrHolidaysCommon):
             # The first 2022 leave brings the user balance at -4
             self.env['hr.leave'].with_user(self.user_employee_id).create({
                 'name': 'first 2022 leave of 5 days',
-                'holiday_status_id': self.leave_type.id,
+                'work_entry_type_id': self.work_entry_type.id,
                 'employee_id': self.employee_emp.id,
                 'request_date_from': datetime(2022, 10, 24),
                 'request_date_to': datetime(2022, 10, 28),
@@ -61,7 +62,7 @@ class TestNegative(TestHrHolidaysCommon):
             # The first leave of 2023 brings the balance at -4
             self.env['hr.leave'].with_user(self.user_employee_id).create({
                 'name': 'first 2023 leave of 5 days',
-                'holiday_status_id': self.leave_type.id,
+                'work_entry_type_id': self.work_entry_type.id,
                 'employee_id': self.employee_emp.id,
                 'request_date_from': datetime(2023, 10, 9),
                 'request_date_to': datetime(2023, 10, 13),
@@ -71,7 +72,7 @@ class TestNegative(TestHrHolidaysCommon):
             with self.assertRaises(ValidationError):
                 self.env['hr.leave'].with_user(self.user_employee_id).create({
                     'name': 'not takable leaves of 5 days',
-                    'holiday_status_id': self.leave_type.id,
+                    'work_entry_type_id': self.work_entry_type.id,
                     'employee_id': self.employee_emp_id,
                     'request_date_from': datetime(2023, 10, 16),
                     'request_date_to': datetime(2023, 10, 20),
@@ -80,7 +81,7 @@ class TestNegative(TestHrHolidaysCommon):
             # The second leave of 2023 brings the balance at -5
             one_day_leave = self.env['hr.leave'].with_user(self.user_employee_id).create({
                 'name': 'Second 2023 leave of 1 day',
-                'holiday_status_id': self.leave_type.id,
+                'work_entry_type_id': self.work_entry_type.id,
                 'employee_id': self.employee_emp_id,
                 'request_date_from': datetime(2023, 10, 23),
                 'request_date_to': datetime(2023, 10, 23),

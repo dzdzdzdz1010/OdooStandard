@@ -18,12 +18,12 @@ class HrLeave(models.Model):
         # The french l10n is meant to be computed only in very specific cases:
         # - there is only one employee affected by the leave
         # - the company is french
-        # - the leave_type is the reference leave_type of that company
+        # - the work_entry_type is the reference work_entry_type of that company
         self.ensure_one()
         return self.employee_id and \
                self.company_id.country_id.code == 'FR' and \
                self.resource_calendar_id != self.company_id.resource_calendar_id and \
-               self.holiday_status_id == self.company_id._get_fr_reference_leave_type()
+               self.work_entry_type_id == self.company_id._get_fr_reference_work_entry_type()
 
     def _get_fr_date_from_to(self, date_from, date_to):
         self.ensure_one()
@@ -34,7 +34,7 @@ class HrLeave(models.Model):
         if not (self.resource_calendar_id.attendance_ids):
             raise UserError(_("An employee can't take paid time off in a period without any work hours."))
 
-        if self.leave_type_request_unit != 'hour':
+        if self.work_entry_type_request_unit != 'hour':
             # Use company's working schedule hours for the leave to avoid duration calculation issues.
             def adjust_date_range(date_from, date_to, from_period, to_period, attendance_ids, employee_id):
                 period_ids_from = attendance_ids.filtered(lambda a: a.day_period in from_period
@@ -49,7 +49,7 @@ class HrLeave(models.Model):
                     date_to = self._to_utc(date_to, max_hour, employee_id)
                 return date_from, date_to
 
-            if self.leave_type_request_unit == 'half_day':
+            if self.work_entry_type_request_unit == 'half_day':
                 from_period = ['morning'] if self.request_date_from_period == 'am' else ['afternoon']
                 to_period = ['morning'] if self.request_date_to_period == 'am' else ['afternoon']
             else:
@@ -59,9 +59,9 @@ class HrLeave(models.Model):
             date_from, date_to = adjust_date_range(date_from, date_to, from_period, to_period, attendance_ids, self.employee_id)
 
         similar = date_from.date() == date_to.date() and self.request_date_from_period == self.request_date_to_period
-        if self.leave_type_request_unit == 'half_day' and similar and self.request_date_from_period == 'am':
-            # In normal workflows leave_type_request_unit = 'half_day' implies that date_from and date_to are the same
-            # leave_type_request_unit = 'half_day' allows us to choose between `am` and `pm`
+        if self.work_entry_type_request_unit == 'half_day' and similar and self.request_date_from_period == 'am':
+            # In normal workflows work_entry_type_request_unit = 'half_day' implies that date_from and date_to are the same
+            # work_entry_type_request_unit = 'half_day' allows us to choose between `am` and `pm`
             # In a case where we work from mon-wed and request a half day in the morning
             # we do not want to push date_to since the next work attendance is actually in the afternoon
             date_from_dayofweek = str(date_from.weekday())
@@ -90,7 +90,7 @@ class HrLeave(models.Model):
         return (date_start, date_target)
 
     @api.depends('request_date_from_period', 'request_date_to_period', 'request_hour_from', 'request_hour_to',
-                'request_date_from', 'request_date_to', 'leave_type_request_unit', 'employee_id')
+                'request_date_from', 'request_date_to', 'work_entry_type_request_unit', 'employee_id')
     def _compute_date_from_to(self):
         super()._compute_date_from_to()
         for leave in self:
@@ -104,7 +104,7 @@ class HrLeave(models.Model):
                 else:
                     leave.l10n_fr_date_to_changed = False
 
-    def _get_durations(self, check_leave_type=True, resource_calendar=None):
+    def _get_durations(self, check_work_entry_type=True, resource_calendar=None):
         """
         In french time off laws, if an employee has a part time contract, when taking time off
         before one of his off day (compared to the company's calendar) it should also count the time
@@ -139,7 +139,7 @@ class HrLeave(models.Model):
                         holidays_days_list.append(current)
                         current += relativedelta(days=1)
                 for leave in leaves:
-                    if leave.leave_type_request_unit == 'half_day':
+                    if leave.work_entry_type_request_unit == 'half_day':
                         duration_by_leave_id.update(leave._get_durations(resource_calendar=company_cal))
                         continue
                     # Extend the end date to next working day

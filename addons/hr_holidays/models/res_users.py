@@ -36,8 +36,8 @@ class ResUsers(models.Model):
                             AND hr_leave.state = 'validate'
                             AND res_users.active IS TRUE
                             AND hr_leave.date_from <= %%s AND hr_leave.date_to >= %%s
-                            RIGHT JOIN hr_leave_type ON hr_leave.holiday_status_id = hr_leave_type.id
-                            AND hr_leave_type.time_type = 'leave';''' % field, (now, now))
+                            RIGHT JOIN hr_work_entry_type ON hr_leave.work_entry_type_id = hr_work_entry_type.id
+                            AND hr_work_entry_type.count_as = 'absence';''' % field, (now, now))
         return [r[0] for r in self.env.cr.fetchall()]
 
     def _clean_leave_responsible_users(self):

@@ -622,7 +622,7 @@ class MrpProduction(models.Model):
                             'state': 'pending',
                         }]
                 workorders_dict = {wo.operation_id.id: wo for wo in production.workorder_ids.filtered(
-                    lambda wo: wo.operation_id and wo.ids and wo.id not in deleted_workorders_ids)}
+                    lambda wo: wo.operation_id and wo.id not in deleted_workorders_ids)}
                 for workorder_values in workorders_values:
                     if workorder_values['operation_id'] in workorders_dict:
                         # update existing entries

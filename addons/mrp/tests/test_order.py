@@ -5375,6 +5375,63 @@ class TestMrpOrder(TestMrpCommon):
         mo = mo_form.save()
         self.assertEqual(len(mo.workorder_ids), 1)
 
+    def test_workorder_duplication_on_bom_change_and_qty_edit(self):
+        """ Test that work orders are updated rather than duplicated when
+            switching BoMs and then modifying the quantity in the draft form.
+        """
+        # 1. Setup Data using TestMrpCommon's workcenter_1
+        product = self.env['product.product'].create({
+            'name': 'Test Finished Product',
+            'is_storable': True,
+        })
+
+        # BoM A: Has 1 Operation
+        bom_with_ops = self.env['mrp.bom'].create({
+            'product_tmpl_id': product.product_tmpl_id.id,
+            'product_qty': 1.0,
+            'operation_ids': [
+                Command.create({
+                    'name': 'Manual Assembly',
+                    'workcenter_id': self.workcenter_1.id,
+                    'time_cycle': 60
+                }),
+            ]
+        })
+
+        # BoM B: Empty (No operations)
+        bom_empty = self.env['mrp.bom'].create({
+            'product_tmpl_id': product.product_tmpl_id.id,
+            'product_qty': 1.0,
+        })
+
+        # 2. Simulate the UI Workflow using Form()
+        # This triggers the _compute_workorder_ids method multiple times
+        with Form(self.env['mrp.production']) as mo_form:
+            mo_form.product_id = product
+            # Select BoM A: Creates a Virtual Workorder (NewId)
+            mo_form.bom_id = bom_with_ops
+            self.assertEqual(len(mo_form.workorder_ids), 1, "Should have exactly 1 work order initially.")
+
+            # Switch to BoM B: Should clear the virtual records
+            mo_form.bom_id = bom_empty
+            self.assertEqual(len(mo_form.workorder_ids), 0, "Work orders should be cleared when switching to an empty BoM.")
+
+            # Switch back to BoM A: Creates a new Virtual Workorder
+            mo_form.bom_id = bom_with_ops
+            self.assertEqual(len(mo_form.workorder_ids), 1, "Should have exactly 1 work order after switching back.")
+
+            # 3. TRIGGER THE BUG: Modify quantity
+            # Without the fix, the logic fails to find the virtual record (NewId)
+            # and appends a second one.
+            mo_form.product_qty = 10.0
+
+            # 4. Final Verification
+            self.assertEqual(len(mo_form.workorder_ids), 1, "The workorder was duplicated instead of being updated!")
+
+            # Change quantity again to ensure stability
+            mo_form.product_qty = 20.0
+            self.assertEqual(len(mo_form.workorder_ids), 1, "Subsequent quantity changes should not duplicate lines.")
+
 
 @tagged('-at_install', 'post_install')
 class TestTourMrpOrder(HttpCase):

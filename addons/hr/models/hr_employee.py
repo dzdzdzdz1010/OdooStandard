@@ -110,7 +110,12 @@ class HrEmployee(models.Model):
         ('present', 'Present'),
         ('absent', 'Absent'),
         ('archive', 'Archived'),
-        ('out_of_working_hour', 'Off-Hours')], compute='_compute_presence_state', search='_search_presence_state', default='out_of_working_hour')
+        ('out_of_working_hour', 'Off-Hours')],
+        compute='_compute_presence_state',
+        compute_sql='_compute_sql_presence_state',
+        compute_sudo=False,
+        default='out_of_working_hour',
+    )
     last_activity = fields.Date(compute="_compute_last_activity")
     last_activity_time = fields.Char(compute="_compute_last_activity")
     hr_icon_display = fields.Selection([
@@ -1016,34 +1021,17 @@ class HrEmployee(models.Model):
                 state = 'archive'
             employee.hr_presence_state = state
 
-    def _search_presence_state(self, operator, value):
-        # This is a hack to allow grouping/filtering by presence state on employee views only.
-        # Do not use this field inside a domain as this has very poor performances.
-        if operator != 'in':
-            return NotImplemented
-        all_employees = self.sudo().search_fetch([])
-        filtered_employees = all_employees.filtered_domain([
-            ('hr_presence_state', operator, value)
-        ])
-        return [('id', 'in', filtered_employees.ids)]
-
-    def _read_group_groupby(self, table, groupby_spec):
-        if groupby_spec != 'hr_presence_state':
-            return super()._read_group_groupby(table, groupby_spec)
-
+    def _compute_sql_presence_state(self, table):
         # Ugly hack to be able to groupby hr_presence_state: that's not efficient since we will compute
-        # the hr_presence_state on every record in the DB to generate this new groupby specification.
-        all_records = self.sudo().with_context(active_test=False).search_fetch([])
-        states_map = all_records.grouped('hr_presence_state')
-        if not states_map:  # No record, no result
-            return SQL('FALSE')
+        # the hr_presence_state on every record in the DB to generate this.
+        all_employees = self.sudo().with_context(active_test=False).search_fetch([]).grouped('hr_presence_state')
+        if not all_employees:
+            return SQL("FALSE")
 
-        id_field = SQL.identifier(table._alias, 'id')
+        id_field = table.id
         when_cases = SQL('\n').join(
-            [
-                SQL('WHEN %s IN %s THEN %s', id_field, records._ids, state)
-                for state, records in states_map.items()
-            ],
+            SQL('WHEN %s IN %s THEN %s', id_field, records._ids, state)
+            for state, records in all_employees.items()
         )
         return SQL("CASE %s END", when_cases)
 

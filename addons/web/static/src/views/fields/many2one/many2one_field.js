@@ -50,6 +50,23 @@ export const m2oSupportedOptions = [
         type: "field",
         availableTypes: ["char"],
     },
+    {
+        label: _t("Decoration"),
+        name: "field_decoration",
+        type: "selection",
+        choices: [
+            { label: _t("Empty"), value: "empty" },
+            { label: _t("Bold"), value: "bold" },
+            { label: _t("Italic"), value: "italic" },
+            { label: _t("Muted"), value: "muted" },
+            { label: _t("Success"), value: "success" },
+            { label: _t("Danger"), value: "danger" },
+            { label: _t("Warning"), value: "warning" },
+            { label: _t("Info"), value: "info" },
+            { label: _t("Primary"), value: "primary" },
+        ],
+        help: _t("WIP: Select a decoration ..."),
+    },
 ];
 /** @type {import("registries").FieldsRegistryItemShape["supportedTypes"]} */
 export const m2oSupportedTypes = ["many2one"];

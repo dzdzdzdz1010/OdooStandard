@@ -15,6 +15,9 @@ export class Many2OneAvatarField extends Component {
     get m2oProps() {
         return computeM2OProps(this.props);
     }
+    get isMuted() {
+        return this.m2oProps.linkCssClass === "text-muted";
+    }
 }
 
 export const many2OneAvatarField = {

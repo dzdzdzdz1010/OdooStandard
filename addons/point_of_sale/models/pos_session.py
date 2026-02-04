@@ -1707,9 +1707,20 @@ class PosSession(models.Model):
             self.name = self.env['ir.sequence'].with_context(company_id=self.config_id.company_id.id).next_by_code('pos.session')
 
     def _post_cash_details_message(self, state, expected, difference, notes):
-        message = (state + " difference: " + self.currency_id.format(difference) + '\n' +
-           state + " expected: " + self.currency_id.format(expected) + '\n' +
-           state + " counted: " + self.currency_id.format(expected + difference) + '\n')
+        if state == 'Opening cash':
+            diff_label = _("Opening cash difference")
+            expected_label = _("Opening cash expected")
+            counted_label = _("Opening cash counted")
+        elif state == 'Closing':
+            diff_label = _("Closing difference")
+            expected_label = _("Closing expected")
+            counted_label = _("Closing counted")
+
+        message = (
+                diff_label + ": " + self.currency_id.format(difference) + '\n' +
+                expected_label + ": " + self.currency_id.format(expected) + '\n' +
+                counted_label + ": " + self.currency_id.format(expected + difference) + '\n'
+        )
 
         if notes:
             message += _('Opening control message: ')
@@ -1906,9 +1917,9 @@ class PosSession(models.Model):
 
     def log_partner_message(self, partner_id, action, message_type):
         if message_type == 'ACTION_CANCELLED':
-            body = 'Action cancelled ({ACTION})'.format(ACTION=action)
+            body = _('Action cancelled (%(ACTION)s)', ACTION=action)
         elif message_type == 'CASH_DRAWER_ACTION':
-            body = 'Cash drawer opened ({ACTION})'.format(ACTION=action)
+            body = _('Cash drawer opened (%(ACTION)s)', ACTION=action)
 
         self.message_post(body=body, author_id=partner_id)
 

@@ -173,7 +173,7 @@ const setSlideUrl = (urlText, matchText) => [
 
 const checkSlideNotClickable = () => ({
     content: "Check that the 'clickable-slide' class and anchor tag are removed",
-    trigger: ":iframe .carousel-item.active:not(.clickable-slide):not(:has(a.slide-link))",
+    trigger: ":iframe .carousel-item.active:not(.clickable-slide):not(:has(a.stretched-link))",
 });
 
 registerWebsitePreviewTour(
@@ -198,7 +198,7 @@ registerWebsitePreviewTour(
         {
             content: "Check that the anchor tag is added to the carousel item",
             trigger:
-                ":iframe .carousel-item.active.clickable-slide a.slide-link[href='/contactus-thank-you']:not(:visible)",
+                ":iframe .carousel-item.active.clickable-slide a.stretched-link[href='/contactus-thank-you']:not(:visible)",
         },
 
         // Enable the option to open the link in a new tab
@@ -211,7 +211,7 @@ registerWebsitePreviewTour(
         {
             content: "Check that the anchor tag is added to the carousel item",
             trigger:
-                ":iframe .carousel-item.active.clickable-slide a.slide-link[href='/contactus-thank-you'][target='_blank']",
+                ":iframe .carousel-item.active.clickable-slide a.stretched-link[href='/contactus-thank-you'][target='_blank']",
         },
         ...clickOnEditAndWaitEditMode(),
         ...clickOnSnippet(".carousel .carousel-item.active"),
@@ -227,7 +227,7 @@ registerWebsitePreviewTour(
         },
         {
             content: "Check that the anchor tag is removed",
-            trigger: ":iframe .carousel-item.active.clickable-slide:not(:has(a.slide-link))",
+            trigger: ":iframe .carousel-item.active.clickable-slide:not(:has(a.stretched-link))",
         },
         {
             content: "Check that the 'Open in New Tab' option is no longer visible",

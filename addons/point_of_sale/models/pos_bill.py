@@ -1,5 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 
 
 class PosBill(models.Model):
@@ -8,9 +8,15 @@ class PosBill(models.Model):
     _description = "Coins/Bills"
     _inherit = ["pos.load.mixin"]
 
-    name = fields.Char("Name")
+    name = fields.Char("Name", required=True)
     value = fields.Float("Value", required=True, digits=(16, 4))
     pos_config_ids = fields.Many2many("pos.config", string="Point of Sales")
+
+    @api.constrains('value')
+    def _check_value_not_zero(self):
+        for bill in self:
+            if bill.value <= 0:
+                raise ValidationError(_("The value of a coin/bill must be greater than 0."))
 
     @api.model
     def name_create(self, name):

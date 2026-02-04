@@ -1,5 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+from odoo.exceptions import ValidationError
 from odoo.fields import Command
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
@@ -95,6 +96,18 @@ class TestPointOfSale(TransactionCase):
             "value": 0.005
         })
         self.assertEqual(coin.value, 0.005)
+
+        with self.assertRaises(ValidationError):
+            self.env["pos.bill"].create({
+                "name": "Zero value",
+                "value": 0
+            })
+
+        with self.assertRaises(ValidationError):
+            self.env["pos.bill"].create({
+                "name": "Negative value",
+                "value": -5
+            })
 
     def test_pos_config_creates_warehouse(self):
         warehouse = self.env['stock.warehouse'].search([('company_id', '=', self.env.company.id)])

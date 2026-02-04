@@ -15,6 +15,19 @@ class ResCompany(models.Model):
         ],
         compute='_compute_onboarding_payment_module',
     )
+    # Labels to be desplayed on the payment buttons, defined per each company
+    pay_now_label = fields.Char(
+        string="Pay Now Label",
+        help="The label to be displayed on the payment button for 'Pay Now' methods.",
+        default="Pay now",
+        translate=True,
+    )
+    pay_later_label = fields.Char(
+        string="Pay Later Label",
+        help="The label to be displayed on the payment button for 'Pay Later' methods.",
+        default="Confirm",
+        translate=True,
+    )
 
     @api.depends('currency_id', 'country_id')
     def _compute_onboarding_payment_module(self):

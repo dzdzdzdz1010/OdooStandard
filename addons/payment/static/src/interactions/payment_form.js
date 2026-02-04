@@ -34,6 +34,12 @@ export class PaymentForm extends Interaction {
             await this.waitFor(this._expandInlineForm(checkedRadio));
             this._enableButton(false);
         } else {
+            const firstRadio = this.el.querySelector('input[name="o_payment_radio"]');
+            if (firstRadio) {
+                const firstPaymentMethodCode = this._getPaymentMethodCode(firstRadio);
+                this._adaptSubmitButtonLabel(firstPaymentMethodCode);
+            }
+
             this._setPaymentFlow(); // Initialize the payment flow to let providers overwrite it.
         }
     }
@@ -283,14 +289,16 @@ export class PaymentForm extends Interaction {
      * @return {void}
      */
     _adaptSubmitButtonLabel(paymentMethodCode) {
-        const buttonLabel = this._isPayLaterPaymentMethod(paymentMethodCode)
-            ? _t("Confirm")
-            : this.defaultSubmitButtonLabel;
-        for (const btn of document.querySelectorAll('button[name="o_payment_submit_button"]')) {
-            if (btn.textContent !== buttonLabel) {
-                btn.textContent = buttonLabel;
+        const isPayLaterMethod = this._isPayLaterPaymentMethod(paymentMethodCode);
+        const submitButtons = document.querySelectorAll('button[name="o_payment_submit_button"]');
+        submitButtons.forEach(btn => {
+            const payNowLabel = btn.querySelector('[name="o_pay_now_label"]');
+            const payLaterLabel = btn.querySelector('[name="o_pay_later_label"]');
+            if (payNowLabel && payLaterLabel) {
+                payNowLabel.classList.toggle('d-none', isPayLaterMethod);
+                payLaterLabel.classList.toggle('d-none', !isPayLaterMethod);
             }
-        }
+        });
     }
 
     /**

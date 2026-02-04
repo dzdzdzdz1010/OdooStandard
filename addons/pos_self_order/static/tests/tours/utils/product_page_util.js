@@ -203,3 +203,14 @@ export function isProductDisplayed(productName) {
         trigger: `.o_self_product_box span:contains("${productName}")`,
     };
 }
+
+export function optionalProductsIsThere() {
+    return {
+        content: "Check if optional product is there",
+        trigger: ".o_self_optional_product_page",
+    };
+}
+
+export function clickOptionalProduct(productName) {
+    return [optionalProductsIsThere(), clickProduct(productName)];
+}

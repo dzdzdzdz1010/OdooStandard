@@ -21,6 +21,7 @@ import {
     changesToOrder,
     filterChangeByCategories,
 } from "@point_of_sale/app/models/utils/order_change";
+import { flyToCart } from "@pos_self_order/app/utils/ui_animations";
 import { EpsonPrinter } from "@point_of_sale/app/utils/printer/epson_printer";
 import { initLNA } from "@point_of_sale/app/utils/init_lna";
 import { GeneratePrinterData } from "@point_of_sale/app/utils/generate_printer_data";
@@ -945,6 +946,48 @@ export class SelfOrder extends Reactive {
             return `url('/web/image/ir.attachment/${imageId}/raw')`;
         }
         return "none";
+    }
+
+    isProductAvailable(product) {
+        return (
+            !product.pos_categ_ids.length ||
+            product.pos_categ_ids.some((categ) => this.isCategoryAvailable(categ.id))
+        );
+    }
+
+    selectProduct(product, opts = {}) {
+        if (!product.self_order_available || !this.isProductAvailable(product)) {
+            return;
+        }
+        if (product.isCombo()) {
+            const { show, selectedCombos } = this.showComboSelectionPage(product);
+            if (show) {
+                this.router.navigate("combo_selection", { id: product.id }, opts.historyState);
+                return;
+            }
+            flyToCart(opts.target, opts.destination);
+            this.addToCart(
+                product,
+                1,
+                "",
+                {},
+                {},
+                selectedCombos.map((combo) => ({
+                    ...combo,
+                    qty: 1,
+                }))
+            );
+            return;
+        }
+        if (this.ordering && !product.isConfigurable()) {
+            flyToCart(opts.target, opts.destination);
+            this.addToCart(product, 1);
+        }
+        if (product.isConfigurable()) {
+            this.router.navigate("product", { id: product.id }, opts.historyState);
+        } else if (product.pos_optional_product_ids.length) {
+            this.router.navigate("optional_product", { id: product.id }, opts.historyState);
+        }
     }
 }
 

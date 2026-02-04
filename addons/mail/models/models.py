@@ -24,6 +24,13 @@ class Base(models.AbstractModel):
     # ORM
     # ------------------------------------------------------------
 
+    def write(self, vals):
+        result = super().write(vals)
+        if versioning := self.env.context.get("mail_store_versioning"):
+            for rec in self:
+                versioning["written_fields_by_record"][rec._name][rec.id].update(vals.keys())
+        return result
+
     def _valid_field_parameter(self, field, name):
         # allow tracking on abstract models; see also 'mail.thread'
         return (

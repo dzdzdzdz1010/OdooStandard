@@ -1,12 +1,15 @@
 /** @typedef {import("./record").Record} Record */
 /** @typedef {import("./record_list").RecordList} RecordList */
 
-import { htmlEscape, markup, toRaw } from "@odoo/owl";
-import { RecordInternal } from "./record_internal";
-import { deserializeDate, deserializeDateTime } from "@web/core/l10n/dates";
-import { IS_DELETED_SYM, isCommandList, isMany, normalizeManyCommands } from "./misc";
-import { browser } from "@web/core/browser/browser";
+import { ManyFieldVersion, SingleFieldVersion, SKIP_REVISION } from "@mail/model/field_versions";
+import { IS_DELETED_SYM, isCommandList, isMany, normalizeManyCommands } from "@mail/model/misc";
+import { RecordInternal } from "@mail/model/record_internal";
 import { parseRawValue } from "@mail/utils/common/local_storage";
+
+import { htmlEscape, markup, toRaw } from "@odoo/owl";
+
+import { browser } from "@web/core/browser/browser";
+import { deserializeDate, deserializeDateTime } from "@web/core/l10n/dates";
 
 const Markup = markup().constructor;
 
@@ -32,6 +35,18 @@ export class StoreInternal extends RecordInternal {
     RHD_QUEUE = new Map(); // record-hard-deletes
     ERRORS = [];
     UPDATE = 0;
+    /**
+     * Current revision context used during store insert/update operations.
+     *
+     * Recursive updates always inherit the revision of the field that triggered
+     * them (e.g. updating a field also updates the inverse side with the same
+     * revision).
+     *
+     * The source of the field revision is:
+     * - the server provided version if one was passed to `store.insert`,
+     * - otherwise, the last known revision of the field.
+     */
+    currentInsertRevision = null;
     /**
      * Map of local storage keys of fields synced with local storage to the record and field name.
      *
@@ -237,31 +252,74 @@ export class StoreInternal extends RecordInternal {
     /**
      * @param {Record} record
      * @param {Object} vals
+     * @param {Object} [options]
+     * @param {{
+     *   snapshot: import("@mail/model/field_versions").PgSnapshot,
+     *   written_fields_by_record: { [modelName: string]: { [id: number]: string[] } }
+     * }} [options.versionMetadata]
      */
-    updateFields(record, vals) {
+    updateFields(record, vals, { versionMeta } = {}) {
         const fieldEntries = Object.entries(vals).concat(
             Object.getOwnPropertySymbols(vals).map((sym) => [sym, vals[sym]])
         );
         for (const [fieldName, value] of fieldEntries) {
-            const valueNormalized = isMany(record.Model, fieldName)
-                ? normalizeManyCommands(value)
-                : value;
-            if (record.Model._.fieldsLocalStorage.has(fieldName)) {
-                // should immediately write in local storage, for immediately correct next compute
-                if (!this.isUpdatingFromStorageEvent) {
-                    const lse = record._.fieldsLocalStorage.get(fieldName);
-                    if (value === record._.fieldsDefault.get(fieldName)) {
-                        lse.remove();
-                    } else {
-                        lse.set(value);
-                    }
+            let version = record._.fieldsVersion.get(fieldName);
+            if (!version) {
+                version = isMany(record.Model, fieldName)
+                    ? new ManyFieldVersion(record.Model)
+                    : new SingleFieldVersion();
+                record._.fieldsVersion.set(fieldName, version);
+            }
+            // Propagate the field revision for recursive updates. If
+            // version was not provided, use the last known revision for
+            // this field.
+            const clearRevisionAfterUpdate = !this.currentInsertRevision;
+            if (!this.currentInsertRevision) {
+                if (versionMeta) {
+                    this.currentInsertRevision = {
+                        snapshot: versionMeta.snapshot,
+                        isWrite:
+                            versionMeta?.written_fields_by_record?.[record.Model.getName()]?.[
+                                record.id
+                            ]?.includes(fieldName),
+                    };
+                } else {
+                    this.currentInsertRevision = version.lastRevision;
                 }
             }
-            if (!record.Model._.fields.get(fieldName) || record.Model._.fieldsAttr.get(fieldName)) {
-                this.updateAttr(record, fieldName, valueNormalized);
-            } else {
-                this.updateRelation(record, fieldName, valueNormalized);
+            const toApply = version.resolveApply(
+                isMany(record.Model, fieldName) ? normalizeManyCommands(value) : value,
+                this.currentInsertRevision
+            );
+            try {
+                if (toApply === SKIP_REVISION) {
+                    continue;
+                }
+                this._updateField(record, fieldName, toApply);
+            } finally {
+                if (clearRevisionAfterUpdate) {
+                    this.currentInsertRevision = null;
+                }
             }
+        }
+    }
+
+    _updateField(record, fieldName, value) {
+        if (record.Model._.fieldsLocalStorage.has(fieldName)) {
+            // should immediately write in local storage, for immediately correct next compute
+            if (!this.isUpdatingFromStorageEvent) {
+                const lse = record._.fieldsLocalStorage.get(fieldName);
+                if (value === record._.fieldsDefault.get(fieldName)) {
+                    lse.remove();
+                } else {
+                    lse.set(value);
+                }
+            }
+        }
+        if (!record.Model._.fields.get(fieldName) || record.Model._.fieldsAttr.get(fieldName)) {
+            this.updateAttr(record, fieldName, value);
+        } else {
+            this.updateRelation(record, fieldName, value);
         }
     }
     /**

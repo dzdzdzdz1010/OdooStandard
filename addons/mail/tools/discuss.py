@@ -9,15 +9,17 @@ from markupsafe import Markup
 import odoo
 from odoo import models
 from odoo.exceptions import MissingError
-from odoo.http import request
-from odoo.tools import groupby
+from odoo.http import request, route
+from odoo.tools import groupby, OrderedSet
 from odoo.addons.bus.websocket import wsrequest
+
 
 def add_guest_to_context(func):
     """ Decorate a function to extract the guest from the request.
     The guest is then available on the context of the current
     request.
     """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         req = request or wsrequest
@@ -36,6 +38,120 @@ def add_guest_to_context(func):
         return func(self, *args, **kwargs)
 
     return wrapper
+
+
+def store_version(func=None, *, make_json_response=False):
+    """Decorator to manage versioned updates in the store.
+
+    Store data is received from RPC and from the bus, and is applied
+    directly to the store. Without versioning, the order of arrival can
+    cause outdated data to overwrite newer data, leading to incorrect
+    store state.
+
+    On the client side, we should be able to determine whether a field
+    represents a newer version of what is already known. This is
+    directly linked to PostgreSQL snapshots and isolation level, in our
+    case, REPEATABLE READ.
+
+    For fields that were read, what matters is what the snapshot could
+    see at the time. For writes, what matters is whether the snapshot of
+    the version we know could see the write transaction. The combination
+    of xmin, xmax, xip and the current transaction id is enough to
+    deduce it.
+
+    This decorator expects the response to be the result of
+    `store.get_result()`, or a dict that includes it at the first level.
+
+    """
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if "mail_store_versioning" in self.env.context:
+                return func(self, *args, **kwargs)
+            store_versioning_ctx = {
+                "pending_bus_send": [],
+                # { model_name: { record_id: set() } }
+                "written_fields_by_record": defaultdict(
+                    lambda: defaultdict(lambda: OrderedSet(["write_uid", "write_date"])),
+                ),
+            }
+            req = request or wsrequest
+            if req:
+                req.update_context(mail_store_versioning=store_versioning_ctx)
+            if isinstance(self, models.BaseModel):
+                self = self.with_context(mail_store_versioning=store_versioning_ctx)
+            response = func(self, *args, **kwargs)
+            self.env.flush_all()  # Ensure xact_id is properly assigned before querying snapshot.
+            self.env.cr.execute("""
+                WITH snapshot AS (
+                    SELECT pg_current_snapshot() as s
+                )
+                SELECT
+                    pg_snapshot_xmin(s),
+                    pg_snapshot_xmax(s),
+                    ARRAY(SELECT pg_snapshot_xip(s))::text[],
+                    pg_current_xact_id_if_assigned()
+                FROM snapshot
+            """)
+            snapshot = self.env.cr.fetchone()
+            store_version_metadata = {
+                "snapshot": {
+                    "xmin": int(snapshot[0]),
+                    "xmax": int(snapshot[1]),
+                    "xip": [int(xid) for xid in snapshot[2]],
+                    "current_xact_id": int(snapshot[3]) if snapshot[3] else None,
+                },
+                "written_fields_by_record": {
+                    model: {record_id: list(fields) for record_id, fields in records.items()}
+                    for model, records in store_versioning_ctx["written_fields_by_record"].items()
+                },
+            }
+
+            # Add the version to the return value of `Store.get_result()`. Either the
+            # payload itself, or at the first level of the payload.
+            def insert_metadata(payload):
+                if not isinstance(payload, dict):
+                    return
+                if isinstance(payload, Store.Result):
+                    payload["__store_version__"] = store_version_metadata
+                    return
+                for value in payload.values():
+                    if isinstance(value, Store.Result):
+                        value["__store_version__"] = store_version_metadata
+                        break
+
+            for target, notification_type, msg in store_versioning_ctx["pending_bus_send"]:
+                insert_metadata(msg)
+                target.channel._bus_send(notification_type, msg, subchannel=target.subchannel)
+            insert_metadata(response)
+            if make_json_response:
+                return req.make_json_response(response)
+            return response
+
+        return wrapper
+
+    if func is None:
+        return decorator
+    return decorator(func)
+
+
+def mail_route(*route_args, make_json_response=False, **route_kwargs):
+    """
+    Thin wrapper around `route` that adds guest context and enables versioning.
+
+    This decorator is equivalent to applying, in order:
+
+        @route(*route_args, **route_kwargs)
+        @store_version(make_json_response=make_json_response)
+        @add_guest_to_context
+
+    """
+    def decorator(func):
+        wrapped_func = add_guest_to_context(func)
+        wrapped_func = store_version(make_json_response=make_json_response)(wrapped_func)
+        return route(*route_args, **route_kwargs)(wrapped_func)
+    return decorator
 
 
 def get_twilio_credentials(env) -> tuple[str | None, str | None]:
@@ -80,6 +196,7 @@ ids_by_model.update(
 )
 
 NO_VALUE = object()
+
 
 class Store:
     """Helper to build a dict of data for sending to web client.
@@ -202,7 +319,7 @@ class Store:
 
     def get_result(self):
         """Gets resulting data built from adding all data together."""
-        res = {}
+        res = Store.Result()
         for model_name, records in sorted(self.data.items()):
             if not ids_by_model[model_name]:  # singleton
                 res[model_name] = dict(sorted(records.items()))
@@ -215,7 +332,18 @@ class Store:
             "Missing `bus_channel`. Pass it to the `Store` constructor to use `bus_send`."
         )
         if res := self.get_result():
-            self.target.channel._bus_send(notification_type, res, subchannel=self.target.subchannel)
+            # First step torwards full versionning, only insert are versionned.
+            if (
+                notification_type == "mail.record/insert"
+                and "mail_store_versioning" in self.target.channel.env.context
+            ):
+                self.target.channel.env.context["mail_store_versioning"]["pending_bus_send"].append(
+                    (self.target, notification_type, res)
+                )
+            else:
+                self.target.channel._bus_send(
+                    notification_type, res, subchannel=self.target.subchannel
+                )
 
     def resolve_data_request(self, values=None):
         """Add values to the store for the current data request.
@@ -649,3 +777,9 @@ class Store:
             if self.target.channel is None and self.target.subchannel is None:
                 records = env.user
             return records if isinstance(records, env.registry["res.users"]) else env["res.users"]
+
+    class Result(dict):
+        """Marker class for dictionaries returned by `Store.get_result()`.
+        Used to distinguish store results from arbitrary dicts so version
+        metadata can be added (see `store_version` decorator).
+        """

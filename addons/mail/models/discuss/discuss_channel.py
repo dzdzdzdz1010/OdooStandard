@@ -1368,9 +1368,6 @@ class DiscussChannel(models.Model):
     def channel_set_custom_name(self, name):
         self.ensure_one()
         self.self_member_id.custom_channel_name = name
-        store = Store(bus_channel=self.self_member_id._bus_channel())
-        store.add(self.self_member_id, ["custom_channel_name"])
-        store.bus_send()
 
     def channel_rename(self, name):
         self.ensure_one()

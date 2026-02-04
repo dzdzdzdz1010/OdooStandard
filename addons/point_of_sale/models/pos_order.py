@@ -1119,7 +1119,7 @@ class PosOrder(models.Model):
         self.ensure_one()
         return {
             "type": "ir.actions.act_url",
-            "url": f"/pos/receipt/{self.id}?company_id={self.company_id.id}",
+            "url": f"/pos/receipt/{self.id}?company_id={self.company_id.id}&lang={self.env.lang}",
             "target": "new",
         }
 

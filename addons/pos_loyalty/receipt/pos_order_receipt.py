@@ -17,16 +17,16 @@ class PosOrderReceipt(models.AbstractModel):
 
         if len(histories) > 0:
             issued = [{
-                'name': history.card_id.program_id.name,
+                'name': history.card_id.program_id.portal_point_name,
                 'type': _('Won:') if history.issued > 0 else _('Spent:'),
                 'points': history.issued or history.used,
             } for history in histories if history.card_id.program_id.program_type == 'loyalty']
             new_coupon = [{
                 'name': history.card_id.program_id.name,
-                'type': '',
-                'points': history.card_id.code,
-                'barcode_base64': 'data:image/png;base64,' + base64.b64encode(self.env['ir.actions.report'].barcode('Code128', history.card_id.code)).decode('utf-8'),
+                'code': history.card_id.code,
+                'barcode_base64': 'data:image/png;base64,' + base64.b64encode(self.env['ir.actions.report'].barcode('Code128', history.card_id.code, quiet=False)).decode('utf-8'),
             } for history in histories if history.card_id.program_id.program_type == 'next_order_coupons']
-            data['extra_data']['loyalties'] = issued + new_coupon
+            data['extra_data']['loyalties'] = issued
+            data['extra_data']['new_coupons'] = new_coupon
 
         return data

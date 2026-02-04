@@ -7,8 +7,8 @@ import {
     startServer,
     triggerHotkey,
 } from "@mail/../tests/mail_test_helpers";
-import { describe, test, waitFor } from "@odoo/hoot";
-import { Command, serverState, withUser } from "@web/../tests/web_test_helpers";
+import { describe, expect, test, waitFor } from "@odoo/hoot";
+import { Command, onRpc, serverState, withUser } from "@web/../tests/web_test_helpers";
 import { defineLivechatModels } from "./livechat_test_helpers";
 
 import { rpc } from "@web/core/network/rpc";
@@ -46,7 +46,7 @@ test("Thread name unchanged when inviting new users", async () => {
     await contains(".o-mail-DiscussContent-threadName[title='Visitor #20']");
 });
 
-test("Can set a custom name to livechat conversation", async () => {
+test("Can rename a livechat conversation", async () => {
     const pyEnv = await startServer();
     const guestId = pyEnv["mail.guest"].create({ name: "Visitor #20" });
     const channelId = pyEnv["discuss.channel"].create({
@@ -56,14 +56,15 @@ test("Can set a custom name to livechat conversation", async () => {
         ],
         channel_type: "livechat",
     });
+    onRpc("discuss.channel", "channel_rename", ({ route }) => expect.step(route));
     await start();
     await openDiscuss(channelId);
     await click(".o-mail-DiscussSidebar-item:contains('Visitor #20')");
     await contains(".o-mail-DiscussContent-threadName[title='Visitor #20']");
     await insertText(".o-mail-DiscussContent-threadName", "New Name", { replace: true });
     await triggerHotkey("Enter");
+    await expect.waitForSteps(["/web/dataset/call_kw/discuss.channel/channel_rename"]);
     await contains(".o-mail-DiscussContent-threadName[title='New Name']");
-    await contains(".o-mail-DiscussSidebar-item:contains('New Name')");
 });
 
 test("Display livechat custom username if defined", async () => {

@@ -90,7 +90,7 @@ registry.category("web_tour.tours").add('crm_tour', {
     run: "click",
 }, {
     trigger: ".o_lead_opportunity_form .o_statusbar_status",
-    content: _t("You can make your opportunity advance through your pipeline from here."),
+    content: _t("You can make your opportunity advance through your pipeline by clicking on stages here. Try sending it to the next stage!"),
     tooltipPosition: "bottom",
     run: "click",
 }, {

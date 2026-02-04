@@ -126,6 +126,11 @@ class SaleOrder(models.Model):
             lambda so: all(ticket.sale_available for ticket in so.order_line.event_ticket_id),
         )
 
+    def _needs_customer_address(self):
+        super_res = super()._needs_customer_address()
+        event_lines = self.order_line.filtered('event_id')
+        return super_res or any(event_lines.mapped('price_total'))
+
 
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"

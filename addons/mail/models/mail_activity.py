@@ -76,9 +76,10 @@ class MailActivity(models.Model):
     activity_decoration = fields.Selection(related='activity_type_id.decoration_type', readonly=True)
     icon = fields.Char('Icon', related='activity_type_id.icon', readonly=True)
     activity_plan_id = fields.Many2one('mail.activity.plan', string='Plan', ondelete='set null', copy=False)
-    summary = fields.Char('Summary')
-    note = fields.Html('Note', sanitize_style=True)
-    date_deadline = fields.Date('Due Date', index=True, required=True, default=fields.Date.context_today)
+    summary = fields.Char('Summary', compute='_compute_summary', precompute=True, store=True, readonly=False)
+    note = fields.Html('Note', sanitize_style=True, compute='_compute_note', precompute=True, store=True, readonly=False)
+    date_deadline = fields.Date('Due Date', index=True, required=True,
+        compute='_compute_date_deadline', precompute=True, store=True, readonly=False)
     date_done = fields.Date('Done Date', compute='_compute_date_done', store=True)
     feedback = fields.Text('Feedback')
     automated = fields.Boolean(
@@ -95,7 +96,8 @@ class MailActivity(models.Model):
     # description
     user_id = fields.Many2one(
         'res.users', 'Assigned to',
-        index=True, required=False, ondelete='cascade')
+        index=True, required=False, ondelete='cascade',
+        compute='_compute_user_id', precompute=True, store=True, readonly=False)
     user_tz = fields.Selection(string='Timezone', related="user_id.tz", store=True)
     state = fields.Selection([
         ('overdue', 'Overdue'),
@@ -185,15 +187,34 @@ class MailActivity(models.Model):
         for record in self:
             record.can_write = record in valid_records
 
-    @api.onchange('activity_type_id')
-    def _onchange_activity_type_id(self):
-        if self.activity_type_id:
-            if self.activity_type_id.summary:
-                self.summary = self.activity_type_id.summary
-            self.date_deadline = self.activity_type_id._get_date_deadline()
-            self.user_id = self.activity_type_id.default_user_id or self.env.user
-            if self.activity_type_id.default_note:
-                self.note = self.activity_type_id.default_note
+    @api.depends('activity_type_id')
+    def _compute_date_deadline(self):
+        for activity in self:
+            if activity.activity_type_id.delay_count:
+                activity.date_deadline = activity.activity_type_id._get_date_deadline()
+            elif not activity.date_deadline:
+                activity.date_deadline = fields.Date.context_today(activity)
+
+    @api.depends('activity_type_id')
+    def _compute_note(self):
+        for activity in self.filtered(lambda a: a.activity_type_id.default_note):
+            activity.note = activity.activity_type_id.default_note
+
+    @api.depends('activity_type_id')
+    def _compute_summary(self):
+        for activity in self:
+            if activity.activity_type_id.summary:
+                activity.summary = activity.activity_type_id.summary
+            elif not activity.summary:
+                activity.summary = activity.activity_type_id.name
+
+    @api.depends('activity_type_id')
+    def _compute_user_id(self):
+        for activity in self:
+            if activity.activity_type_id.default_user_id:
+                activity.user_id = activity.activity_type_id.default_user_id
+            elif not activity.user_id:
+                activity.user_id = self.env.user
 
     @api.onchange('recommended_activity_type_id')
     def _onchange_recommended_activity_type_id(self):
@@ -850,7 +871,6 @@ class MailActivity(models.Model):
         })
         virtual_activity = self.new(vals)
         virtual_activity._onchange_previous_activity_type_id()
-        virtual_activity._onchange_activity_type_id()
         return virtual_activity._convert_to_write(virtual_activity._cache)
 
     @api.autovacuum

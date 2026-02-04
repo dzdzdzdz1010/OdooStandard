@@ -88,15 +88,7 @@ class HrAttendanceOvertimeRule(models.Model):
         ),
     )
 
-    timing_type = fields.Selection([
-        ('work_days', "On any working day"),
-        ('non_work_days', "On any non-working day"),
-        ('leave', "When employee is off"),
-        ('schedule', "Outside of a specific schedule"),
-        # ('employee', "Outside the employee's working schedule"),
-        # ('off_time', "When employee is off"),  # TODO in ..._holidays
-        # ('public_leave', "On a holiday"), ......
-    ], default='work_days')
+    timing_type = fields.Selection(selection=lambda self: self._get_timing_type_selection(), default='work_days')
     timing_start = fields.Float("From", default=0)
     timing_stop = fields.Float("To", default=24)
     expected_hours_from_contract = fields.Boolean(
@@ -139,6 +131,13 @@ class HrAttendanceOvertimeRule(models.Model):
         'CHECK(0 <= timing_stop AND timing_stop <= 24)',
         "Timing Stop is an hour of the day",
     )
+
+    def _get_timing_type_selection(self):
+        return [
+            ('work_days', "On any working day"),
+            ('non_work_days', "On any non-working day"),
+            ('schedule', "Outside of a specific schedule"),
+        ]
 
     # Quantity rule well defined
     @api.constrains('base_off', 'expected_hours', 'quantity_period')
@@ -731,7 +730,7 @@ class HrAttendanceOvertimeRule(models.Model):
         }
 
     def _compute_information_display(self):
-        timing_types = dict(self._fields['timing_type'].selection)
+        timing_types = dict(self._get_timing_type_selection())
         for rule in self:
             if rule.base_off == 'quantity':
                 if rule.expected_hours_from_contract:

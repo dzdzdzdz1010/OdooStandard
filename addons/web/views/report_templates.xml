@@ -327,7 +327,12 @@
                                 </div>
                             </span>
                         </li>
-                        <li t-if="not forced_vat"/>
+                        <li t-if="not forced_vat">
+                            <t t-if="company.vat">
+                                <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                                <span t-esc="company.vat">US12345671</span>
+                            </t>
+                        </li>
                         <li t-else="">
                             <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
                             <span t-esc="forced_vat">US12345671</span>
@@ -382,7 +387,12 @@
                                     </div>
                                 </span>
                             </li>
-                            <li t-if="not forced_vat"/>
+                            <li t-if="not forced_vat">
+                                <t t-if="company.vat">
+                                    <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                                    <span t-esc="company.vat">US12345671</span>
+                                </t>
+                            </li>
                             <li t-else="">
                                 <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
                                 <span t-esc="forced_vat">US12345671</span>
@@ -441,7 +451,12 @@
                                 </div>
                             </span>
                         </li>
-                        <li t-if="not forced_vat"/>
+                        <li t-if="not forced_vat">
+                            <t t-if="company.vat">
+                                <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                                <span t-esc="company.vat">US12345671</span>
+                            </t>
+                        </li>
                         <li t-else="">
                             <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
                             <span t-esc="forced_vat">US12345671</span>
@@ -501,7 +516,12 @@
                                 </div>
                             </span>
                         </li>
-                        <li t-if="not forced_vat"/>
+                        <li t-if="not forced_vat">
+                            <t t-if="company.vat">
+                                <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                                <span t-esc="company.vat">US12345671</span>
+                            </t>
+                        </li>
                         <li t-else="">
                             <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
                             <span t-esc="forced_vat">US12345671</span>
@@ -575,7 +595,12 @@
                                 </div>
                             </span>
                         </li>
-                        <li t-if="not forced_vat"/>
+                        <li t-if="not forced_vat">
+                            <t t-if="company.vat">
+                                <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                                <span t-esc="company.vat">US12345671</span>
+                            </t>
+                        </li>
                         <li t-else="">
                             <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
                             <span t-esc="forced_vat">US12345671</span>
@@ -644,7 +669,12 @@
                                 </div>
                             </span>
                         </li>
-                        <li t-if="not forced_vat"/>
+                        <li t-if="not forced_vat">
+                            <t t-if="company.vat">
+                                <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                                <span t-esc="company.vat">US12345671</span>
+                            </t>
+                        </li>
                         <li t-else="">
                             <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
                             <span t-esc="forced_vat">US12345671</span>
@@ -696,6 +726,7 @@
                             <span t-field="company.report_header">
                                 Company tagline
                             </span>
+<<<<<<< fa993fdc4450368822c1ac7e278ee9708e1aacab
                         </td>
                         <td class="p-0 text-end">
                             <img t-if="company.logo" class="o_company_logo mb-2" t-att-src="image_data_uri(company.logo)" alt="Logo"/>
@@ -728,6 +759,32 @@
                     </tr>
                 </tbody>
             </table>
+||||||| 14095442eae0f8678bf9236019bee71af3f6f494
+                        </li>
+                        <li t-if="not forced_vat"/>
+                        <li t-else="">
+                            <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                            <span t-esc="forced_vat">US12345671</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+=======
+                        </li>
+                        <li t-if="not forced_vat">
+                            <t t-if="company.vat">
+                                <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                                <span t-esc="company.vat">US12345671</span>
+                            </t>
+                        </li>
+                        <li t-else="">
+                            <t t-esc="company.country_id.vat_label or 'Tax ID'">Tax ID</t>:
+                            <span t-esc="forced_vat">US12345671</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+>>>>>>> 6c9543ec9ca4e82865a8a0962c377a1d4d591fb9
         </div>
 
         <!-- BODY -->

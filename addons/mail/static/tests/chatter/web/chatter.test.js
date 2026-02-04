@@ -61,6 +61,7 @@ test("simple chatter on a record", async () => {
                         "activities",
                         "attachments",
                         "contact_fields",
+                        "default_subject",
                         "followers",
                         "has_pinned_messages",
                         "scheduledMessages",

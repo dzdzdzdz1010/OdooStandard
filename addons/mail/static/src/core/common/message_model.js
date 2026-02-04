@@ -74,6 +74,17 @@ export class Message extends Record {
             );
         },
     });
+    /** attachments not already clearly visible in the body, unlike inlined images */
+    extra_body_attachment_ids = fields.Attr("ir.attachment", {
+        compute() {
+            const parsedBody = new DOMParser().parseFromString(this.body, "text/html");
+            const inlinedImageAttachmentIds = [
+                ...parsedBody.querySelectorAll("img[data-attachment-id]"),
+            ].map((img) => parseInt(img.dataset.attachmentId));
+
+            return this.attachment_ids.filter((a) => !inlinedImageAttachmentIds.includes(a.id));
+        },
+    });
     hasLink = fields.Attr(false, {
         compute() {
             if (this.isBodyEmpty) {
@@ -133,6 +144,8 @@ export class Message extends Record {
         },
     });
     partner_ids = fields.Many("res.partner");
+    /** @type {string} */
+    reply_to;
     subtype_id = fields.One("mail.message.subtype");
     thread = fields.One("mail.thread");
     threadAsNeedaction = fields.One("mail.thread", {

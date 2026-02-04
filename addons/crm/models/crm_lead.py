@@ -26,8 +26,6 @@ CRM_LEAD_FIELDS_TO_MERGE = [
     'campaign_id',
     'medium_id',
     'source_id',
-    # Mail mixin
-    'email_cc',
     # description
     'name',
     'user_id',
@@ -85,7 +83,7 @@ class CrmLead(models.Model):
     _name = 'crm.lead'
     _description = "Lead"
     _order = "priority desc, id desc"
-    _inherit = ['mail.thread.cc',
+    _inherit = [
                 'mail.thread.blacklist',
                 'mail.thread.phone',
                 'mail.activity.mixin',
@@ -95,12 +93,14 @@ class CrmLead(models.Model):
                ]
     _primary_email = 'email_from'
     _check_company_auto = True
+    _mail_subject_field = 'mail_subject'
     _track_duration_field = 'stage_id'
 
     # Description
     name = fields.Char(
         'Opportunity', index='trigram', required=True,
         compute='_compute_name', readonly=False, store=True)
+    mail_subject = fields.Char('Mail Subject')
     user_id = fields.Many2one(
         'res.users', string='Salesperson', default=lambda self: self.env.user,
         domain="[('share', '=', False)]",

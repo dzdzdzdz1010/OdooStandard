@@ -298,18 +298,21 @@ class AccountMoveSendWizard(models.TransientModel):
         if not self.model or not self.model in self.env:
             raise UserError(_('Template creation from composer requires a valid model.'))
         model_id = self.env['ir.model']._get_id(self.model)
+        template_body = self.body
+        if template_body:
+            template_body = self._remove_quotes(template_body)
         values = {
             'name': self.template_name or self.subject,
             'subject': self.subject,
-            'body_html': self.body,
+            'body_html': template_body,
             'model_id': model_id,
             'use_default_to': True,
             'user_id': self.env.uid,
         }
         template = self.env['mail.template'].create(values)
 
-        # generate the saved template
-        self.write({'template_id': template.id})
+        # generate the saved template, but keep the original body
+        self.write({'template_id': template.id, 'body': self.body})
         return _reopen(self, self.id, self.model, context={**self.env.context, 'dialog_size': 'large'})
 
     # Similar of mail.compose.message

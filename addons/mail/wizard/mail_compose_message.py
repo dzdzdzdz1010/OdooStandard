@@ -5,6 +5,7 @@ import ast
 import base64
 import datetime
 import json
+import lxml.html
 
 from odoo import _, api, fields, models, Command, tools
 from odoo.exceptions import UserError, ValidationError
@@ -511,8 +512,12 @@ class MailComposeMessage(models.TransientModel):
         When not having a template, recipients may come from the parent in
         comment mode, to be sure to notify the same people. """
         for composer in self:
-            if (composer.template_id and composer.composition_mode == 'comment'
-                and not composer.composition_batch):
+            template = composer.template_id
+            template_defines_recipients = bool(template.email_cc or template.email_to or template.partner_to)
+            # Use template in comment mode only if there are no partners yet or if the template specifies different ones
+            # as suggested recipients should normally not change and we don't want to re-add them every time
+            if (template and composer.composition_mode == 'comment'
+                and not composer.composition_batch and (template_defines_recipients or not composer.partner_ids)):
                 res_ids = composer._evaluate_res_ids() or [0]
                 rendered_values = composer._generate_template_for_composer(
                     res_ids,
@@ -896,9 +901,12 @@ class MailComposeMessage(models.TransientModel):
         if not self.model or not self.model in self.env:
             raise UserError(_('Template creation from composer requires a valid model.'))
         model_id = self.env['ir.model']._get_id(self.model)
+        template_body = self.body
+        if template_body:
+            template_body = self._remove_quotes(template_body)
         values = {
             'name': self.template_name,
-            'body_html': self.body,
+            'body_html': template_body,
             'model_id': model_id,
             'use_default_to': True,
             'user_id': self.env.uid,
@@ -912,9 +920,27 @@ class MailComposeMessage(models.TransientModel):
                 attachments.write({'res_model': template._name, 'res_id': template.id})
                 template.attachment_ids = self.attachment_ids
 
-        # generate the saved template
-        self.write({'template_id': template.id})
+        # generate the saved template, but keep the original body
+        self.write({'template_id': template.id, 'body': self.body})
         return _reopen(self, self.id, self.model, context={**self.env.context, 'dialog_size': 'large'})
+
+    @api.model
+    def _remove_quotes(self, body):
+        """Remove all quoted content from a given html body, except on the root."""
+        BodyClass = body.__class__
+        parsed_body_root = lxml.html.fragment_fromstring(self.body, create_parent='div')
+        quoted_elements = parsed_body_root.xpath("//*[@data-o-mail-quote or @data-o-mail-quote-container] | //blockquote")
+        for element in quoted_elements:
+            if element == parsed_body_root:
+                continue
+            # may be orphaned if parent was a quote
+            if parent := element.getparent():
+                parent.remove(element)
+        # if the input body was already a single node with no trailing string, avoid adding wrapper div
+        root_children = parsed_body_root.getchildren()
+        if len(root_children) == 1 and not root_children[0].tail:
+            parsed_body_root = root_children[0]
+        return BodyClass(lxml.html.tostring(parsed_body_root, encoding='utf-8').decode(encoding='utf-8'))
 
     def cancel_save_template(self):
         """ Restore old subject when canceling the 'save as template' action

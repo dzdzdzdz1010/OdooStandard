@@ -2668,3 +2668,76 @@ class TestSaleStock(TestSaleStockCommon, ValuationReconciliationTestCommon):
         lot.invalidate_recordset()
         self.assertEqual(lot.with_user(user).sale_order_count, 1)
         self.assertEqual(lot.with_user(user).sale_order_ids, sale_order_2)
+
+    def test_get_cogs_price_unit_for_product_with_multiple_moves(self):
+        """Ensure that Products that have BOMs of multiple products can have their
+        COGS successfully calculated without encountering any Singleton Errors
+        """
+        product, component1, component2 = [self.env['product.product'].create({
+            'is_storable': True,
+            'name': name,
+            'standard_price': standard_price,
+            'valuation': 'real_time',
+        }) for name, standard_price in zip(
+            ['Kit Product', 'Component 1', 'Component 2'],
+            [50, 15, 20],
+            )
+        ]
+        product.valuation = 'real_time'
+        component1.valuation = 'real_time'
+        component2.valuation = 'real_time'
+
+        inv_loc = self.env['stock.location'].create({
+            'name': 'WH/STOCK',
+            'usage': 'internal',
+        })
+        cust_loc = self.env['stock.location'].create({
+            'name': 'CUSTOMERS',
+            'usage': 'customer',
+        })
+        inv_loc, cust_loc = [self.env['stock.location'].create({
+            'name': name,
+            'usage': usage,
+        }) for name, usage in zip(['WH/STOCK', 'CUSTOMERS'], ['internal', 'customer'])]
+        stock_move_line_vals = {
+            'quantity': 1.0,
+            'location_id': inv_loc.id,
+            'location_dest_id': cust_loc.id,
+            'picked': True,
+            'company_id': self.company.id,
+        }
+        stock_move_lines = [self.env['stock.move.line'].create(
+                stock_move_line_vals | {'product_id': component.id}
+            ) for component in [component1, component2]]
+        stock_move_vals = {
+                'product_uom_qty': 1.0,
+                'location_id': inv_loc.id,
+                'location_dest_id': cust_loc.id,
+                'picked': True,
+                'state': 'done',
+        }
+        stock_moves = self.env['stock.move'].create([stock_move_vals | {
+                    'move_line_ids': stock_move_line,
+                    'product_id': component.id,
+                    'value': component.standard_price
+                } for stock_move_line, component in zip(stock_move_lines, [component1, component2])]
+            )
+        account_move = self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner.id,
+            'line_ids': [
+                    Command.create({
+                        'product_id': product.id,
+                        'name': False,
+                        'sale_line_ids': [Command.create({
+                            'order_id': self._create_sale_order_one_line(product_id=product.id).id,
+                            'product_id': product.id,
+                            'product_uom_qty': 1.0,
+                            'move_ids': stock_moves
+                            })
+                        ]
+                    })
+            ],
+        })
+        self.assertEqual(-account_move._stock_account_prepare_realtime_out_lines_vals()[0]['amount_currency'], 35.0)
+        self.assertEqual(account_move._stock_account_prepare_realtime_out_lines_vals()[1]['amount_currency'], 35.0)

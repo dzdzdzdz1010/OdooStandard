@@ -14,6 +14,8 @@ from odoo.orm.models import (
     Model,
     check_companies_domain_parent_of,
     check_company_domain_parent_of,
+    check_company_domain_child_of,
+    check_company_domain_child_or_parent_of,
     fix_import_export_id_paths,
     get_public_method,
     parse_read_group_spec,

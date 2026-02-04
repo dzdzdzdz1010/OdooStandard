@@ -214,14 +214,14 @@ class StockReplenishmentOption(models.TransientModel):
     @api.depends('product_id', 'route_id')
     def _compute_free_qty(self):
         for record in self:
-            record.free_qty = record.product_id.with_context(location=record.location_id.id).free_qty
+            record.free_qty = record.product_id.with_context(location=record.location_id.id).sudo().free_qty
 
     @api.depends('replenishment_info_id')
     def _compute_lead_time(self):
         for record in self:
-            rule = self.env['stock.rule']._get_rule(record.product_id, record.location_id, {
+            rule = self.env['stock.rule']._get_rule(record.product_id, record.location_id.sudo(), {
                 'route_ids': record.route_id,
-                'warehouse_id': record.warehouse_id,
+                'warehouse_id': record.warehouse_id.sudo(),
             })
             delay = rule._get_lead_days(record.product_id)[0]['total_delay'] if rule else 0
             record.lead_time = _("%s days", delay)

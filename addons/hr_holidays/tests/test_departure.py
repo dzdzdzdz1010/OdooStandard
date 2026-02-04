@@ -62,7 +62,7 @@ class TestDeparture(TestHolidayContract):
     def test_departure_with_leave_cancel(self):
         self.env['hr.employee.departure'].create([{
             'employee_id': self.jules_emp.id,
-            'departure_date': date(2026, 2, 1),
+            'dismissal_date': date(2026, 2, 1),
             'departure_reason_id': self.env.ref('hr.departure_fired').id,
             'do_cancel_time_off_requests': True,
         }]).action_register()
@@ -78,7 +78,7 @@ class TestDeparture(TestHolidayContract):
     def test_departure_without_leave_cancel(self):
         self.env['hr.employee.departure'].create([{
             'employee_id': self.jules_emp.id,
-            'departure_date': date(2026, 2, 1),
+            'dismissal_date': date(2026, 2, 1),
             'departure_reason_id': self.env.ref('hr.departure_fired').id,
             'do_cancel_time_off_requests': False,
         }]).action_register()

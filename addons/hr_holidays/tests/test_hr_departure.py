@@ -1,7 +1,6 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 from datetime import date, timedelta
 
-from odoo import Command
 from odoo.tests import tagged
 
 from odoo.addons.hr_holidays.tests.common import TestHrHolidaysCommon
@@ -18,10 +17,10 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
         })
         cls.departure_date = date.today()
         departure_reason = cls.env['hr.departure.reason'].create({'name': "Fired"})
-        cls.departure_wizard = cls.env['hr.departure.wizard'].create({
+        cls.departure = cls.env['hr.employee.departure'].create({
             'departure_reason_id': departure_reason.id,
-            'departure_date': cls.departure_date,
-            'employee_ids': [Command.link(cls.employee.id)],
+            'dismissal_date': cls.departure_date,
+            'employee_id': cls.employee.id,
         })
         cls.leave_type = cls.env['hr.leave.type'].create({
             'name': 'Paid Time Off',
@@ -71,7 +70,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
         self.assertTrue(message in leave.message_ids.mapped('body'))
 
         cancel_message = "<p>The time off request has been cancelled for the following reason:</p><p>The employee will leave the company on %(departure_date)s.</p>" % {
-            'departure_date': self.departure_date
+            'departure_date': self.departure_date,
         }
         self.assertTrue(cancel_message in self.env['hr.leave'].search([
             ('request_date_from', '=', self.departure_date + timedelta(days=1)),
@@ -122,7 +121,7 @@ class TestHolidaysFlow(TestHrHolidaysCommon):
         self.assertTrue(allocation_msg in allocation.message_ids.mapped('body'))
 
     def _check_action_departure(self):
-        self.departure_wizard.action_register_departure()
+        self.departure.action_register()
         self._check_employee_allocation()
         self._check_employee_leave()
 

@@ -273,6 +273,8 @@ class HrEmployee(models.Model):
         readonly=False, groups="hr.group_hr_user")
     departure_description = fields.Html(related='version_id.departure_description', inherited=True,
         readonly=False, groups="hr.group_hr_user")
+    dismissal_date = fields.Date(related='version_id.dismissal_date', inherited=True,
+        readonly=False, groups="hr.group_hr_user")
     departure_date = fields.Date(related='version_id.departure_date', inherited=True,
         readonly=False, groups="hr.group_hr_user")
     departure_action_at_departure = fields.Boolean(related='version_id.departure_action_at_departure', inherited=True,
@@ -2116,39 +2118,6 @@ class HrEmployee(models.Model):
                 'default_employee_id': self.id,
             },
         }
-
-    def action_departure_multi(self):
-        return {
-            'name': self.env._('End of collaboration'),
-            'res_model': 'hr.departure.wizard',
-            'type': 'ir.actions.act_window',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_employee_ids': self.ids,
-            },
-        }
-
-    def action_reopen(self):
-        if any(not emp.departure_id for emp in self):
-            raise ValidationError(self.env._("You can't reopen employees that are still employed"))
-        today = fields.Date.context_today(self)
-        employees_to_edit = self.env['hr.employee']
-        for employee in self:
-            current_version = employee._get_version(today)
-            if current_version.date_version == today:
-                employees_to_edit += employee
-            else:
-                contract_end = current_version.contract_date_end
-                new_version_date = max(today, contract_end + relativedelta(days=1)) if contract_end else today
-                employee.create_version({
-                    'date_version': new_version_date,
-                    'departure_id': False,
-                    'contract_date_start': False,
-                    'contract_date_end': False,
-                })
-        employees_to_edit.write({'departure_id': False})
-        self.action_unarchive()
 
     def action_cancel_departure(self):
         self.ensure_one()

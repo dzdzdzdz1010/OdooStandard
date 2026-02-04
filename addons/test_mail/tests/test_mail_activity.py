@@ -927,6 +927,21 @@ class TestActivitySystray(TestActivityCommon):
             ('res_model', '=', self.test_lead_records._name),
         ])
         self.assertEqual(len(test_with_removed), 4, 'Without ACL check, activities linked to removed records are kept')
+
+        self.env.invalidate_all()
+        test_with_removed_as_admin = self.env['mail.activity'].with_user(self.user_admin).search([
+            ('id', 'in', self.test_activities.ids),
+            ('res_model', '=', self.test_lead_records._name),
+        ])
+        self.assertEqual(len(test_with_removed_as_admin), 3, 'With ACL check, activities linked to removed records are not kept is not assigned to the user')
+
+        self.env.invalidate_all()
+        # interestingly, has_access('read') works, but reading fails (see below). To check with ORM.
+        # self.assertFalse(
+        #     self.test_activities_removed.with_user(self.user_admin).has_access('read'),
+        #     'No access to an activity linked to someone and whose record has been removed '
+        #     '(considered as no access to record); and should not crash (no MissingError)'
+        # )
         test_with_removed = self.env['mail.activity'].search([
             ('id', 'in', self.test_activities.ids),
             ('res_model', '=', self.test_lead_records._name),
@@ -934,7 +949,13 @@ class TestActivitySystray(TestActivityCommon):
         self.assertEqual(len(test_with_removed), 4, 'Even with ACL check, activities linked to removed records are kept if assigned to the user (see odoo/odoo#112126)')
 
         # if not assigned -> should filter out
+        self.env.invalidate_all()
         self.test_activities_removed.write({'user_id': self.user_admin.id})
+        test_with_removed = self.env['mail.activity'].search([
+            ('id', 'in', self.test_activities.ids),
+            ('res_model', '=', self.test_lead_records._name),
+        ])
+        self.assertEqual(len(test_with_removed), 3, 'With ACL check, activities linked to removed records are not kept if assigned to the another user')
         self.test_activities_removed.write({'user_id': self.user_employee.id})
 
         # be sure activities on removed records do not crash when managed, and that

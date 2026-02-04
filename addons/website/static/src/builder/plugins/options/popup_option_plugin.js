@@ -53,7 +53,9 @@ class PopupOptionPlugin extends Plugin {
             return popupModalChildrenEls.every((child) => child.matches(".s_popup_close"));
         },
         on_cloned_handlers: this.onCloned.bind(this),
-        on_snippet_dropped_handlers: this.onSnippetDropped.bind(this),
+        on_snippet_dropped_handlers: withSequence(0, this.onSnippetDropped.bind(this)),
+        // TODO remove when popup dragging from the page is disabled.
+        on_element_dropped_handlers: withSequence(0, this.onElementDropped.bind(this)),
         on_will_remove_handlers: this.onWillRemove.bind(this),
         no_parent_containers: ".s_popup",
     };
@@ -66,6 +68,7 @@ class PopupOptionPlugin extends Plugin {
 
     onSnippetDropped({ snippetEl }) {
         if (snippetEl.matches(".s_popup")) {
+            this.relocatePopup(snippetEl);
             this.assignUniqueID(snippetEl);
             this.dependencies.history.addCustomMutation({
                 apply: () => {
@@ -92,6 +95,24 @@ class PopupOptionPlugin extends Plugin {
 
     assignUniqueID(editingElement) {
         editingElement.closest(".s_popup").id = `sPopup${Date.now()}`;
+    }
+
+    onElementDropped({ droppedEl }) {
+        if (droppedEl.matches(".s_popup")) {
+            this.relocatePopup(droppedEl);
+        }
+    }
+
+    relocatePopup(editingElement) {
+        const popupEl = editingElement.closest(".s_popup");
+        if (popupEl.closest("#o_shared_blocks")) {
+            return;
+        }
+        const containerEl = this.editable.querySelector("main .oe_structure.o_savable");
+        if (!containerEl) {
+            return;
+        }
+        containerEl.insertAdjacentElement("afterbegin", popupEl);
     }
 }
 

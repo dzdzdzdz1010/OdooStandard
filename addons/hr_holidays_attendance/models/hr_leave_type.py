@@ -19,17 +19,32 @@ class HrLeaveType(models.Model):
             return super()._compute_display_name()
 
         employee = self.env['hr.employee'].browse(self.env.context.get('employee_id')).sudo()
-        unspent_overtime = self.env['hr.leave']._get_deductible_employee_overtime(employee)[employee]
-        if not unspent_overtime:
+        if not employee:
             return super()._compute_display_name()
+
+        unspent_overtime = self.env['hr.leave']._get_deductible_employee_overtime(employee)[employee]
 
         overtime_leaves = self.filtered(lambda l_type: l_type.overtime_deductible and not l_type.requires_allocation)
         for leave_type in overtime_leaves:
-            leave_type.display_name = "%(name)s (%(count)s)" % {
-                'name': leave_type.name,
-                'count': _('%s hours available',
-                    format_duration(unspent_overtime)),
-            }
+            balance_str = _('%s hours', format_duration(unspent_overtime)) if unspent_overtime != 0 else ""
+            cap_str = ""
+            if leave_type.allows_negative:
+                cap = leave_type.max_allowed_negative
+                unit = _('days') if leave_type.unit_of_measure == 'day' else _('hours')
+                cap_str = _('up to %(cap)g %(unit)s negative cap', cap=cap, unit=unit)
+
+            if balance_str and cap_str:
+                count = _('%(balance)s (%(cap)s)', balance=balance_str, cap=cap_str)
+            else:
+                count = balance_str or cap_str or False
+
+            if count:
+                leave_type.display_name = "%(name)s (%(count)s)" % {
+                    'name': leave_type.name,
+                    'count': count,
+                }
+            else:
+                leave_type.display_name = leave_type.name
         super(HrLeaveType, self - overtime_leaves)._compute_display_name()
 
     def get_allocation_data(self, employees, target_date=None):

@@ -36,7 +36,7 @@ test("dynamic snippet products loads items and displays them through template", 
         expect(json.params.template_key).toBe(
             "website_sale.dynamic_filter_template_product_product_products_item"
         );
-        expect(json.params.limit).toBe(16);
+        expect(json.params.limit).toBe(8);
         expect(json.params.search_domain).toEqual([["public_categ_ids", "child_of", 2]]);
         return [
             `
@@ -80,6 +80,21 @@ test("dynamic snippet products loads items and displays them through template", 
           >
               <div class="container">
                   <div class="row s_nb_column_fixed">
+                    <section class="s_dynamic_snippet_holder d-none px-4 placeholder-glow">
+                            <div class="row">
+                                <span class="placeholder col-3 rounded"/>
+                                <span class="placeholder col-2 offset-7 rounded"/>
+                                <span class="placeholder mt-3 col-6 rounded"/>
+                            </div>
+                            <div class="row mt-4">
+                                <span class="placeholder col-12 rounded" style="height:250px;"/>
+                            </div>
+                        </section>
+                        <section class="s_dynamic_content_holder d-none px-4 placeholder-glow">
+                            <div class="row mt-4">
+                                <span class="placeholder col-12 rounded" style="height:250px;"/>
+                            </div>
+                        </section>
                       <section class="s_dynamic_snippet_content oe_unremovable oe_unmovable o_not_editable col o_colored_level">
                           <div class="css_non_editable_mode_hidden">
                               <div class="missing_option_warning alert alert-info fade show d-none d-print-none rounded-0">

@@ -896,7 +896,7 @@ class StockPicking(models.Model):
                 if package.shipping_weight:
                     shipping_weight += package.shipping_weight
                 else:
-                    shipping_weight += package.package_type_id.base_weight
+                    shipping_weight += packages_weight.get(package, 0)
                     shipping_weight += sum(packages_weight.get(pack, 0) for pack in self.env['stock.package'].browse(children_packages_by_pack.get(package)))
 
             picking.shipping_weight = shipping_weight

@@ -244,12 +244,12 @@ export class Record {
         });
     }
     /** @returns {Record} */
-    static _insert(data) {
+    static _insert(data, options) {
         const ModelFullProxy = this;
         const Model = toRaw(ModelFullProxy);
         const recordFullProxy = Model.preinsert.call(ModelFullProxy, data);
         const record = toRaw(recordFullProxy)._raw;
-        record.update.call(record._proxy, data);
+        record.update.call(record._proxy, data, options);
         return recordFullProxy;
     }
     /** @returns {Record} */
@@ -312,12 +312,12 @@ export class Record {
 
     setup() {}
 
-    update(data) {
+    update(data, options) {
         const record = toRaw(this)._raw;
         const store = record._rawStore;
         return store.MAKE_UPDATE(function recordUpdate() {
             if (typeof data === "object" && data !== null) {
-                store._.updateFields(record, data);
+                store._.updateFields(record, data, options);
             } else {
                 if (Array.isArray(record.Model.id)) {
                     throw new Error(
@@ -325,7 +325,7 @@ export class Record {
                     );
                 }
                 // update on single-id data
-                store._.updateFields(record, { [record.Model.id]: data });
+                store._.updateFields(record, { [record.Model.id]: data }, options);
             }
         });
     }

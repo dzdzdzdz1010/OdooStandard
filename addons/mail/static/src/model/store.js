@@ -1,3 +1,4 @@
+import { PgSnapshot } from "@mail/model/field_versions";
 import { Record } from "./record";
 import { STORE_SYM, modelRegistry } from "./misc";
 import { reactive, toRaw } from "@odoo/owl";
@@ -206,6 +207,14 @@ export class Store extends Record {
      */
     insert(dataByModelName = {}, options = {}) {
         const store = this;
+        if ("__store_version__" in dataByModelName) {
+            const versionMeta = dataByModelName.__store_version__;
+            delete dataByModelName.__store_version__;
+            options.versionMeta = {
+                ...versionMeta,
+                snapshot: new PgSnapshot(versionMeta.snapshot),
+            };
+        }
         Record.MAKE_UPDATE(function storeInsert() {
             const recordsDataToDelete = [];
             for (const [modelName, data] of Object.entries(dataByModelName)) {

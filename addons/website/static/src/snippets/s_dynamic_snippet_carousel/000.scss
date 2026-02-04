@@ -24,18 +24,6 @@
         width: auto;
     }
 
-    &:where(:not(.o_carousel_multi_items)) {
-        .s_dynamic_snippet_title_aside + .s_dynamic_snippet_content {
-            .s_dynamic_snippet_arrows {
-                @include media-breakpoint-up(lg) {
-                    position: sticky;
-                    bottom: map-get($spacers, 3);
-                    transform: none;
-                }
-            }
-        }
-    }
-
     @include media-breakpoint-up(md) {
         &:where(:not([class*="o_arrows_"])){
             .carousel-control-prev {

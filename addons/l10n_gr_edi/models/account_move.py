@@ -2,6 +2,7 @@ from lxml import etree
 from urllib.parse import urlencode
 
 from odoo import api, fields, models, _
+from odoo.addons.l10n_gr_edi import utils
 from odoo.exceptions import UserError
 from odoo.tools import cleanup_xml_node
 from odoo.tools.sql import column_exists, create_column
@@ -14,11 +15,15 @@ from odoo.addons.l10n_gr_edi.models.preferred_classification import (
     INVOICE_TYPES_HAVE_INCOME,
     INVOICE_TYPES_SELECTION,
     PAYMENT_METHOD_SELECTION,
+    MOVE_PURPOSE_SELECTION,
     TYPES_WITH_CORRELATE_INVOICE,
+    TYPES_WITH_FORBIDDEN_AMOUNT,
     TYPES_WITH_FORBIDDEN_CLASSIFICATION,
     TYPES_WITH_FORBIDDEN_COUNTERPART,
     TYPES_WITH_FORBIDDEN_QUANTITY,
     TYPES_WITH_MANDATORY_COUNTERPART,
+    TYPES_WITH_MANDATORY_ISSUER,
+    TYPES_WITH_MANDATORY_ITEM_DESCR,
     TYPES_WITH_MANDATORY_PAYMENT,
     TYPES_WITH_VAT_CATEGORY_8,
     TYPES_WITH_VAT_EXEMPT,
@@ -85,6 +90,42 @@ class AccountMove(models.Model):
         comodel_name='ir.attachment',
         compute='_compute_from_l10n_gr_edi_document_ids',
         store=True,
+    )
+    l10n_gr_edi_is_delivery_note = fields.Boolean(
+        string="Is a delivery note",
+        compute='_compute_l10n_gr_edi_is_delivery_note',
+        store=True,
+    )
+    l10n_gr_edi_move_purpose = fields.Selection(
+        selection=MOVE_PURPOSE_SELECTION,
+        string='Move Purpose',
+    )
+    l10n_gr_edi_other_move_purpose = fields.Char(
+        string='Specify move purpose',
+    )
+    l10n_gr_edi_loading_address_street = fields.Char(
+        string="Loading street",
+    )
+    l10n_gr_edi_loading_address_number = fields.Char(
+        string="Loading number",
+    )
+    l10n_gr_edi_loading_address_zip = fields.Char(
+        string="Loading city",
+    )
+    l10n_gr_edi_loading_address_city = fields.Char(
+        string="Loading postal zip",
+    )
+    l10n_gr_edi_delivery_address_street = fields.Char(
+        string="Delivery street",
+    )
+    l10n_gr_edi_delivery_address_number = fields.Char(
+        string="Delivery number",
+    )
+    l10n_gr_edi_delivery_address_zip = fields.Char(
+        string="Delivery city",
+    )
+    l10n_gr_edi_delivery_address_city = fields.Char(
+        string="Deivery postal code",
     )
 
     def _auto_init(self):
@@ -172,6 +213,16 @@ class AccountMove(models.Model):
             else:
                 move.l10n_gr_edi_payment_method = False
 
+    @api.depends('l10n_gr_edi_inv_type')
+    def _compute_l10n_gr_edi_is_delivery_note(self):
+        for move in self:
+            if move.l10n_gr_edi_inv_type == '9.3':
+                move.l10n_gr_edi_is_delivery_note = True
+            elif move.country_code == 'GR':
+                pass
+            else:
+                move.l10n_gr_edi_is_delivery_note = False
+
     ################################################################################
     # Dynamic Selection Field Computes
     ################################################################################
@@ -219,6 +270,57 @@ class AccountMove(models.Model):
                 move.is_sale_document(include_receipts=True),
             ))
             move.l10n_gr_edi_need_payment_method = move.l10n_gr_edi_inv_type in TYPES_WITH_MANDATORY_PAYMENT
+
+    ################################################################################
+    # Field Autofill Onchanges
+    ################################################################################
+
+    @api.onchange('move_type', 'l10n_gr_edi_is_delivery_note')
+    def _onchange_l10n_gr_edi_move_purpose(self):
+        for move in self:
+            if move.l10n_gr_edi_is_delivery_note:
+                if move.move_type in ('out_refund', 'in_refund'):
+                    move.l10n_gr_edi_move_purpose = '5'
+                elif move.is_sale_document(include_receipts=True):
+                    move.l10n_gr_edi_move_purpose = '1'
+                elif move.is_purchase_document(include_receipts=True):
+                    move.l10n_gr_edi_move_purpose = '9'
+            else:
+                move.l10n_gr_edi_move_purpose = False
+
+    @api.onchange('l10n_gr_edi_is_delivery_note')
+    def _onchange_l10n_gr_edi_loading_address(self):
+        for move in self:
+            if move.state != 'draft':
+                pass
+            if move.l10n_gr_edi_is_delivery_note:
+                street_detail = utils.street_split(move.company_id.street)
+                move.l10n_gr_edi_loading_address_street = street_detail.get('street_name')
+                move.l10n_gr_edi_loading_address_number = street_detail.get('street_number')
+                move.l10n_gr_edi_loading_address_zip = move.company_id.zip or ""
+                move.l10n_gr_edi_loading_address_city = move.company_id.city or ""
+            else:
+                move.l10n_gr_edi_loading_address_street = False
+                move.l10n_gr_edi_loading_address_number = False
+                move.l10n_gr_edi_loading_address_zip = False
+                move.l10n_gr_edi_loading_address_city = False
+
+    @api.onchange('l10n_gr_edi_is_delivery_note', 'commercial_partner_id')
+    def _onchange_l10n_gr_edi_delivery_address(self):
+        for move in self:
+            if move.state != 'draft':
+                pass
+            if move.l10n_gr_edi_is_delivery_note:
+                street_detail = utils.street_split(move.commercial_partner_id.street)
+                move.l10n_gr_edi_delivery_address_street = street_detail.get('street_name')
+                move.l10n_gr_edi_delivery_address_number = street_detail.get('street_number')
+                move.l10n_gr_edi_delivery_address_zip = move.commercial_partner_id.zip or ""
+                move.l10n_gr_edi_delivery_address_city = move.commercial_partner_id.city or ""
+            else:
+                move.l10n_gr_edi_delivery_address_street = False
+                move.l10n_gr_edi_delivery_address_number = False
+                move.l10n_gr_edi_delivery_address_zip = False
+                move.l10n_gr_edi_delivery_address_city = False
 
     ################################################################################
     # Greece Document Helpers
@@ -355,8 +457,9 @@ class AccountMove(models.Model):
         partner_not_from_greece = self.partner_id.country_code != 'GR'
         inv_type_require_counterpart = self.l10n_gr_edi_inv_type in TYPES_WITH_MANDATORY_COUNTERPART
 
-        conditional_address_keys = ('issuer_name', 'issuer_postal_code', 'issuer_city', 'counterpart_vat', 'counterpart_country',
-                                    'counterpart_branch', 'counterpart_name', 'counterpart_postal_code', 'counterpart_city')
+        conditional_address_keys = ('issuer_name', 'issuer_street', 'issuer_number', 'issuer_postal_code', 'issuer_city',
+                                    'counterpart_vat', 'counterpart_country', 'counterpart_branch', 'counterpart_name',
+                                    'counterpart_street', 'counterpart_number', 'counterpart_postal_code', 'counterpart_city')
         values.update({
             'issuer_vat_number': self.company_id.vat.replace('EL', '').replace('GR', ''),
             'issuer_country': self.company_id.country_code,
@@ -364,9 +467,12 @@ class AccountMove(models.Model):
             **dict.fromkeys(conditional_address_keys),
         })
 
-        if issuer_not_from_greece:
+        if issuer_not_from_greece or self.l10n_gr_edi_inv_type in TYPES_WITH_MANDATORY_ISSUER:
+            street_detail = utils.street_split(self.company_id.street)
             values.update({
                 'issuer_name': self.company_id.name.encode('ISO-8859-7'),
+                'issuer_street': street_detail.get('street_name'),
+                'issuer_number': street_detail.get('street_number'),
                 'issuer_postal_code': self.company_id.zip,
                 'issuer_city': (self.company_id.city or "").encode('ISO-8859-7') or None,
             })
@@ -381,7 +487,10 @@ class AccountMove(models.Model):
                 values['counterpart_name'] = self.commercial_partner_id.name.encode('ISO-8859-7')
 
         if inv_type_require_counterpart or (inv_type_allows_counterpart and partner_not_from_greece):
+            street_detail = utils.street_split(self.commercial_partner_id.street)
             values.update({
+                'counterpart_street': street_detail.get('street_name'),
+                'counterpart_number': street_detail.get('street_number'),
                 'counterpart_postal_code': self.commercial_partner_id.zip,
                 'counterpart_city': (self.commercial_partner_id.city or "").encode('ISO-8859-7') or None,
             })
@@ -421,7 +530,7 @@ class AccountMove(models.Model):
         :rtype: dict[str, list[dict]]
         """
         line = base_line['record']
-        net_amount = base_line['tax_details']['raw_total_excluded']
+        net_amount = base_line['tax_details']['raw_total_excluded'] if self.l10n_gr_edi_inv_type not in TYPES_WITH_FORBIDDEN_AMOUNT else 0
         cls_vals = {'ecls': [], 'icls': []}
 
         if line.l10n_gr_edi_cls_category:
@@ -508,6 +617,7 @@ class AccountMove(models.Model):
         for move in self.sorted(key='id'):
             details = []
             base_lines, _tax_lines = move._get_rounded_base_and_tax_lines()
+            inv_type_needs_zero_value = move.l10n_gr_edi_inv_type in TYPES_WITH_FORBIDDEN_AMOUNT
 
             for line_no, base_line in enumerate(base_lines, start=1):
                 line = base_line['record']
@@ -524,9 +634,11 @@ class AccountMove(models.Model):
                 details.append({
                     'line_number': line_no,
                     'quantity': line.quantity if move.l10n_gr_edi_inv_type not in TYPES_WITH_FORBIDDEN_QUANTITY else '',
+                    'unit_of_measure': line.l10n_gr_edi_measurement_unit if move.l10n_gr_edi_is_delivery_note else '',
+                    'item_description': line.product_id.name if move.l10n_gr_edi_inv_type in TYPES_WITH_MANDATORY_ITEM_DESCR else '',
                     'detail_type': line.l10n_gr_edi_detail_type or '',
-                    'net_value': base_line['tax_details']['raw_total_excluded'],
-                    'vat_amount': sum(tax_data['tax_amount'] for tax_data in base_line['tax_details']['taxes_data']),
+                    'net_value': base_line['tax_details']['raw_total_excluded'] if not inv_type_needs_zero_value else 0,
+                    'vat_amount': sum(tax_data['tax_amount'] for tax_data in base_line['tax_details']['taxes_data']) if not inv_type_needs_zero_value else 0,
                     'vat_category': vat_category,
                     'vat_exemption_category': vat_exemption_category,
                     **self._l10n_gr_edi_common_base_line_details_values(base_line),
@@ -538,17 +650,28 @@ class AccountMove(models.Model):
                 'header_aa': move.name.split('/')[-1],
                 'header_issue_date': move.date.isoformat(),
                 'header_invoice_type': move.l10n_gr_edi_inv_type,
-                'header_currency': move.currency_id.name,
+                'header_currency': move.currency_id.name if not inv_type_needs_zero_value else '',
                 'header_correlate': move.l10n_gr_edi_correlation_id.l10n_gr_edi_mark or '',
+                'is_delivery_note': 'true' if move.l10n_gr_edi_is_delivery_note else '',
+                'move_purpose': move.l10n_gr_edi_move_purpose,
+                'other_move_purpose_title': move.l10n_gr_edi_other_move_purpose,
+                'loading_street': move.l10n_gr_edi_loading_address_street,
+                'loading_number': move.l10n_gr_edi_loading_address_number,
+                'loading_postal_code': move.l10n_gr_edi_loading_address_zip,
+                'loading_city': move.l10n_gr_edi_loading_address_city,
+                'delivery_street': move.l10n_gr_edi_delivery_address_street,
+                'delivery_number': move.l10n_gr_edi_delivery_address_number,
+                'delivery_postal_code': move.l10n_gr_edi_delivery_address_zip,
+                'delivery_city': move.l10n_gr_edi_delivery_address_city,
                 'details': details,
-                'summary_total_net_value': move.amount_untaxed,
-                'summary_total_vat_amount': move.amount_tax,
+                'summary_total_net_value': move.amount_untaxed if not inv_type_needs_zero_value else 0,
+                'summary_total_vat_amount': move.amount_tax if not inv_type_needs_zero_value else 0,
                 'summary_total_withheld_amount': 0,
                 'summary_total_fees_amount': 0,
                 'summary_total_stamp_duty_amount': 0,
                 'summary_total_other_taxes_amount': 0,
                 'summary_total_deductions_amount': 0,
-                'summary_total_gross_value': move.amount_total,
+                'summary_total_gross_value': move.amount_total if not inv_type_needs_zero_value else 0,
             }
             move._l10n_gr_edi_add_address_vals(invoice_values)
             move._l10n_gr_edi_add_payment_method_vals(invoice_values)
@@ -641,10 +764,24 @@ class AccountMove(models.Model):
                 }
             if ((self.commercial_partner_id.country_code != 'GR' or self.l10n_gr_edi_inv_type in TYPES_WITH_MANDATORY_COUNTERPART) and
                     (not self.commercial_partner_id.zip or not self.commercial_partner_id.city)):
-                errors['l10n_gr_edi_partner_no_zip_street'] = {
+                errors['l10n_gr_edi_partner_no_zip_city'] = {
                     'message': _("Missing city and/or ZIP code on partner %s.", self.commercial_partner_id.name),
                     **error_action_partner,
                 }
+        if self.l10n_gr_edi_is_delivery_note:
+            street_detail_counterpart = utils.street_split(self.commercial_partner_id.street)
+            street_detail_issuer = utils.street_split(self.company_id.street)
+            if not (street_detail_counterpart.get('street_name') and street_detail_counterpart.get('street_number')):
+                errors['l10n_gr_edi_partner_no_street'] = {
+                'message': _("Missing street and/or street number on partner %s.", self.commercial_partner_id.name),
+                **error_action_partner,
+            }
+        if self.l10n_gr_edi_inv_type in TYPES_WITH_MANDATORY_ISSUER:
+            if not (street_detail_issuer.get('street_name') and street_detail_issuer.get('street_number')):
+                errors['l10n_gr_edi_partner_no_street'] = {
+                'message': _("Missing street and/or street number on company %s.", self.company_id.name),
+                **error_action_company,
+            }
 
         move_disallow_classification = self.is_purchase_document(include_receipts=True) and self.l10n_gr_edi_inv_type in TYPES_WITH_FORBIDDEN_CLASSIFICATION
 
@@ -684,6 +821,10 @@ class AccountMove(models.Model):
                     'message': _('Invalid tax amount for line %(line_no)s. The valid values are %(valid_values)s.',
                                  line_no=line_no,
                                  valid_values=', '.join(str(tax) for tax in VALID_TAX_AMOUNTS)),
+                }
+            if self.l10n_gr_edi_inv_type in TYPES_WITH_MANDATORY_ITEM_DESCR and not (line.product_id and line.product_id.name):
+                errors[f'l10n_gr_edi_line_{line_no}_missing_product'] = {
+                    'message': _('Missing product on line %s.', line_no),
                 }
         return errors
 

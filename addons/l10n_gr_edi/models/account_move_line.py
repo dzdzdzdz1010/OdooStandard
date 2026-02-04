@@ -54,6 +54,10 @@ class AccountMoveLine(models.Model):
         store=True,
         readonly=False,
     )
+    l10n_gr_edi_measurement_unit = fields.Selection(
+        selection=[('1', "Units"), ('2', "Kg"), ('3', "Litres")],
+        string="myDATA Unit of Measure",
+    )
 
     def _auto_init(self):
         """

@@ -61,6 +61,14 @@
     </div>
 </template>
 
+<template name="Unsubscribe Link" id="s_unsubscribe_link">
+    <div class="s_unsubscribe_link o_mail_snippet_general" data-name="Unsubscribe Link">
+        <span class="">
+            <a class="btn btn-link" href="/unsubscribe_from_list">Unsubscribe</a>
+        </span>
+    </div>
+</template>
+
 <template id="s_button" name="Button">
     <p class="o_snippet_drop_in_only">
         <a class="btn btn-primary" href="https://www.example.com">Button</a>

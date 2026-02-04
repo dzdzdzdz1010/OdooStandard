@@ -193,6 +193,9 @@ export class DiscussChannel extends Record {
         }
         return this.channel_member_ids.filter(({ persona }) => persona?.notEq(this.store.self));
     }
+    discuss_category_id = fields.One("discuss.category", {
+        inverse: "channel_ids",
+    });
     get displayName() {
         if (this.supportsCustomChannelName && this.self_member_id?.custom_channel_name) {
             return this.self_member_id.custom_channel_name;
@@ -336,6 +339,11 @@ export class DiscussChannel extends Record {
                     this.self_member_id.new_message_separator;
                 this.markedAsUnread = false;
             }
+        },
+    });
+    isLocallyPinned = fields.Attr(false, {
+        onUpdate() {
+            this.onPinStateUpdated();
         },
     });
     lastMessageSeenByAllId = fields.Attr(undefined, {

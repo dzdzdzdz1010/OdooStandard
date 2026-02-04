@@ -183,6 +183,9 @@ Help your customers with this chat, and analyse their feedback.
             "im_livechat/static/src/core/common/**/*",
             "im_livechat/static/src/core/public_web/**/*",
         ],
+        "portal.assets_chatter_helpers": [
+            "im_livechat/static/src/core/common/**/*.js",
+        ],
     },
     'author': 'Odoo S.A.',
     'license': 'LGPL-3',

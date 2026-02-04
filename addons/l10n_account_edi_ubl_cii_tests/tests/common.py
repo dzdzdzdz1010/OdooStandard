@@ -5,10 +5,12 @@ from freezegun import freeze_time
 from os.path import join as opj
 
 from odoo.addons.account.tests.common import AccountTestInvoicingCommon
+from odoo.addons.account_edi_ubl_cii.models.account_edi_ubl import AccountEdiUBL
 from odoo import fields
 from odoo.tools import misc
 
 from lxml import etree
+from unittest.mock import patch
 
 
 class TestUBLCommon(AccountTestInvoicingCommon):
@@ -99,7 +101,9 @@ class TestUBLCommon(AccountTestInvoicingCommon):
         """ Create an attachment from a file and post it on the invoice
         """
         file_path = opj(module_name, subfolder, filename)
-        with misc.file_open(file_path, 'rb', filter_ext=('.xml',)) as file:
+        with patch.object(AccountEdiUBL, '_import_attachments', return_value=[]), \
+             misc.file_open(file_path, 'rb', filter_ext=('.xml',)) as file:
+
             attachment = self.env['ir.attachment'].create({
                 'name': filename,
                 'datas': base64.encodebytes(file.read()),

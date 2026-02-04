@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="web_external_layout" inherit_id="web.external_layout">
+        <xpath expr="//t[@t-if='company.external_report_layout_id']" position="attributes">
+            <attribute name="t-call">{{ env.context.get('report_layout') or company.external_report_layout_id.sudo().key }}</attribute>
+        </xpath>
+
+        <xpath expr="//t[@t-else='else' and @t-call='web.external_layout_standard']" position="attributes">
+            <attribute name="t-call">{{ env.context.get('report_layout') or 'web.external_layout_standard' }}</attribute>
+        </xpath>
+    </template>
+</odoo>

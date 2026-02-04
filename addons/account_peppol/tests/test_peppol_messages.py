@@ -11,6 +11,7 @@ from odoo.tests.common import tagged, freeze_time
 from odoo.tools.misc import file_open
 
 from odoo.addons.account.tests.test_account_move_send import TestAccountMoveSendCommon
+from odoo.addons.account_edi_ubl_cii.models.account_edi_ubl import AccountEdiUBL
 
 ID_CLIENT = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
 FAKE_UUID = ['yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy',
@@ -356,7 +357,7 @@ class TestPeppolMessage(TestPeppolMessageCommon):
 
     def test_receive_error_peppol(self):
         # an error peppol message should be created
-        with self._set_context({'error': True}):
+        with self._set_context({'error': True}), patch.object(AccountEdiUBL, '_import_attachments', return_value=[]):
             self.env['account_edi_proxy_client.user']._cron_peppol_get_new_documents()
 
             move = self.env['account.move'].search([('peppol_message_uuid', '=', FAKE_UUID[1])])
@@ -368,7 +369,8 @@ class TestPeppolMessage(TestPeppolMessageCommon):
 
     def test_receive_success_peppol(self):
         # a correct move should be created
-        self.env['account_edi_proxy_client.user']._cron_peppol_get_new_documents()
+        with patch.object(AccountEdiUBL, '_import_attachments', return_value=[]):
+            self.env['account_edi_proxy_client.user']._cron_peppol_get_new_documents()
 
         move = self.env['account.move'].search([('peppol_message_uuid', '=', FAKE_UUID[1])])
         self.assertRecordValues(

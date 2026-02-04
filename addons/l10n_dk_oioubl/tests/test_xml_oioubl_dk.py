@@ -1,6 +1,8 @@
 from freezegun import freeze_time
+from unittest.mock import patch
 
 from odoo import Command, fields
+from odoo.addons.account_edi_ubl_cii.models.account_edi_ubl import AccountEdiUBL
 from odoo.addons.l10n_account_edi_ubl_cii_tests.tests.common import TestUBLCommon
 from odoo.addons.account.tests.test_account_move_send import TestAccountMoveSendCommon
 from odoo.exceptions import UserError
@@ -214,8 +216,9 @@ class TestUBLDK(TestUBLCommon, TestAccountMoveSendCommon):
                 'raw': file.read(),
             })
         purchase_journal = self.company_data["default_journal_purchase"]
-        invoice = purchase_journal._create_document_from_attachment(xml_attachment.id)
-        return invoice
+        with patch.object(AccountEdiUBL, '_import_attachments', return_value=[]):
+            invoice = purchase_journal._create_document_from_attachment(xml_attachment.id)
+            return invoice
 
     @freeze_time('2017-01-01')
     def test_oioubl_import_exemple_file_1(self):

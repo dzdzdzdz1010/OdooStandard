@@ -7,7 +7,6 @@ import { useService } from "@web/core/utils/hooks";
 import { registry } from "@web/core/registry";
 import { cookie } from "@web/core/browser/cookie";
 import { formatDateTime, serializeDateTime } from "@web/core/l10n/dates";
-import { renderToElement } from "@web/core/utils/render";
 import { TimeoutPopup } from "@pos_self_order/app/components/timeout_popup/timeout_popup";
 import { NetworkConnectionLostPopup } from "@pos_self_order/app/components/network_connectionLost_popup/network_connectionLost_popup";
 import { UnavailableProductsDialog } from "@pos_self_order/app/components/unavailable_product_dialog/unavailable_product_dialog";
@@ -17,15 +16,21 @@ import {
     orderUsageUTCtoLocalUtil,
 } from "@point_of_sale/utils";
 import { getOrderLineValues } from "./card_utils";
-import {
-    changesToOrder,
-    filterChangeByCategories,
-} from "@point_of_sale/app/models/utils/order_change";
 import { EpsonPrinter } from "@point_of_sale/app/utils/printer/epson_printer";
 import { initLNA } from "@point_of_sale/app/utils/init_lna";
-import { GeneratePrinterData } from "@point_of_sale/app/utils/generate_printer_data";
+import { GeneratePrinterData } from "@point_of_sale/app/utils/printer/generate_printer_data";
 
 export class SelfOrder extends Reactive {
+    static serviceDependencies = [
+        "notification",
+        "router",
+        "pos_data",
+        "pos_ticket_printer",
+        "barcode",
+        "bus_service",
+        "dialog",
+    ];
+
     constructor(...args) {
         super();
         this.ready = this.setup(...args).then(() => this);
@@ -33,15 +38,14 @@ export class SelfOrder extends Reactive {
 
     async setup(
         env,
-        { notification, router, printer, renderer, barcode, bus_service, dialog, pos_data }
+        { notification, router, pos_ticket_printer, barcode, bus_service, dialog, pos_data }
     ) {
         // services
         this.notification = notification;
         this.router = router;
         this.data = pos_data;
         this.env = env;
-        this.printer = printer;
-        this.renderer = renderer;
+        this.ticketPrinter = pos_ticket_printer;
         this.barcode = barcode;
         this.bus = bus_service;
         this.dialog = dialog;
@@ -64,7 +68,6 @@ export class SelfOrder extends Reactive {
         this.ordering = false;
         this.orderTakeAwayState = {};
         this.orderSubscribtion = new Set();
-        this.kitchenPrinters = [];
         this.productCategories = [];
         this.currentCategory = null;
         this.productByCategIds = {};
@@ -286,7 +289,6 @@ export class SelfOrder extends Reactive {
             orderAccessToken: access_token || this.currentOrder.access_token,
             screenMode: screen_mode,
         });
-        this.printKioskChanges(access_token);
         this.resetCategorySelection();
     }
 
@@ -458,25 +460,6 @@ export class SelfOrder extends Reactive {
         if (this.config.self_ordering_mode !== "kiosk") {
             return;
         }
-        let useLna = false;
-        for (const printerConfig of this.config.preparation_printer_ids) {
-            const printer = this.createPrinter(printerConfig);
-            if (printer) {
-                printer.config = printerConfig;
-                this.kitchenPrinters.push(printer);
-            }
-
-            useLna = useLna || printerConfig.use_lna;
-        }
-        for (const relPrinter of this.config.receipt_printer_ids) {
-            const printerDevice = this.createPrinter(relPrinter);
-            this.printer.setFallbackPrinter(printerDevice);
-            if (relPrinter == this.config.default_receipt_printer_id) {
-                this.printer.setPrinter(printerDevice);
-            }
-
-            useLna = useLna || relPrinter.use_lna;
-        }
 
         for (const pm of this.models["pos.payment.method"].getAll()) {
             const PaymentInterface = registry
@@ -487,7 +470,7 @@ export class SelfOrder extends Reactive {
             }
         }
 
-        if (useLna) {
+        if (this.ticketPrinter.useLna) {
             initLNA(this.notification);
         }
     }
@@ -517,47 +500,6 @@ export class SelfOrder extends Reactive {
         }
     }
 
-    async printKioskChanges(access_token = "") {
-        const order = access_token
-            ? this.models["pos.order"].find((o) => o.access_token === access_token)
-            : this.currentOrder;
-
-        const orderData = order.getOrderData();
-        const changes = changesToOrder(order, this.config.preparationCategories);
-        for (const printer of this.kitchenPrinters) {
-            const orderlines = filterChangeByCategories(
-                printer.config.product_categories_ids.map((c) => c.id),
-                changes,
-                this.models
-            ).new;
-            if (orderlines.length > 0) {
-                const printingChanges = {
-                    ...orderData,
-                    changes: {
-                        title: _t("NEW"),
-                        data: orderlines,
-                    },
-                };
-                const receipt = renderToElement("point_of_sale.OrderChangeReceipt", {
-                    data: printingChanges,
-                });
-                await printer.printReceipt(receipt);
-            }
-            if (orderData.general_customer_note) {
-                const printingChanges = {
-                    ...orderData,
-                    changes: {
-                        title: "",
-                        data: [],
-                    },
-                };
-                const receipt = renderToElement("point_of_sale.OrderChangeReceipt", {
-                    data: printingChanges,
-                });
-                await printer.printReceipt(receipt);
-            }
-        }
-    }
     async initKioskData() {
         if (this.session && this.access_token) {
             this.ordering = true;
@@ -903,9 +845,14 @@ export class SelfOrder extends Reactive {
         });
         const companyName = this.company.name.replaceAll(" ", "_");
         link.download = `${companyName}-${currentDate}.png`;
-        const renderer = new GeneratePrinterData(order);
-        const data = await renderer.generateImage();
-        link.href = data.toDataURL().replace("data:image/jpeg;base64,", "");
+
+        const template = "point_of_sale.pos_order_receipt";
+        const generator = new GeneratePrinterData(this.data.models, order);
+        const data = generator.generateReceiptData();
+        const iframe = await this.ticketPrinter.generateIframe(template, data);
+        const image = await this.ticketPrinter.generateImage(iframe);
+
+        link.href = image.toDataURL().replace("data:image/jpeg;base64,", "");
         link.click();
     }
 
@@ -949,16 +896,7 @@ export class SelfOrder extends Reactive {
 }
 
 export const selfOrderService = {
-    dependencies: [
-        "notification",
-        "router",
-        "pos_data",
-        "printer",
-        "renderer",
-        "barcode",
-        "bus_service",
-        "dialog",
-    ],
+    dependencies: SelfOrder.serviceDependencies,
     async start(env, services) {
         return new SelfOrder(env, services).ready;
     },

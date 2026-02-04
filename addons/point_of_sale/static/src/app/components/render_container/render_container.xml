@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="l10n_it_pos.RenderContainer">
+        <div t-ref="root" class="render-container">
+            <ErrorHandler t-if="props.component.component and props.component.data" onError.bind="handleError">
+                <t t-component="props.component.component" t-props="props.component.data" />
+            </ErrorHandler>
+        </div>
+    </t>
+</templates>

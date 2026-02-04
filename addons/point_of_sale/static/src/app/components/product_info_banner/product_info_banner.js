@@ -30,23 +30,11 @@ export class ProductInfoBanner extends Component {
         });
 
         const debouncedFetchStocks = debounce(async (product, productTemplate) => {
-            let result = {};
             if (!this.props.info) {
                 await this.fetchStock.call(productTemplate, product);
                 if (this.fetchStock.status === "error") {
                     throw this.fetchStock.result;
                 }
-                result = this.fetchStock.result;
-            } else {
-                result = this.props.info;
-            }
-
-            if (result) {
-                const productInfo = result.productInfo;
-                this.state.other_warehouses = productInfo.warehouses.slice(1);
-                this.state.available_quantity = productInfo.warehouses[0]?.available_quantity;
-                this.state.free_qty = productInfo.warehouses[0]?.free_qty;
-                this.state.uom = productInfo.warehouses[0]?.uom;
             }
         }, 500);
 

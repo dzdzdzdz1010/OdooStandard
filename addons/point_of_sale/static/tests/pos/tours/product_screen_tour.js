@@ -4,6 +4,7 @@ import * as PaymentScreen from "@point_of_sale/../tests/pos/tours/utils/payment_
 import * as Dialog from "@point_of_sale/../tests/generic_helpers/dialog_util";
 import * as PartnerList from "@point_of_sale/../tests/pos/tours/utils/partner_list_util";
 import * as ProductScreen from "@point_of_sale/../tests/pos/tours/utils/product_screen_util";
+import * as StockProductScreen from "@pos_stock/../tests/pos/tours/utils/product_screen_util";
 import * as ProductScreenPartnerList from "@point_of_sale/../tests/pos/tours/utils/product_screen_partner_list_util";
 import * as Chrome from "@point_of_sale/../tests/pos/tours/utils/chrome_util";
 import { registry } from "@web/core/registry";
@@ -368,16 +369,7 @@ registry.category("web_tour.tours").add("limitedProductPricelistLoading", {
 
             scan_barcode("0100100"),
             ProductScreen.selectedOrderlineHas("Test Product 1", "1", "80.0"),
-
-            scan_barcode("0100201"),
-            ProductScreen.enterLotNumber("1", "lot"),
-            ProductScreen.selectedOrderlineHas("Test Product 2", "1", "100.0", "White"),
-
-            scan_barcode("0100202"),
-            ProductScreen.enterLotNumber("1", "lot"),
-            ProductScreen.selectedOrderlineHas("Test Product 2", "1", "120.0", "Red"),
-
-            ProductScreen.totalAmountIs("300.0"),
+            ProductScreen.totalAmountIs("80.0"),
 
             refresh(),
             inLeftSide([
@@ -386,7 +378,6 @@ registry.category("web_tour.tours").add("limitedProductPricelistLoading", {
                 Numpad.click("2"),
                 ...ProductScreen.selectedOrderlineHasDirect("Test Product 1", "2", "140.0"),
             ]),
-
             scan_barcode("0100300"),
             ProductScreen.selectedOrderlineHas("Test Product 3", "1", "50.0"),
             Chrome.endTour(),
@@ -780,7 +771,7 @@ registry.category("web_tour.tours").add("AddMultipleSerialsAtOnce", {
             Chrome.startPoS(),
             Dialog.confirm("Open Register"),
             ProductScreen.clickDisplayedProduct("Product A"),
-            ProductScreen.enterLotNumbers(["SN001", "SN002", "SN003"]),
+            StockProductScreen.enterLotNumbers(["SN001", "SN002", "SN003"]),
             ProductScreen.selectedOrderlineHas("Product A", "3.0"),
             ProductScreen.clickDisplayedProduct("Product A"),
             [
@@ -789,7 +780,7 @@ registry.category("web_tour.tours").add("AddMultipleSerialsAtOnce", {
                     run: "click",
                 },
             ],
-            ProductScreen.enterLotNumbers(["SN005", "SN006"]),
+            StockProductScreen.enterLotNumbers(["SN005", "SN006"]),
             ProductScreen.selectedOrderlineHas("Product A", "4.0"),
             Chrome.endTour(),
         ].flat(),
@@ -941,7 +932,7 @@ registry.category("web_tour.tours").add("test_product_long_press", {
             Dialog.is(),
             {
                 content: "Check On hand quantity is display on product info popup",
-                trigger: ".section-inventory-body div:contains('On hand: 0')",
+                trigger: "div:contains('On hand: 0')",
             },
             {
                 content: "Check that VAT label is present in the product details popup",
@@ -1117,21 +1108,6 @@ registry
             ].flat(),
     });
 
-registry.category("web_tour.tours").add("test_only_existing_lots", {
-    steps: () =>
-        [
-            Chrome.startPoS(),
-            Dialog.confirm("Open Register"),
-            ProductScreen.clickDisplayedProduct("Product with existing lots"),
-            ProductScreen.selectNthLotNumber(1),
-            ProductScreen.selectedOrderlineHas("Product with existing lots", "1.0"),
-            inLeftSide({
-                trigger: ".order-container .orderline .lot-number:contains('Lot Number 1001')",
-            }),
-            Chrome.endTour(),
-        ].flat(),
-});
-
 registry.category("web_tour.tours").add("test_delete_line", {
     undeterministicTour_doNotCopy: true, // Remove this key to make the tour failed. ( It removes delay between steps )
     steps: () =>
@@ -1233,32 +1209,6 @@ registry.category("web_tour.tours").add("test_preset_customer_selection", {
             PartnerList.clickPartner("Test Partner"),
             ProductScreen.customerIsSelected("Test Partner"),
             Chrome.endTour(),
-        ].flat(),
-});
-
-registry.category("web_tour.tours").add("test_product_info_product_inventory", {
-    steps: () =>
-        [
-            Chrome.startPoS(),
-            Dialog.confirm("Open Register"),
-
-            inLeftSide([
-                ...scan_barcode("product_variant_0"),
-                ...ProductScreen.clickControlButton("Info"),
-                {
-                    trigger: ".section-inventory-body :contains(100)",
-                },
-                Dialog.confirm("Close"),
-            ]),
-
-            inLeftSide([
-                ...scan_barcode("product_variant_1"),
-                ...ProductScreen.clickControlButton("Info"),
-                {
-                    trigger: ".section-inventory-body :contains(200)",
-                },
-                Dialog.confirm("Close"),
-            ]),
         ].flat(),
 });
 

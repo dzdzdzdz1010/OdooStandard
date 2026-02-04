@@ -68,6 +68,7 @@ export class Orderline extends Component {
 
     get infoListClasses() {
         const line = this.line;
+        // Lot can be left here since it would be undefined and yield to "false" for the condition
         if (line.customer_note || line.note || line.discount || line.packLotLines?.length) {
             return "gap-2 mt-1";
         }
@@ -119,7 +120,6 @@ export class Orderline extends Component {
             productImage: this.props.showImage && imageUrl,
             taxGroup: this.props.showTaxGroup && taxGroup,
             price: this.line.currencyDisplayPrice,
-            lotLines: line.product_id.tracking !== "none" && (line.packLotLines || []),
         };
     }
 }

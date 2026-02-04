@@ -24,7 +24,7 @@
                 class="btn btn-primary"
                 t-if="showShopButtons()"
                 t-on-click="() => this.onConfirm({goToCart: true})"
-                t-att-disabled="!isPossibleConfiguration() || !canBeSold()"
+                t-att-disabled="!isPossibleConfiguration() || !canBeSold() || !state.products[0].quantity"
             >
                 Proceed to Checkout
             </button>

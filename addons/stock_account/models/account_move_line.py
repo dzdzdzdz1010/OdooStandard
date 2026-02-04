@@ -65,6 +65,9 @@ class AccountMoveLine(models.Model):
 
         cogs_qty = self._get_cogs_qty()
         if moves := self._get_stock_moves().filtered(lambda m: m.state == 'done'):
+            # if the moves have products that are not the same as the initial product, then its a kit
+            if moves[0].product_id != self.product_id:
+                return (sum(moves.mapped('value')) * cogs_qty - self._get_posted_cogs_value()) / self.quantity
             price_unit = moves._get_cogs_price_unit(cogs_qty)
         else:
             if self.product_id.cost_method in ['standard', 'average']:

@@ -36,15 +36,15 @@ class TestLeadMergeCommon(TestLeadConvertMassCommon):
 class TestLeadMerge(TestLeadMergeCommon):
 
     def _run_merge_wizard(self, leads):
-        res = self.env['crm.merge.opportunity'].with_context({
+        opportunity_id = self.env['crm.merge.opportunity'].with_context({
             'active_model': 'crm.lead',
             'active_ids': leads.ids,
             'active_id': False,
         }).create({
             'team_id': False,
             'user_id': False,
-        }).action_merge()
-        return self.env['crm.lead'].browse(res['res_id'])
+        })._action_merge_to_opportunity()
+        return self.env['crm.lead'].browse(opportunity_id)
 
     def test_initial_data(self):
         """ Ensure initial data to avoid spaghetti test update afterwards
@@ -181,8 +181,8 @@ class TestLeadMerge(TestLeadMergeCommon):
 
         # merged opportunity: in this test, all input are leads. Confidence is based on stage
         # sequence -> lead_w_contact has a stage sequence of 3 and probability is greater
-        result = merge.action_merge()
-        merge_opportunity = self.env['crm.lead'].browse(result['res_id'])
+        opportunity_id = merge._action_merge_to_opportunity()
+        merge_opportunity = self.env['crm.lead'].browse(opportunity_id)
         self.assertFalse((ordered_merge - merge_opportunity).exists())
         self.assertEqual(merge_opportunity, self.lead_w_contact)
         self.assertEqual(merge_opportunity.type, 'lead')
@@ -227,8 +227,8 @@ class TestLeadMerge(TestLeadMergeCommon):
         self.assertEqual(merge.opportunity_ids, self.leads - self.lead_w_email_lost)
         ordered_merge = self.lead_w_partner_company + self.lead_w_contact + self.lead_w_email + self.lead_w_partner
 
-        result = merge.action_merge()
-        merge_opportunity = self.env['crm.lead'].browse(result['res_id'])
+        opportunity_id = merge._action_merge_to_opportunity()
+        merge_opportunity = self.env['crm.lead'].browse(opportunity_id)
         self.assertFalse((ordered_merge - merge_opportunity).exists())
         self.assertEqual(merge_opportunity, self.lead_1)
         self.assertEqual(merge_opportunity.type, 'opportunity')
@@ -470,8 +470,8 @@ class TestLeadMerge(TestLeadMergeCommon):
             'team_id': self.sales_team_convert.id,
             'user_id': False,
         })
-        result = merge.action_merge()
-        master_lead = self.leads.filtered(lambda lead: lead.id == result['res_id'])
+        opportunity_id = merge._action_merge_to_opportunity()
+        master_lead = self.leads.filtered(lambda lead: lead.id == opportunity_id)
 
         # check result of merge process
         self.assertEqual(master_lead, self.lead_w_partner_company)

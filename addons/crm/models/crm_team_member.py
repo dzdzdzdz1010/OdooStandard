@@ -11,6 +11,8 @@ from odoo.tools import float_round
 
 _logger = logging.getLogger(__name__)
 
+MEMBER_MAX_LEAD_ASSIGNMENT_QUOTA = 10000  # Arbitrarily large (also, math.inf causes issues on runbot)
+
 
 class CrmTeamMember(models.Model):
     _inherit = 'crm.team.member'
@@ -19,8 +21,8 @@ class CrmTeamMember(models.Model):
     assignment_enabled = fields.Boolean(related="crm_team_id.assignment_enabled")
     assignment_domain = fields.Char('Assignment Domain', tracking=True)
     assignment_domain_preferred = fields.Char('Preference assignment Domain', tracking=True)
-    assignment_optout = fields.Boolean('Pause assignment')
     assignment_max = fields.Integer('Average Leads Capacity (on 30 days)', default=30)
+    assignment_max_enabled = fields.Boolean('Limit maximum number of assigned leads per month', default=True)
     lead_day_count = fields.Integer(
         'Leads (last 24h)', compute='_compute_lead_day_count',
         help='Number of leads assigned to this member in the last 24 hours (lost leads excluded)')
@@ -93,6 +95,8 @@ class CrmTeamMember(models.Model):
 
         :param bool force_quota: see ``CrmTeam._action_assign_leads()``;
         """
+        if not self.assignment_max_enabled:
+            return MEMBER_MAX_LEAD_ASSIGNMENT_QUOTA
         quota = float_round(self.assignment_max / 30.0, precision_digits=0, rounding_method='HALF-UP')
         if force_quota:
             return quota

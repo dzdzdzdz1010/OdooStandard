@@ -2039,6 +2039,19 @@
         />
     </record>
 
+    <record id="payment_method_mobile_phone" model="payment.method">
+        <field name="name">Mobile Phone Payment</field>
+        <field name="code">mobile_phone</field>
+        <field name="sequence">1000</field>
+        <field name="active">False</field>
+        <field name="image" type="base64" file="payment/static/img/mobile_phone.png"/>
+        <field name="support_tokenization">False</field>
+        <field name="support_express_checkout">False</field>
+        <field name="support_manual_capture">none</field>
+        <field name="support_refund">none</field>
+        <field name="supported_currency_ids" eval="[Command.set([ref('base.KRW')])]" />
+    </record>
+
     <record id="payment_method_mobile_wallet_eg" model="payment.method">
         <field name="name">Mobile Wallets Egypt</field>
         <field name="code">mobile_wallet_eg</field>

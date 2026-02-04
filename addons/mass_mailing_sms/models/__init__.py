@@ -8,4 +8,5 @@ from . import mailing_trace
 from . import res_users
 from . import sms_sms
 from . import sms_tracker
+from . import utm_campaign
 from . import utm

@@ -22,10 +22,10 @@
                 <attribute name="groups"></attribute><!-- Remove the res.group on the group and set it on the field directly-->
                 <attribute name="string">Delivery</attribute>
             </group>
-            <label for="commitment_date" position="before">
+            <field name="shipping_weight" position="after">
                 <field name="warehouse_id" options="{'no_create': True}" force_save="1" readonly="state == 'sale'"/>
                 <field name="picking_policy" required="True" readonly="state not in ['draft', 'sent']"/>
-            </label>
+            </field>
             <div name="commitment_date_div" position="replace">
                 <div class="o_row">
                     <field name="expected_date" invisible="1"/>  <!-- Needed for the placeholder widget -->
@@ -41,7 +41,7 @@
                 </div>
                 <field name="effective_date" invisible="not effective_date"/>
             </div>
-            <xpath expr="//page[@name='other_information']//field[@name='commitment_date']" position="after">
+            <xpath expr="//group[@name='order_details']//field[@name='commitment_date']" position="after">
                 <field string=" " name="json_popover" widget="stock_rescheduling_popover" invisible="not show_json_popover"/>
             </xpath>
             <xpath expr="//field[@name='order_line']//form//field[@name='analytic_distribution']" position="before">

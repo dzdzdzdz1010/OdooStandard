@@ -83,11 +83,17 @@ export class GeneratePrinterData {
         const url = `${baseUrl}/pos/ticket?order_uuid=${this.order.uuid}`;
         const useQrCode = company.point_of_sale_ticket_portal_url_display_mode !== "url";
         const useTips = this.config.set_tip_after_payment && this.order.displayPrice > 0;
-        const tipsConfiguration = {
-            15: this.formatCurrency(this.order.displayPrice * 0.15),
-            20: this.formatCurrency(this.order.displayPrice * 0.2),
-            25: this.formatCurrency(this.order.displayPrice * 0.25),
-        };
+        const tipPercentages = [
+            this.config.tip_percentage_1,
+            this.config.tip_percentage_2,
+            this.config.tip_percentage_3,
+        ];
+        const tipsConfiguration = {};
+        for (const tipPercentage of tipPercentages) {
+            tipsConfiguration[tipPercentage] = this.formatCurrency(
+                this.order.displayPrice * (tipPercentage / 100)
+            );
+        }
 
         return {
             order: this.order.raw,
@@ -110,6 +116,7 @@ export class GeneratePrinterData {
                 module_pos_restaurant: this.order.config.module_pos_restaurant,
             },
             extra_data: {
+                tip_percentages: useTips ? tipPercentages : false,
                 tips_configuration: useTips ? tipsConfiguration : false,
                 preset_datetime: this.order.presetDateTime,
                 partner_vat_label: company.country_id.vat_label || "Tax ID",

@@ -664,7 +664,7 @@ class PosSession(models.Model):
             return {
                 'successful': False,
                 'type': 'alert',
-                'title': 'Session already closed',
+                'title': _('Session already closed'),
                 'message': _("The session has been already closed by another User. "
                             "All sales completed in the meantime have been saved in a "
                             "Rescue Session, which can be reviewed anytime and posted "
@@ -1906,9 +1906,9 @@ class PosSession(models.Model):
 
     def log_partner_message(self, partner_id, action, message_type):
         if message_type == 'ACTION_CANCELLED':
-            body = 'Action cancelled ({ACTION})'.format(ACTION=action)
+            body = _('Action cancelled (%(action)s)', action=action)
         elif message_type == 'CASH_DRAWER_ACTION':
-            body = 'Cash drawer opened ({ACTION})'.format(ACTION=action)
+            body = _('Cash drawer opened (%(action)s)', action=action)
 
         self.message_post(body=body, author_id=partner_id)
 

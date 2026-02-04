@@ -1733,7 +1733,7 @@ export class PosStore extends Reactive {
                 );
                 changes.new = [];
                 if (!printed) {
-                    unsuccedPrints.push("Detailed Receipt");
+                    unsuccedPrints.push(_t("Detailed Receipt"));
                 } else {
                     isPrinted = true;
                 }
@@ -1753,7 +1753,7 @@ export class PosStore extends Reactive {
             if (orderChange.generalNote && anyChangesToPrint) {
                 const printed = await this.printReceipts(order, printer, "Message", []);
                 if (!printed) {
-                    unsuccedPrints.push("General Message");
+                    unsuccedPrints.push(_t("General Message"));
                 } else {
                     isPrinted = true;
                 }

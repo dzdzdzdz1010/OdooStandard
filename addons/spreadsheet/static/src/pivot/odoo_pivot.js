@@ -355,6 +355,9 @@ export class OdooPivot {
 
     getCollapsedTableStructure() {
         this.assertIsValid();
+        if (this.coreDefinition.style?.tabularForm) {
+            return this.model.getExpandedTableStructure();
+        }
         return this.model.getCollapsedTableStructure();
     }
 
@@ -418,6 +421,13 @@ export class OdooPivot {
                         : this._getPivotFieldFormat(measure.fieldName, value);
         }
         return { value, format };
+    }
+
+    getPivotRowGroupName(rowField) {
+        const rowDimension = this.definition.rows.find(
+            (dim) => dim.nameWithGranularity === rowField
+        );
+        return { value: rowDimension?.displayName || "" };
     }
 
     //--------------------------------------------------------------------------

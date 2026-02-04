@@ -7,7 +7,7 @@ from collections.abc import Iterable
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools import SQL
 from odoo.tools.barcode import check_barcode_encoding
@@ -118,6 +118,18 @@ class ProductProduct(models.Model):
     show_qty_update_button = fields.Boolean(compute='_compute_show_qty_update_button')
     valid_ean = fields.Boolean('Barcode is valid EAN', compute='_compute_valid_ean')
     lot_properties_definition = fields.PropertiesDefinition('Lot Properties')
+
+    @api.constrains('barcode')
+    def _check_barcode_uniqueness(self):
+        super()._check_barcode_uniqueness()
+        self_ctx = self.with_context(skip_preprocess_gs1=True)
+        for company_id, barcodes_within_company in self_ctx._get_barcodes_by_company():
+            self_ctx._check_duplicated_package_type_barcodes(barcodes_within_company, company_id)
+
+    def _check_duplicated_package_type_barcodes(self, barcodes_within_company, company_id):
+        package_domain = self._get_barcode_search_domain(barcodes_within_company, company_id)
+        if self.env['stock.package.type'].sudo().search_count(package_domain, limit=1):
+            raise ValidationError(self.env._("A package type already uses the barcode."))
 
     @api.depends('product_tmpl_id')
     def _compute_show_qty_status_button(self):
@@ -1248,3 +1260,14 @@ class UomUom(models.Model):
         else:
             computed_qty = self._compute_quantity(qty, procurement_uom, rounding_method='HALF-UP')
         return (computed_qty, procurement_uom)
+
+
+class ProductUom(models.Model):
+    _inherit = 'product.uom'
+
+    @api.constrains('barcode')
+    def _check_barcode_uniqueness(self):
+        super()._check_barcode_uniqueness()
+        domain = [('barcode', 'in', [b for b in self.mapped('barcode') if b])]
+        if self.env['stock.package.type'].search_count(domain, limit=1):
+            raise ValidationError(self.env._("A package type already uses the barcode"))

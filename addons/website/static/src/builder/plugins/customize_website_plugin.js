@@ -476,7 +476,7 @@ export class AddLanguageAction extends BuilderAction {
 
 export class CustomizeBodyBgTypeAction extends BuilderAction {
     static id = "customizeBodyBgType";
-    static dependencies = ["builderActions", "history", "customizeWebsite"];
+    static dependencies = ["builderActions", "history", "customizeWebsite", "media"];
     isApplied({ value }) {
         const getAction = this.dependencies.builderActions.getAction;
         const currentValue = getAction("customizeBodyBgType").getValue();
@@ -493,60 +493,57 @@ export class CustomizeBodyBgTypeAction extends BuilderAction {
         const style = getHtmlStyle(this.document);
         return getCSSVariableValue("body-image-type", style);
     }
-    async load({ editingElement: el, params, value, historyImageSrc }) {
-        const getAction = this.dependencies.builderActions.getAction;
-        const oldValue = getAction("customizeBodyBgType").getValue({ params });
-        const oldImageSrc =
-            this.dependencies.customizeWebsite.getWebsiteVariableValue("body-image");
-        let imageSrc = "";
+    async apply({ editingElement, value }) {
         if (value === "NONE") {
-            await this.dependencies.customizeWebsite.customizeWebsiteVariables({
-                "body-image-type": "'image'",
-                "body-image": "",
-            });
+            await this.saveImageAndAddHistoryMutation({ imageType: 'image' });
         } else {
-            const imageEl = historyImageSrc || (await getAction("replaceBgImage").load({ el }));
-            if (imageEl) {
-                imageSrc = imageEl.src;
-                await this.dependencies.customizeWebsite.customizeWebsiteVariables({
-                    "body-image-type": `'${value}'`,
-                    "body-image": `'${imageSrc}'`,
-                });
-            } else {
-                imageSrc = NO_IMAGE_SELECTION;
-            }
+            await this.dependencies.media.openMediaDialog(this.getMediaDialogProps({ editingElement, value }));
         }
-        return { imageSrc, oldImageSrc, oldValue };
     }
-    apply({ editingElement, params, value, loadResult: { imageSrc, oldImageSrc, oldValue } }) {
-        if (imageSrc === NO_IMAGE_SELECTION) {
-            return;
+
+    getMediaDialogProps({ editingElement, value }) {
+        return {
+            onlyImages: true,
+            node: editingElement,
+            save: async (imageEl) => {
+                await this.saveImageAndAddHistoryMutation({
+                    imageType: value,
+                    imageSrc: imageEl.src,
+                });
+                this.dependencies.history.addStep();
+            },
         }
+    }
+
+    async saveImageAndAddHistoryMutation({ imageType, imageSrc }){
         const getAction = this.dependencies.builderActions.getAction;
+        const oldImageType = getAction("customizeBodyBgType").getValue();
+        const oldImageSrc = this.dependencies.customizeWebsite.getWebsiteVariableValue("body-image");
+        await this.saveImage({ imageType, imageSrc });
         this.dependencies.history.addCustomMutation({
             apply: () => {
                 this.services.ui.block({ delay: 2500 });
-                getAction("customizeBodyBgType")
-                    .load({ editingElement, params, value, historyImageSrc: imageSrc })
-                    .then(() => {
-                        this.dispatchTo("trigger_dom_updated");
-                    })
-                    .finally(() => this.services.ui.unblock());
+                this.saveImage({ imageType, imageSrc })
+                .then(() => {
+                    this.dispatchTo("trigger_dom_updated");
+                })
+                .finally(() => this.services.ui.unblock());
             },
             revert: () => {
                 this.services.ui.block({ delay: 2500 });
-                getAction("customizeBodyBgType")
-                    .load({
-                        editingElement,
-                        params,
-                        value: oldValue,
-                        historyImageSrc: oldImageSrc,
-                    })
-                    .then(() => {
-                        this.dispatchTo("trigger_dom_updated");
-                    })
-                    .finally(() => this.services.ui.unblock());
+                this.saveImage({ imageType: oldImageType, imageSrc: oldImageSrc, addQuotesToType: false })
+                .then(() => {
+                    this.dispatchTo("trigger_dom_updated");
+                })
+                .finally(() => this.services.ui.unblock());
             },
+        });
+    }
+
+    async saveImage({ imageType, imageSrc, addQuotesToType = true }){
+        await this.dependencies.customizeWebsite.customizeWebsiteVariables({
+            "body-image-type": addQuotesToType ? `'${imageType}'` : imageType ,
+            "body-image": imageSrc ? `'${imageSrc}'` : "" ,
         });
     }
 }

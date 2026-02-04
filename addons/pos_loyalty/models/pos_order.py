@@ -194,6 +194,28 @@ class PosOrder(models.Model):
             'coupon_report': coupon_per_report,
         }
 
+    def get_pos_loyalty_receipt_data(self):
+        data = {}
+        histories = self.env['loyalty.history'].search([('order_id', '=', self.id), ('order_model', '=', 'pos.order')])
+
+        if len(histories) > 0:
+            data['loyalties'] = [{
+                'couponId': history.card_id.id,
+                'program': {'portal_visible': history.card_id.program_id.portal_visible},
+                'points': {
+                    'name': history.card_id.program_id.portal_point_name,
+                    **({'won': history.issued} if history.issued > 0 else {'spent': history.used})
+                },
+            } for history in histories if history.card_id.program_id.program_type == 'loyalty']
+            data['new_coupons'] = [{
+                'name': history.card_id.program_id.name,
+                'points': history.card_id.code,
+                'barcode_base64': 'data:image/png;base64,' + base64.b64encode(self.env['ir.actions.report'].barcode('Code128', history.card_id.code)).decode('utf-8'),
+                'code': history.card_id.code,
+            } for history in histories if history.card_id.program_id.program_type == 'next_order_coupons']
+
+        return data
+
     def _check_existing_loyalty_cards(self, coupon_data):
         coupon_key_to_modify = []
         for coupon_id, coupon_vals in coupon_data.items():

@@ -907,4 +907,15 @@ patch(PosStore.prototype, {
             return payload;
         }
     },
+    async _add_loyalty_info(order) {
+        const data = await this.data.call("pos.order", "get_pos_loyalty_receipt_data", [order.id]);
+        order.loyaltyStats = data.loyalties;
+        order.new_coupon_info = data.new_coupons;
+    },
+    async printReceipt({ order = this.get_order() } = {}) {
+        if (!order.uiState.couponPointChanges.length) {
+            await this._add_loyalty_info(order);
+        }
+        return super.printReceipt(...arguments);
+    },
 });

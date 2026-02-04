@@ -268,7 +268,7 @@ export class PaymentStripe extends PaymentInterface {
         var line = order.getPaymentlineByUuid(uuid);
         return (
             this.pos.config.set_tip_after_payment &&
-            line.payment_method_id.use_payment_terminal === "stripe" &&
+            line.payment_method_id.payment_provider === "stripe" &&
             line.card_type !== "interac" &&
             (!line.card_type || !line.card_type.includes("eftpos"))
         );
@@ -387,4 +387,4 @@ export class PaymentStripe extends PaymentInterface {
     }
 }
 
-registry.category("electronic_payment_interfaces").add("stripe", PaymentStripe);
+registry.category("pos_payment_providers").add("stripe", PaymentStripe);

@@ -15,7 +15,7 @@ class PosVivaComController(http.Controller):
         _logger.info('notification received from Viva.com')
 
         viva_payment_methods = request.env['pos.payment.method'].sudo().search([
-            ('use_payment_terminal', '=', 'viva_com'),
+            ('payment_provider', '=', 'viva_com'),
             ('company_id.id', '=', int(company_id))
         ])
         payment_method_sudo = next(

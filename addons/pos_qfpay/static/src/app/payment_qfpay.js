@@ -165,4 +165,4 @@ export class PaymentQFpay extends PaymentInterface {
     }
 }
 
-registry.category("electronic_payment_interfaces").add("qfpay", PaymentQFpay);
+registry.category("pos_payment_providers").add("qfpay", PaymentQFpay);

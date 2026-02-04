@@ -28,7 +28,7 @@ export class PaymentVivaCom extends PaymentInterface {
                     !paymentLine.isDone() &&
                     paymentLine.getPaymentStatus() !== "retry"
                 ) {
-                    paymentLine.payment_method_id.payment_terminal.handleVivaComStatusResponse(
+                    paymentLine.payment_method_id.payment_interface.handleVivaComStatusResponse(
                         paymentLine,
                         payload
                     );
@@ -210,4 +210,4 @@ export class PaymentVivaCom extends PaymentInterface {
     }
 }
 
-registry.category("electronic_payment_interfaces").add("viva_com", PaymentVivaCom);
+registry.category("pos_payment_providers").add("viva_com", PaymentVivaCom);

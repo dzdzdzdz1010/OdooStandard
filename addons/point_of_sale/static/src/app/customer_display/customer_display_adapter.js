@@ -83,12 +83,17 @@ export class CustomerDisplayPosAdapter {
 
     getQrPaymentData(order) {
         const qrPaymentData = order.getSelectedPaymentline()?.qrPaymentData;
-        if (!qrPaymentData) {
+        if (!qrPaymentData?.qrCode) {
             return null;
         }
         return {
             ...qrPaymentData,
+            amount:
+                typeof qrPaymentData.amount === "number"
+                    ? formatCurrency(qrPaymentData.amount, this.currency)
+                    : qrPaymentData.amount,
             isCustomerDisplay: true,
+            footer: false,
         };
     }
 }

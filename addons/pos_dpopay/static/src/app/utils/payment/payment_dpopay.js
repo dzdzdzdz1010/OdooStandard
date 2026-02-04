@@ -269,7 +269,6 @@ export class PaymentDPOPay extends PaymentInterface {
             ]);
         } catch (error) {
             const line = this._pendingDPOPaymentLine();
-            this.pos.paymentTerminalInProgress = false;
             if (line) {
                 line.setPaymentStatus("force_done");
             }

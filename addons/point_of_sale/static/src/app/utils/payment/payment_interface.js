@@ -7,10 +7,9 @@
  * To connect the interface to the right payment methods register it:
  *
  * import { registry } models from "@web/core/registry";
- * registry.category("electronic_payment_interfaces").add("my_payment", MyPayment);
+ * registry.category("pos_payment_providers").add("my_payment", MyPayment);
  *
- * my_payment is the technical name of the added selection in
- * use_payment_terminal.
+ * my_payment is the technical name of the added selection in payment_provider
  *
  * If necessary new fields can be loaded on any model:
  * by overriding the loader_params of the models in the back end
@@ -24,7 +23,11 @@ export class PaymentInterface {
     setup(pos, payment_method_id) {
         this.env = pos.env;
         this.pos = pos;
+        this.notification = pos.notification;
+        this.orm = pos.data.orm;
+        this.dialog = pos.dialog;
         this.payment_method_id = payment_method_id;
+        this.supports_refunds = true;
         this.supports_reversals = false;
     }
 

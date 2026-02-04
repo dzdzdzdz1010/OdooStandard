@@ -166,24 +166,21 @@ export class PosStore extends WithLazyGetterTrap {
             this.syncAllOrdersDebounced();
         });
 
-        this.handleQRPaymentLines();
+        this.paymentsToForceCancel = this.getPaymentsToForceCancel();
     }
 
-    handleQRPaymentLines() {
-        // Ensure that all Bank QR payments in the 'waiting' status are automatically set to 'retry'
-        // when the POS session is started or restarted.
-        const order = this.getOrder();
-        if (!order) {
-            return;
-        }
-        order.payment_ids?.forEach((payment) => {
-            if (
-                payment.payment_method_id.payment_method_type === "qr_code" &&
-                payment.getPaymentStatus() === "waiting"
-            ) {
-                payment.setPaymentStatus("retry");
-            }
-        });
+    getPaymentsToForceCancel() {
+        const orders = this.getOpenOrders();
+        const payments = orders.flatMap((order) =>
+            order.payment_ids
+                .filter(this.predicateGetPaymentsToForceCancel)
+                .map((payment) => payment.id)
+        );
+        return new Set(payments);
+    }
+
+    predicateGetPaymentsToForceCancel(payment) {
+        return payment.useBankQrCode && payment.getPaymentStatus() === "waiting";
     }
 
     async searchProductsFromDB() {
@@ -465,11 +462,9 @@ export class PosStore extends WithLazyGetterTrap {
         // Add Payment Interface to Payment Method
         for (const pm of this.models["pos.payment.method"].getAll()) {
             const PaymentInterface = registry
-                .category("electronic_payment_interfaces")
-                .get(pm.use_payment_terminal, null);
-            if (PaymentInterface) {
-                pm.payment_terminal = new PaymentInterface(this, pm);
-            }
+                .category("pos_payment_providers")
+                .get(pm.payment_provider, null);
+            pm.payment_interface = PaymentInterface ? new PaymentInterface(this, pm) : null;
         }
 
         // Create preparation/kitchen printers
@@ -1788,14 +1783,11 @@ export class PosStore extends WithLazyGetterTrap {
         }
     }
 
-    /**
-     * @param {str} terminalName
-     */
-    getPendingPaymentLine(terminalName) {
+    getPendingPaymentLine(provider) {
         for (const order of this.models["pos.order"].getAll()) {
             const paymentLine = order.payment_ids.find(
                 (paymentLine) =>
-                    paymentLine.payment_method_id.use_payment_terminal === terminalName &&
+                    paymentLine.payment_provider === provider &&
                     !paymentLine.isDone() &&
                     paymentLine.getPaymentStatus() !== "retry"
             );
@@ -1803,6 +1795,18 @@ export class PosStore extends WithLazyGetterTrap {
                 return paymentLine;
             }
         }
+    }
+
+    canSendPaymentRequest({ paymentMethod, paymentline } = {}) {
+        const crossOrders = this.getOpenOrders().filter((o) => o.payment_ids.length);
+        for (const order of crossOrders) {
+            const result = order.canSendPaymentRequest({ paymentMethod, paymentline });
+            if (!result.status) {
+                return result;
+            }
+        }
+
+        return { status: true, message: "" };
     }
 
     get linesToRefund() {
@@ -2639,23 +2643,35 @@ export class PosStore extends WithLazyGetterTrap {
                 return false;
             }
         }
-        payment.qrPaymentData = {
-            amount: this.env.utils.formatCurrency(payment.amount),
-            qrCode: qr,
-            paymentMethod: payment.payment_method_id,
-        };
-        return await ask(
-            this.env.services.dialog,
-            {
-                ...payment.qrPaymentData,
-                line: payment,
-            },
-            {},
-            QRPopup
-        ).then((result) => {
-            payment.qrPaymentData = null;
-            return result;
+        payment.updateCustomerDisplayQrCode(qr);
+        return await ask(this.env.services.dialog, payment.qrPaymentData, {}, QRPopup).then(
+            (result) => {
+                payment.updateCustomerDisplayQrCode(null);
+                return result;
+            }
+        );
+    }
+
+    displayQrCode(paymentline) {
+        if (!paymentline.qr_code) {
+            return;
+        }
+        this.closeQrCode();
+        const closer = this.dialog.add(QRPopup, {
+            ...paymentline.qrPaymentData,
+            qrCode: paymentline.qr_code,
+            close: () => {},
+            cancelLabel: _t("Close"),
         });
+
+        this.qrCode = { paymentline, closer };
+    }
+
+    closeQrCode() {
+        if (this.qrCode?.closer) {
+            this.qrCode.closer();
+            this.qrCode = null;
+        }
     }
 
     redirectToBackend() {
@@ -2878,6 +2894,47 @@ export class PosStore extends WithLazyGetterTrap {
         return (
             (await this.data.orm.searchCount("pos.session", [["id", "=", this.session.id]])) === 0
         );
+    }
+
+    // -------- Order Validation -------- //
+    getValidationOrderOptions(args = {}) {
+        const { order = this.getOrder() } = args;
+        const opts = { pos: this, orderUuid: order.uuid };
+
+        // Fast payment should be applied in the following cases:
+        // 1. When there are no existing payment lines, but a payment method is configured.
+        // 2. When the customer's due has been settled (i.e., a negative payment entry exists).
+        //    In this case, the negative payment line is present in `paymentLines` but not shown in the UI,
+        //    so `fastPayment` should still be triggered by passing `opts`.
+        const paymentLines = order.payment_ids;
+        if (
+            !paymentLines.length ||
+            (!order.is_refund &&
+                paymentLines.length === 1 &&
+                this.currency.isNegative(paymentLines[0].amount))
+        ) {
+            opts.fastPaymentMethod = this.config.payment_method_ids[0];
+        }
+        return opts;
+    }
+
+    async validateOrder(args = {}) {
+        const { order = this.getOrder(), isForceValidate = false } = args;
+        const validationOptions = this.getValidationOrderOptions({ order });
+        const validation = new OrderPaymentValidation(validationOptions);
+        return await validation.validateOrder(isForceValidate);
+    }
+
+    async autoValidateOrder(args = {}) {
+        const { order = this.getOrder() } = args;
+        if (
+            order.toBeValidate() &&
+            this.config.auto_validate_electronic_payment &&
+            !order.isRefundInProcess()
+        ) {
+            return await this.validateOrder({ ...args, order });
+        }
+        return false;
     }
 
     async validateOrderFast(paymentMethod) {

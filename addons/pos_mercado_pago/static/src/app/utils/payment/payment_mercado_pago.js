@@ -62,7 +62,7 @@ export class PaymentMercadoPago extends PaymentInterface {
                 const pendingLine = this.getPendingPaymentLine("mercado_pago");
 
                 if (pendingLine) {
-                    pendingLine.payment_method_id.payment_terminal.handleMercadoPagoWebhook();
+                    pendingLine.payment_method_id.payment_interface.handleMercadoPagoWebhook();
                 }
             }
         });
@@ -200,4 +200,4 @@ export class PaymentMercadoPago extends PaymentInterface {
     }
 }
 
-registry.category("electronic_payment_interfaces").add("mercado_pago", PaymentMercadoPago);
+registry.category("pos_payment_providers").add("mercado_pago", PaymentMercadoPago);

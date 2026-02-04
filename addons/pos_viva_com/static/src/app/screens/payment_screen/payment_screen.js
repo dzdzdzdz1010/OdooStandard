@@ -11,7 +11,7 @@ patch(PaymentScreen.prototype, {
         onMounted(() => {
             const pendingPaymentLine = this.currentOrder.payment_ids.find(
                 (paymentLine) =>
-                    paymentLine.payment_method_id.use_payment_terminal === "viva_com" &&
+                    paymentLine.payment_method_id.payment_provider === "viva_com" &&
                     !paymentLine.isDone() &&
                     paymentLine.getPaymentStatus() !== "pending"
             );
@@ -63,12 +63,12 @@ patch(PaymentScreen.prototype, {
             }
         }
 
-        if (pm.use_payment_terminal === "viva_com" && this.isRefundOrder) {
+        if (pm.payment_provider === "viva_com" && this.isRefundOrder) {
             const refundedOrder = this.currentOrder.lines[0]?.refunded_orderline_id?.order_id;
             const amountDue = Math.abs(this.currentOrder.remainingDue);
             const matchedPaymentLine = refundedOrder.payment_ids.find(
                 (line) =>
-                    line.payment_method_id.use_payment_terminal === "viva_com" &&
+                    line.payment_method_id.payment_provider === "viva_com" &&
                     line.amount === amountDue
             );
             if (matchedPaymentLine) {

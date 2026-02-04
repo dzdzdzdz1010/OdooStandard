@@ -38,6 +38,7 @@ class EventTrack(models.Model):
         'website.searchable.mixin'
     ]
     _primary_email = 'contact_email'
+    _priority_field = 'priority'
 
     @api.model
     def _get_default_stage_id(self):

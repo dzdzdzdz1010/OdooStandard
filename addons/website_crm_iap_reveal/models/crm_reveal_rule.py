@@ -24,6 +24,7 @@ class CrmRevealRule(models.Model):
     _order = 'sequence'
     _clear_cache_name = 'default'
     _clear_cache_on_fields = {'active', 'country_ids', 'regex_url'}  # in order to recompute _get_active_rules
+    _priority_field = 'priority'
 
     name = fields.Char(string='Rule Name', required=True)
     active = fields.Boolean(default=True)

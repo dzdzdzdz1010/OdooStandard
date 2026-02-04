@@ -37,6 +37,7 @@ class HrApplicant(models.Model):
     _mailing_enabled = True
     _primary_email = 'email_from'
     _track_duration_field = 'stage_id'
+    _priority_field = 'priority'
 
     def _recruiter_domain(self):
         recruiter_groups = [

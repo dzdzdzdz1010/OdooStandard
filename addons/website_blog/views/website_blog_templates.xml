@@ -5,7 +5,7 @@
 ============================================================================ -->
 <template id="index" name="Blog Navigation">
     <t t-call="website.layout">
-        <div id="wrap" class="js_blog website_blog">
+        <div id="wrap" class="js_blog website_blog" t-att-data-blog-post-id="blog_post.id if blog_post else ''">
             <t t-out="0"/>
 
             <!-- Droppable-area shared across all blog's pages -->
@@ -327,7 +327,7 @@ list of filtered posts (by date or tag).
 -->
 <template id="opt_blog_post_read_next" name="Read Next Article" inherit_id="website_blog.blog_post_complete" active="True">
     <xpath expr="//section[@id='o_wblog_post_footer']" position="inside">
-        <div t-if="next_post" class="mt-5">
+        <div t-if="next_post" class="mt-5" t-att-data-recommended-blog-post-id="next_post.id">
             <t t-if="opt_blog_post_regular_cover">
                 <t t-if="opt_blog_post_sidebar" t-set="readableClass" t-value="'o_wblog_read_with_sidebar'"/>
                 <t t-else="" t-set="readableClass" t-value="'o_container_small'"/>

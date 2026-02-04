@@ -305,17 +305,20 @@ class WebsiteBlog(http.Controller):
         if not request.env.user.has_group('website_blog.group_website_blog_manager'):
             blog_post_domain += [('website_published', '=', True)]
 
-        all_post = BlogPost.search(blog_post_domain)
+        # Ensure deterministic chronological ordering for next blog navigation.
+        all_post = BlogPost.search(blog_post_domain, order="published_date asc, id asc")
 
         if blog_post not in all_post:
             return request.redirect("/blog/%s" % (request.env['ir.http']._slug(blog_post.blog_id)))
 
-        # should always return at least the current post
-        all_post_ids = all_post.ids
-        current_blog_post_index = all_post_ids.index(blog_post.id)
-        nb_posts = len(all_post_ids)
-        next_post_id = all_post_ids[(current_blog_post_index + 1) % nb_posts] if nb_posts > 1 else None
-        next_post = next_post_id and BlogPost.browse(next_post_id) or False
+        next_post = blog_post.recommended_post_id
+        if not next_post or not next_post.sudo().is_published:
+            # Fallback to the next post in the list.
+            all_post_ids = all_post.ids
+            current_index = all_post_ids.index(blog_post.id)
+            nb_posts = len(all_post_ids)
+            next_post_id = all_post_ids[(current_index + 1) % nb_posts] if nb_posts > 1 else None
+            next_post = next_post_id and BlogPost.browse(next_post_id) or False
 
         values = {
             'tags': tags,

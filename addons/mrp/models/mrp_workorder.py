@@ -145,6 +145,8 @@ class MrpWorkorder(models.Model):
                                      column1="blocked_by_id", column2="workorder_id", string="Blocks",
                                      domain="[('allow_workorder_dependencies', '=', True), ('id', '!=', id), ('production_id', '=', production_id)]",
                                      copy=False)
+    production_is_delayed = fields.Boolean(related='production_id.is_delayed', readonly=True)  # Technical field used in views only
+    production_delay_alert_date = fields.Datetime(related='production_id.delay_alert_date', readonly=True)  # Technical field used in views only
 
     @api.depends('qty_ready')
     def _compute_state(self):
@@ -274,6 +276,10 @@ class MrpWorkorder(models.Model):
     def _set_dates(self):
         for wo in self.sudo():
             if wo.leave_id:
+                # gantt unschedule write False on date_start and date_finished
+                if not wo.date_start and not wo.date_finished:
+                    wo.leave_id.unlink()
+                    continue
                 if (not wo.date_start or not wo.date_finished):
                     raise UserError(_("It is not possible to unplan one single Work Order. "
                               "You should unplan the Manufacturing Order instead in order to unplan all the linked operations."))

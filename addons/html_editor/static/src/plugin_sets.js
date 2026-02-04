@@ -30,6 +30,7 @@ import { FontFamilyPlugin } from "./main/font/font_family_plugin";
 import { HintPlugin } from "./main/hint_plugin";
 import { InlineCodePlugin } from "./main/inline_code";
 import { LinkPastePlugin } from "./main/link/link_paste_plugin";
+import { LinkStylePlugin } from "./main/link/link_style_plugin";
 import { LinkPlugin } from "./main/link/link_plugin";
 import { OdooLinkSelectionPlugin } from "./main/link/link_selection_odoo_plugin";
 import { LinkSelectionPlugin } from "./main/link/link_selection_plugin";
@@ -135,6 +136,7 @@ export const MAIN_PLUGINS = [
     DoubleClickImagePreviewPlugin,
     LinkPlugin,
     LinkPastePlugin,
+    LinkStylePlugin,
     FeffPlugin,
     LinkSelectionPlugin,
     OdooLinkSelectionPlugin,

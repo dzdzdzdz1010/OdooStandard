@@ -189,7 +189,7 @@ export class Builder extends Component {
                     ),
                 snippetModel: this.snippetModel,
                 updateInvisibleElementsPanel: () => this.updateInvisibleEls(),
-                allowCustomStyle: true,
+                includeStylingInLinkPopover: false,
                 allowTargetBlank: true,
                 dropImageAsAttachment: true,
                 getAnimateTextConfig: () => ({ editor: this.editor, editorBus: this.editorBus }),

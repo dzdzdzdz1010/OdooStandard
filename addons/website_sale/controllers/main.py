@@ -1,6 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 import base64
+from collections import defaultdict
 import itertools
 import json
 from datetime import datetime
@@ -471,22 +472,29 @@ class WebsiteSale(payment_portal.PaymentPortal):
         variants.fetch()
         product_variants = dict(zip(products, variants))
 
-        ProductAttribute = request.env['product.attribute']
+        attributes = request.env['product.attribute']
+        pavs_per_attribute = defaultdict(list)
         if products:
-            # get all products without limit
-            attributes_grouped = request.env['product.template.attribute.line']._read_group(
-                domain=[
-                    ('product_tmpl_id', 'in', search_product.ids),
-                    ('attribute_id.visibility', '=', 'visible'),
-                ],
+            used_pavs_query = f'''
+                SELECT product_attribute_value_id
+                FROM product_attribute_value_product_template_attribute_line_rel
+                WHERE product_template_attribute_line_id IN ({
+                ",".join(str(i) for i in search_product.attribute_line_ids.ids)
+                })
+            '''
+            request.env.cr.execute(SQL(used_pavs_query))
+            used_pavs_ids = [pav for pav, in self.env.cr.fetchall()]
+            grouped_pavs = request.env['product.attribute.value']._read_group(
+                domain=[('id', 'in', used_pavs_ids), ('attribute_id.visibility', '=', 'visible')],
                 groupby=['attribute_id'],
-                order='attribute_id'
+                order='attribute_id',
+                aggregates=['id:recordset'],
             )
-            attribute_ids = [attribute.id for attribute, in attributes_grouped]
-            attributes = ProductAttribute.browse(attribute_ids)
+            for attribute, pavs in grouped_pavs:
+                pavs_per_attribute[attribute] = pavs
+                attributes |= attribute
         else:
-            attributes = ProductAttribute.browse(attribute_ids).sorted()
-
+            attributes = attributes.browse(attribute_ids).sorted()
         products_prices = products._get_sales_prices(website)
         product_query_params = self._get_product_query_params(**post)
 
@@ -525,6 +533,8 @@ class WebsiteSale(payment_portal.PaymentPortal):
                 lambda: products._get_previewed_attribute_values(category, product_query_params),
             ),
         }
+        if pavs_per_attribute:
+            values['pavs_per_attribute'] = pavs_per_attribute
         if filter_by_price_enabled:
             values['min_price'] = min_price or available_min_price
             values['max_price'] = max_price or available_max_price

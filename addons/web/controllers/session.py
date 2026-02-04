@@ -90,3 +90,8 @@ class Session(Controller):
     def session_identity_check(self, **kwargs):
         """ JSON route used to receive the authentication form sent by the user. """
         return request.env['ir.http']._check_identity(kwargs)
+
+    @route('/web/session/identity/fingerprint/check', type='jsonrpc', auth='user', check_identity=False)
+    def session_identity_fingerprint(self, fingerprint):
+        """ JSON route used to receive the fingerprint of the current device. """
+        return {'success': request.session.update_device_fingerprint(request, fingerprint)}

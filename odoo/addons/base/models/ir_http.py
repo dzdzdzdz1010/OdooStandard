@@ -487,8 +487,22 @@ class IrHttp(models.AbstractModel):
         - `check_identity` [bool]: True if an identity check is required
         - `mfa` [bool]: True if multi-factor authentication is required
         - `1fa_method` [str]: previously used auth method, to avoid reuse as second factor
+        - `fingerprint_check` [bool]: True if re-auth can be **fully** completed with device fingerprint
         """
-        return {}
+        device = request.session.get_device(request)
+        if device.get('trusted'):
+            return {}
+        # If the feature is not activated, trust the device
+        if not request.env['ir.config_parameter'].sudo().get_bool('check_device'):
+            device['trusted'] = True
+            request.session.is_dirty = True
+            return {}
+        # The current request is using an unknown device
+        return {
+            'check_identity': True,
+            'mfa': True,
+            'fingerprint_check': True,
+        }
 
     @classmethod
     def _check_identity(cls, credential):
@@ -513,14 +527,21 @@ class IrHttp(models.AbstractModel):
         auth_methods = user._get_auth_methods()
 
         reauth_requirements = cls._must_check_identity()
-        assert set(reauth_requirements).issubset(('logout', 'check_identity', 'mfa', '1fa_method')), reauth_requirements
+        assert set(reauth_requirements).issubset(
+            ('logout', 'check_identity', 'mfa', '1fa_method', 'fingerprint_check'),
+        ), reauth_requirements
 
         first_fa_method = reauth_requirements.get('1fa_method')
 
         if not credential:
             if first_fa_method in auth_methods:
                 auth_methods.remove(first_fa_method)
-            return {'user_id': user.id, 'login': user.login, 'auth_methods': auth_methods}
+            return {
+                'user_id': user.id,
+                'login': user.login,
+                'auth_methods': auth_methods,
+                'fingerprint_check': reauth_requirements.get('fingerprint_check'),
+            }
 
         auth = user._check_credentials(credential, {"interactive": True})
 
@@ -537,5 +558,9 @@ class IrHttp(models.AbstractModel):
 
         # Use the same key as the one used for the `check_identity` wrapper
         session['identity-check-last'] = time.time()
+        # Mark the current device as trusted
+        device = session.get_device(request)
+        device['trusted'] = True
+        session.is_dirty = True
 
         return None

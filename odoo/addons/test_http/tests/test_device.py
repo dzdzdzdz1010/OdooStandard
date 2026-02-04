@@ -7,8 +7,10 @@ from unittest.mock import patch
 from freezegun import freeze_time
 
 from odoo import Command
+from odoo.http._facade import HTTPRequest
 from odoo.http.router import Application, root
 from odoo.http.session import Session, SessionStore
+from odoo.http.requestlib import Request
 from odoo.tests import tagged
 from odoo.tools import config, mute_logger, reset_cached_properties
 
@@ -509,3 +511,55 @@ class TestDevice(TestHttpBase):
             self.assertEqual(len(sessions), 1)
             self.assertEqual(len(devices), 1)
             self.assertEqual(len(logs), 1)
+
+    # --------------------
+    # FINGERPRINT
+    # --------------------
+
+    def test_check_untrusted_device_with_fingerprint(self):
+        ICP = self.env['ir.config_parameter']
+        ICP.set_bool('check_device', True)
+
+        RE_AUTH_PATH = '/web/session/identity'
+        TRUSTED_FINGERPRINT = '123456789'
+        UA_DEVICE_1 = USER_AGENT_linux_chrome
+        UA_DEVICE_2 = USER_AGENT_linux_firefox
+
+        class _Request(Request):
+            """ Helper to call function with request required """
+
+            def __init__(self, ip_address, user_agent):
+                super().__init__(HTTPRequest(environ={
+                    'REMOTE_ADDR': ip_address,
+                    'HTTP_USER_AGENT': user_agent,
+                }))
+
+        session = self.authenticate(self.user_admin.login, self.user_admin.login)
+
+        res_1 = self.hit('2026-01-01 08:00:00', '/test_http/greeting-user?readonly=0', ip=TEST_IP, headers={'User-Agent': UA_DEVICE_1})
+        res_2 = self.hit('2026-01-01 08:00:00', '/test_http/greeting-user?readonly=0', ip=TEST_IP, headers={'User-Agent': UA_DEVICE_2})
+
+        self.assertEqual(len(session['_devices']), 2, 'All devices are detected')
+
+        self.assertNotIn(RE_AUTH_PATH, res_1.url, 'First device is always trusted')
+        self.assertIn(RE_AUTH_PATH, res_2.url, 'Second device is not trusted, re-authentication requested')
+
+        device_2 = next(device for device in session['_devices'].values() if device['user_agent'] == UA_DEVICE_2)
+        device_2['trusted'] = True
+
+        res_2 = self.hit('2026-01-01 08:00:00', '/test_http/greeting-user?readonly=0', ip=TEST_IP, headers={'User-Agent': UA_DEVICE_2})
+        self.assertNotIn(RE_AUTH_PATH, res_2.url, 'Second device must be trusted')
+
+        device_2['trusted'] = False  # Remove the fact that the second device is verified
+
+        # Try to validate the second device using fingerprint
+        self.assertFalse(session.get('_device_fingerprint'))
+        # The first device add a fingerprint for the session
+        request_1 = _Request(TEST_IP, UA_DEVICE_1)
+        session.update_device_fingerprint(request_1, TRUSTED_FINGERPRINT)
+        self.assertTrue(session['_device_fingerprint'])
+        # The second device has the correct fingerprint (hypothetical for testing purposes)
+        request_2 = _Request(TEST_IP, UA_DEVICE_2)
+        session.update_device_fingerprint(request_2, TRUSTED_FINGERPRINT)
+        res_2 = self.hit('2026-01-01 08:00:00', '/test_http/greeting-user?readonly=0', ip=TEST_IP, headers={'User-Agent': UA_DEVICE_2})
+        self.assertNotIn(RE_AUTH_PATH, res_2.url, 'Second device must be trusted')

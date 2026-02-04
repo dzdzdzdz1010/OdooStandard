@@ -107,3 +107,39 @@ class TestReportPoSOrder(TestPoSCommon):
 
         self.assertEqual(reports[0].margin, 135)
         self.assertEqual(reports[0].price_total, 135)
+
+    def test_report_pos_after_refunds(self):
+        """Test the margin, price_total and price_subtotal_excl of reports containing refunded orders."""
+
+        product = self.create_product('Product', self.categ_basic, 10, 5)  # Sale price: $10 | Cost: $5
+        self.open_new_session()
+        session = self.pos_session
+        self.env['pos.order'].create({
+            'session_id': session.id,
+            'lines': [(0, 0, {
+                'name': '000001',
+                'product_id': product.id,
+                'price_unit': 10,
+                'discount': 0,
+                'qty': 1.0,
+                'price_subtotal': 10,
+                'price_subtotal_incl': 10,
+                'total_cost': 5.0,
+            })],
+            'amount_total': 10.0,
+            'amount_tax': 0.0,
+            'amount_paid': 10.0,
+            'amount_return': 0.0,
+        })
+        refund_action = self.pos_session.order_ids.refund()
+        refund = self.env['pos.order'].browse(refund_action['res_id'])
+        context_make_payment = {"active_ids": refund.ids, "active_id": refund.id}
+        self.env['pos.make.payment'].with_context(context_make_payment).create({
+            'payment_method_id': self.cash_pm1.id,
+            'amount': refund.amount_total,
+        }).check()
+        self.env.flush_all()
+        self.assertRecordValues(self.env['report.pos.order'].sudo().search([('product_id', '=', product.id)], order='id'), [
+            {'margin': 5.0, 'price_total': 10.0, 'price_subtotal_excl': 10.0},     # Order report
+            {'margin': -5.0, 'price_total': -10.0, 'price_subtotal_excl': -10.0},  # Refund report
+        ])

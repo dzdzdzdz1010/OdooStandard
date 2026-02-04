@@ -12,6 +12,7 @@ from . import mailing_contact
 from . import mailing_list
 from . import mailing_subscription_optout
 from . import mailing_trace
+from . import mailing_templates
 from . import mailing
 from . import mailing_filter
 from . import mail_mail

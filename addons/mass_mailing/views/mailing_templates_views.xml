@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Templates -->
+    <record model="ir.ui.view" id="mailing_templates_view_search">
+        <field name="name">mailing.templates.search</field>
+        <field name="model">mailing.templates</field>
+        <field name="arch" type="xml">
+            <search string="Templates">
+                <separator/>
+                <filter string="My Mailings" name="assigned_to_me"
+                            domain="[('user_id', '=', uid)]"
+                            help="Mailings that are assigned to me"/>
+                <separator/>
+                <group>
+                    <separator/>
+                    <filter string="Created On" name="group_by_create_date" domain="[]" context="{'group_by': 'create_date'}"/>
+                    <filter string="User" name="group_by_user_id" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="mailing_templates_action" model="ir.actions.act_window">
+        <field name="name">Templates</field>
+        <field name="res_model">mailing.templates</field>  
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_assigned_to_me': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+            Create a Mailing Template
+            </p><p>
+            Design a mailing template.
+            </p>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="mailing_templates_view_list">
+        <field name="name">mailing.templates.list</field>
+        <field name="model">mailing.templates</field>
+        <field name="arch" type="xml">
+            <list string="Mailing List Contacts" sample="1" multi_edit="1">
+                <field name="name" optional="show" readonly="1"/>
+                <field name="description" optional="show"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+            </list>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="mailing_templates_view_form">
+        <field name="name">mailing.templates.form</field>
+        <field name="model">mailing.templates</field>
+        <field name="arch" type="xml">
+            <form string="Templates">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" class="text-break" placeholder="e.g. Customer Acquisition Template"/>
+                        </h1>
+                    </div>
+                    <separator/>
+                    <group>
+                        <field name="user_id" widget="many2one_avatar_user"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

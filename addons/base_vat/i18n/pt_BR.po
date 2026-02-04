@@ -34,8 +34,16 @@ msgstr ""
 #. odoo-python
 #: code:addons/base_vat/models/res_partner.py:0
 #, python-format
+<<<<<<< 0f110564571d1fde2bc0208fdc37198dc02a841b
 msgid "17291716060 (NIN) or 1729171602 (VKN)"
 msgstr "17291716060 (NIN) ou 1729171602 (VKN)"
+||||||| ec6e5596ead009265c3ac8a64a2d28e0397d8383
+msgid "17291716060 (NIN) or 1729171602 (VKN)"
+msgstr "17291716060 (NIN) pu 1729171602 (VKN)"
+=======
+msgid "1111111111 (NIN) or 22222222222 (VKN)"
+msgstr "1111111111 (NIN) pu 22222222222 (VKN)"
+>>>>>>> 12fa6ed04f472f2fe9a36939c7ada5f2b7286e69
 
 #. module: base_vat
 #. odoo-python

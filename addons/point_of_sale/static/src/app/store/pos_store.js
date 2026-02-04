@@ -1772,7 +1772,7 @@ export class PosStore extends Reactive {
                 }
             }
             // Print Order Note if changed
-            if (orderChange.generalNote && anyChangesToPrint) {
+            if (orderChange.generalNote && !anyChangesToPrint) {
                 const printed = await this.printReceipts(order, printer, "Message", []);
                 if (!printed) {
                     unsuccedPrints.push("General Message");

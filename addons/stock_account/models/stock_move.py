@@ -242,7 +242,8 @@ class StockMove(models.Model):
         total_qty = sum(m._get_valued_qty() for m in self)
         if not total_qty:
             return 0
-        return sum(self.mapped('value')) / total_qty if self.product_id.cost_method == 'fifo' else self.product_id.standard_price
+        return sum(self.mapped('value')) / total_qty if self.product_id.cost_method == 'fifo' or \
+            (self.product_id.lot_valuated and self.product_id.cost_method == 'average') else self.product_id.standard_price
 
     @api.model
     def _get_valued_types(self):

@@ -273,3 +273,48 @@ class TestManual(common.TestAr):
         })
         debit_note_wizard.create_debit()
         self.assertTrue(invoice.reversal_move_id.debit_note_ids)
+
+    def test_19_corner_case(self):
+        """
+        Test for non AFIP POS sale journal:
+            - that the right documents are computed as available for invoice
+            - that the right document number is computed for a new invoice
+        """
+        journal = self.env['account.journal'].create({
+            'name': 'non AFIP POS sale journal',
+            'type': 'sale',
+            'l10n_ar_is_pos': False,
+            'l10n_latam_use_documents': True,
+            'default_account_id': self.company_data['default_account_revenue'].id,
+            'code': '12345',
+        })
+        invoice = self._create_invoice_from_dict({
+            'journal_id': journal,
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_cf,
+            'company_id': self.company_ri,
+            'l10n_latam_document_number': '1-3',
+            'invoice_date': "2021-03-20",
+            'invoice_line_ids': [
+                {'product_id': self.product_iva_105_perc,
+                'price_unit': 10000.0,
+                'quantity': 1,
+                'tax_ids': [(6, 0, [self.tax_no_gravado.id])]},
+            ],
+        })
+        self.assertListEqual([6, 7, 9], invoice.l10n_latam_available_document_type_ids.ids)
+        invoice2 = self._create_invoice_from_dict({
+            'journal_id': journal,
+            'move_type': 'out_invoice',
+            'partner_id': self.partner_cf,
+            'company_id': self.company_ri,
+            'invoice_date': "2021-03-21",
+            'invoice_line_ids': [
+                {'product_id': self.product_iva_105_perc,
+                'price_unit': 10000.0,
+                'quantity': 1,
+                'tax_ids': [(6, 0, [self.tax_no_gravado.id])]},
+            ],
+        })
+        invoice2.action_post()
+        self.assertEqual(invoice2.l10n_latam_document_number, '00001-00000004')

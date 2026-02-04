@@ -229,6 +229,20 @@ class AccountMove(models.Model):
         if doctype_fa_exterior:
             foreign_vendor_bills.l10n_latam_document_type_id = doctype_fa_exterior
 
+    @api.depends('l10n_latam_document_type_id', 'journal_id')
+    def _compute_l10n_latam_manual_document_number(self):
+        """ Indicates if this document type uses a sequence or if the numbering is made manually """
+        super()._compute_l10n_latam_manual_document_number()
+        invoices = self.filtered(lambda x: (
+                not x.journal_id.l10n_ar_is_pos
+            and x.journal_id.type == 'sale'
+            and x.l10n_latam_document_type_id
+            and not x.l10n_latam_document_number
+            and (x.l10n_latam_manual_document_number)
+            and x.l10n_latam_document_type_id.country_id.code == 'AR'))
+        for rec in invoices:
+            rec.l10n_latam_manual_document_number = not bool(rec._get_last_sequence()) and rec.l10n_latam_manual_document_number
+
     def _post(self, soft=True):
         ar_invoices = self.filtered(lambda x: x.company_id.account_fiscal_country_id.code == "AR" and x.l10n_latam_use_documents)
         # We make validations here and not with a constraint because we want validation before sending electronic

@@ -1,0 +1,15 @@
+.s_age_verification_popup[data-vcss='001'] {
+    .modal {
+        // always appear on top in case of multiple popups
+        z-index: 9999 !important;
+    }
+}
+
+#wrapwrap:has([data-age-verification-pending="true"])::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    z-index: 9998;
+}

@@ -208,8 +208,13 @@ class HrVersion(models.Model):
                 static_attendances = calendar._attendance_intervals_batch(
                     start_dt, end_dt, resources_per_tz=resources_per_tz)[resource.id]
                 real_leaves = (static_attendances & multi_day_leaves) | one_day_leaves
-            else:
+            elif version.has_static_work_entries() or not leaves:
                 real_leaves = expected_attendances & leaves
+            else:
+                resources_per_tz = version._get_resources_per_tz()
+                static_attendances = calendar._attendance_intervals_batch(
+                    start_dt, end_dt, resources_per_tz=resources_per_tz)[resource.id]
+                real_leaves = static_attendances & leaves
 
             real_worked_leaves = worked_leaves - real_leaves
             real_attendances = self._get_real_attendances(expected_attendances, leaves, worked_leaves)

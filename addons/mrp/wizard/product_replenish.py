@@ -2,6 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models
+from odoo.fields import Domain
 
 
 class ProductReplenish(models.TransientModel):
@@ -41,3 +42,10 @@ class ProductReplenish(models.TransientModel):
         if product_tmpl_id and product_tmpl_id.bom_ids:
             delay += product_tmpl_id.bom_ids[0].produce_delay + product_tmpl_id.bom_ids[0].days_to_prepare_mo
         return fields.Datetime.add(date, days=delay)
+
+    def _get_route_domain(self, product_tmpl_id):
+        domain = super()._get_route_domain(product_tmpl_id)
+        manufacture_route = self.env.ref('mrp.route_warehouse0_manufacture', raise_if_not_found=False)
+        if manufacture_route and product_tmpl_id.bom_ids:
+            domain = Domain.OR([domain, Domain('id', '=', manufacture_route.id)])
+        return domain

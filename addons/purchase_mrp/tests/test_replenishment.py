@@ -90,7 +90,7 @@ class TestReplenishment(TestStockCommon):
 
     def test_replenishment_wizard_warehouse_routes(self):
         def create_replenish_wizard(warehouse, product):
-            return self.env['product.replenish'].create({
+            return self.env['product.replenish'].with_context(default_product_id=product.id).create({
                 'product_id': product.id,
                 'product_tmpl_id': product.product_tmpl_id.id,
                 'product_uom_id': product.uom_id.id,
@@ -104,10 +104,15 @@ class TestReplenishment(TestStockCommon):
         })
         manufacture_route = self.warehouse_1.route_ids.filtered(lambda r: any(rule.action == 'manufacture' for rule in r.rule_ids))
         buy_route = self.warehouse_1.route_ids.filtered(lambda r: any(rule.action == 'buy' for rule in r.rule_ids))
+        self.route_mto.active = True
+        self.productA.route_ids = self.route_mto
 
-        # No resupply methods should be set for Product A
-        self.assertRecordValues(self.productA, [{'route_ids': self.env['stock.route'], 'seller_ids': self.env['product.supplierinfo'], 'bom_ids': self.env['mrp.bom']}])
+        # No resupply methods should be set for Product A (except mto route)
+        self.assertRecordValues(self.productA, [{'route_ids': self.route_mto.ids, 'seller_ids': self.env['product.supplierinfo'], 'bom_ids': self.env['mrp.bom']}])
         replenish_empty = create_replenish_wizard(self.warehouse_1, self.productA)
+        self.assertEqual(replenish_empty.route_id, self.route_mto)
+        # Force computation, as if a user clicked to change the value
+        replenish_empty._compute_allowed_route_ids()
         self.assertFalse(replenish_empty.allowed_route_ids)
 
         # Add a BoM for Product A. This should make it eligible for Manufacture routes
@@ -116,6 +121,7 @@ class TestReplenishment(TestStockCommon):
             'product_qty': 1,
         })
         replenish_manufacture = create_replenish_wizard(self.warehouse_1, self.productA)
+        self.assertEqual(replenish_manufacture.route_id, manufacture_route)
         self.assertEqual(replenish_manufacture.allowed_route_ids, manufacture_route)
 
         # Now add a seller for Product A. This should make it eligible for Buy routes
@@ -123,7 +129,9 @@ class TestReplenishment(TestStockCommon):
             'product_id': self.productA.id,
             'partner_id': self.partner_1.id,
         })
+        manufacture_route.sequence = 100  # Ensure buy gets selected as default
         replenish_both = create_replenish_wizard(self.warehouse_1, self.productA)
+        self.assertEqual(replenish_both.route_id, buy_route)
         self.assertEqual(set(replenish_both.allowed_route_ids.ids), set((manufacture_route | buy_route).ids))
 
     def test_replenishment_cache_route_placeholder(self):

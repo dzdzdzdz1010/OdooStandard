@@ -4,6 +4,7 @@ from markupsafe import Markup
 from unittest.mock import patch
 
 from odoo import SUPERUSER_ID
+from odoo.addons.mail.models.res_partner import Partner
 from odoo.addons.mail.tests.common import mail_new_test_user, MailCommon
 from odoo.addons.test_mail.models.mail_test_access import MailTestAccess
 from odoo.addons.test_mail.models.test_mail_models import MailTestSimple
@@ -270,6 +271,51 @@ class TestMailMessageAccess(MessageAccessCommon):
                             'res_id': self.record_internal_ro.id,
                             'body': 'Test',
                         })
+
+    def test_access_create_attachment_post_access(self):
+        """ Test 'mail_post_access' support that allows creating a message with
+        other rights than 'write' access on document """
+        record = self.record_internal_ro
+        for post_value, should_crash in [
+            ('read', False),
+            ('write', True),
+        ]:
+            with self.subTest(post_value=post_value):
+                with patch.object(MailTestAccess, '_mail_post_access', post_value):
+                    if should_crash:
+                        with self.assertRaises(AccessError):
+                            self.env['ir.attachment'].with_user(self.user_employee).create({
+                                'name': 'doc.txt',
+                                'raw': b'My attachment',
+                                'res_model': record._name,
+                                'res_id': record.id
+                            })
+                    else:
+                        attachment = self.env['ir.attachment'].with_user(self.user_employee).create({
+                            'name': 'doc.txt',
+                            'raw': b'My attachment',
+                            'res_model': record._name,
+                            'res_id': record.id
+                        })
+                        attachment.with_user(self.user_employee).write({'name': 'doc2.txt'})
+                        attachment.with_user(self.user_employee).unlink()
+
+    def test_mail_attachments_permissions(self):
+        partner = self.env["res.partner"].create({"name": "Jane", "email": "jane@example.com"})
+
+        partner.with_user(self.user_employee).check_access_rights('read')
+        with self.assertRaises(AccessError):
+            partner.with_user(self.user_employee).check_access_rights('write')
+
+        with patch.object(Partner, '_mail_post_access', 'read', create=True):
+            for mode in ('create', 'read', 'write', 'unlink'):
+                self.env['ir.attachment'].with_user(self.user_employee).check(mode, {'res_model': 'res.partner', 'res_id': partner.id})
+
+        with patch.object(Partner, '_mail_post_access', 'write', create=True):
+            for mode in ('create', 'write', 'unlink'):
+                with self.assertRaises(AccessError):
+                    self.env['ir.attachment'].with_user(self.user_employee).check(mode, {'res_model': 'res.partner', 'res_id': partner.id})
+            self.env['ir.attachment'].with_user(self.user_employee).check('read', {'res_model': 'res.partner', 'res_id': partner.id})
 
     @mute_logger('odoo.addons.base.models.ir_rule')
     def test_access_create_portal(self):

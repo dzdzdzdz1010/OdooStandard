@@ -493,7 +493,7 @@ class IrAttachment(models.Model):
             # was not)
             if res_model not in self.env:
                 continue
-            if res_model == 'res.users' and len(res_ids) == 1 and self.env.uid == list(res_ids)[0]:
+            if res_model == 'res.users' and len(res_ids) == 1 and self.env.uid == next(iter(res_ids)):
                 # by default a user cannot write on itself, despite the list of writeable fields
                 # e.g. in the case of a user inserting an image into his image signature
                 # we need to bypass this check which would needlessly throw us away
@@ -501,9 +501,13 @@ class IrAttachment(models.Model):
             records = self.env[res_model].browse(res_ids).exists()
             # For related models, check if we can write to the model, as unlinking
             # and creating attachments can be seen as an update to the model
-            access_mode = 'write' if mode in ('create', 'unlink') else mode
-            records.check_access_rights(access_mode)
-            records.check_access_rule(access_mode)
+            self._check_corecord_access(records, mode)
+
+    def _check_corecord_access(self, records, access_mode):
+        """ Check access rights and rules on the given records for the given access_mode. """
+        access_mode = 'write' if access_mode in ('create', 'unlink') else access_mode
+        records.check_access_rights(access_mode)
+        records.check_access_rule(access_mode)
 
     @api.model
     def _filter_attachment_access(self, attachment_ids):

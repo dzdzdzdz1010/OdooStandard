@@ -175,6 +175,7 @@ export class TabulationPlugin extends Plugin {
 
     /**
      * @param {HTMLSpanElement} tabSpan - span.oe-tabs element
+     * @returns {boolean} true if width was adjusted
      */
     adjustTabWidth(tabSpan) {
         let tabPreviousSibling = tabSpan.previousSibling;
@@ -194,11 +195,16 @@ export class TabulationPlugin extends Plugin {
         if (!referenceRect?.width || !spanRect.width) {
             return;
         }
-        const relativePosition = spanRect.left - referenceRect.left;
+        const side = getComputedStyle(tabSpan).direction === "rtl" ? "right" : "left";
+        const relativePosition = Math.abs(spanRect[side] - referenceRect[side]);
         const distToNextGridLine = GRID_COLUMN_WIDTH - (relativePosition % GRID_COLUMN_WIDTH);
         // Round to the first decimal point.
         const width = distToNextGridLine.toFixed(1);
+        if (parseFloat(tabSpan.style.width) === parseFloat(width)) {
+            return false;
+        }
         tabSpan.style.width = `${width}px`;
+        return true;
     }
 
     /**
@@ -211,8 +217,29 @@ export class TabulationPlugin extends Plugin {
         if (!block) {
             return;
         }
-        for (const tab of block.querySelectorAll("span.oe-tabs")) {
-            this.adjustTabWidth(tab);
+        const tabs = [...block.querySelectorAll("span.oe-tabs")];
+        let hadChange = true;
+        let maxCount = tabs.length;
+        while (hadChange && maxCount > 0) {
+            maxCount--;
+            hadChange = false;
+            const isRtl = getComputedStyle(block).direction === "rtl";
+            tabs.sort(
+                isRtl
+                    ? (a, b) => {
+                          const ra = a.getBoundingClientRect();
+                          const rb = b.getBoundingClientRect();
+                          return rb.right - ra.right;
+                      }
+                    : (a, b) => {
+                          const ra = a.getBoundingClientRect();
+                          const rb = b.getBoundingClientRect();
+                          return ra.left - rb.left;
+                      }
+            );
+            for (const tab of tabs) {
+                hadChange |= this.adjustTabWidth(tab);
+            }
         }
     }
 

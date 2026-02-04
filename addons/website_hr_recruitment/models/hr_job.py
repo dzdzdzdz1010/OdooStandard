@@ -1,6 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import api, fields, models, _
+from odoo.addons.website.structure_data_defination import SchemaBuilder
 from odoo.tools import mute_logger
 from odoo.tools.urls import urljoin as url_join
 from odoo.tools.translate import html_translate
@@ -152,3 +153,59 @@ spirit. To be successful, you will have solid solving problem skills.''')
             'mapping': mapping,
             'icon': 'fa-briefcase',
         }
+
+    def _to_structured_data(self):
+        self.ensure_one()
+        identifier = None
+        # TODO: Add support for validThrough field
+        valid_through = None
+        employement_type = None
+        if self.contract_type_id.sudo():
+            employement_type = {
+                'Permanent': 'FULL_TIME',
+                'Temporary': 'TEMPORARY',
+                'Interim': 'TEMPORARY',
+                'Seasonal': 'TEMPORARY',
+                'Full-Time': 'FULL_TIME',
+                'Part-Time': 'PART_TIME',
+                'Intern': 'INTERN',
+                'Student': 'INTERN',
+                'Apprenticeship': 'INTERN',
+                'Thesis': 'INTERN',
+                'Statutory': 'OTHER',
+                'Employee': 'FULL_TIME',
+            }.get(self.contract_type_id.sudo().name, 'OTHER')
+        hiring_organization = None
+        job_location = None
+        if self.department_id:
+            department_company = self.department_id.company_id.sudo()
+            identifier = SchemaBuilder(
+                "PropertyValue",
+                name=department_company.name,
+                value=f"{department_company.id}-{self.id}",
+            )
+            hiring_organization = self.website_id.organization_structured_data(department_company)
+            job_location = SchemaBuilder(
+                "Place",
+                address=self.env['website'].postal_address_structured_data(department_company),
+            )
+        base_salary = None  # TODO: Add support for baseSalary field
+        return SchemaBuilder(
+            "JobPosting",
+            title=self.name,
+            url=self.full_url,
+            description=self.website_description,
+            date_posted=SchemaBuilder.datetime(self.create_date),
+            valid_through=valid_through,
+            direct_apply=True,
+            employment_type=employement_type,
+        ).add_nested(
+            identifier=identifier,
+            hiring_organization=hiring_organization,
+            applicant_location_requirements=SchemaBuilder(
+                "Country",
+                name=self.address_id.country_id.code,
+            ),
+            job_location=job_location,
+            base_salary=base_salary,
+        )

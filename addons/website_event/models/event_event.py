@@ -9,6 +9,8 @@ import werkzeug.urls
 from dateutil.relativedelta import relativedelta
 from markupsafe import Markup
 
+from odoo.addons.website.structure_data_defination import SchemaBuilder
+from odoo.addons.website.tools import text_from_html, truncate_text
 from odoo import api, fields, models, tools, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
@@ -661,3 +663,69 @@ class EventEvent(models.Model):
                 )
             data['tag_ids'] = event.tag_ids.read(['name'])
         return results_data
+
+    def _to_structured_data(self, website):
+        """ Generate structured data for the event. """
+        self.ensure_one()
+        base_url = website.get_base_url()
+
+        event_url = f"{base_url}{self.website_url}" if self.website_url else f"{base_url}/event/{self.id}"
+        image_url = website.image_url(self, 'image_1920')
+        image_url = f"{base_url}{image_url}" if image_url else None
+
+        location = None
+        if self.address_id:
+            address = website.postal_address_structured_data(self.address_id.sudo())
+            location = SchemaBuilder("Place", name=self.address_name).add_nested(address=address)
+
+        description = self.subtitle
+        if not description and self.description:
+            description = truncate_text(text_from_html(self.description, True), 300)
+
+        organizer = None
+        if self.organizer_id:
+            organizer_sudo = self.organizer_id.sudo()
+            organizer = SchemaBuilder("Organization", name=organizer_sudo.name)
+            if organizer_sudo.website:
+                organizer.set(url=organizer_sudo.website)
+
+        event_status = "EventScheduled"
+        if self.is_ongoing:
+            event_status = "EventOngoing"
+        elif self.kanban_state == 'cancel':
+            event_status = "EventCancelled"
+
+        tickets = []
+        currency = self.company_id.currency_id.name
+        for ticket in self.event_ticket_ids:
+            availability = "https://schema.org/SoldOut" if ticket.is_sold_out else "https://schema.org/InStock"
+            offer = SchemaBuilder("Offer",
+                name=ticket.name,
+                price=ticket.total_price_reduce,
+                price_currency=currency,
+                availability=availability,
+            )
+            if not ticket.is_sold_out:
+                offer.set(url=f"{event_url}/register")
+
+            if ticket.start_sale_datetime:
+                offer.set(valid_from=SchemaBuilder.datetime(ticket.start_sale_datetime))
+            if ticket.end_sale_datetime:
+                offer.set(valid_through=SchemaBuilder.datetime(ticket.end_sale_datetime))
+
+            tickets.append(offer)
+
+        # Build and return event schema
+        return SchemaBuilder("Event",
+            name=self.name,
+            url=event_url,
+            start_date=SchemaBuilder.datetime(self.date_begin),
+            end_date=SchemaBuilder.datetime(self.date_end),
+            image=image_url,
+            description=description,
+            event_status=f"https://schema.org/{event_status}",
+        ).add_nested(
+            location=location,
+            organizer=organizer,
+            offers=tickets,
+        )

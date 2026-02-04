@@ -20,7 +20,8 @@
 // ------- SearchPanel -------
 
 .o_search_panel {
-    --treeEntry-padding-h: #{map-get($spacers, 3)};
+    --treeEntry-padding-h: calc(#{map-get($spacers, 4)} + #{map-get($spacers, 2)});
+    --treeEntry-padding-v: #{map-get($spacers, 3)};
 
     width: var(--SearchPanel-width, #{$o-search-panel-width});
     font-size: var(--SearchPanel-fontSize, #{$o-search-panel-font-size});

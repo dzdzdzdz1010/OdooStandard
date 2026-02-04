@@ -596,6 +596,22 @@ class PsycoConnection(psycopg2.extensions.connection):
                     pass
             return PsycoConnectionInfo(self)
 
+    def _matches_dsn(self, dsn: dict) -> bool:
+        # check the database (alias dbname)
+        db1 = self.info.dbname
+        db2 = dsn.get('database', dsn.get('dbname', ''))
+        if db1 != str(db2):
+            return False
+        # check the rest of the keys
+        keys = set(dsn)
+        keys.difference_update(('password', 'dbname', 'database'))
+        info = self.info.dsn_parameters
+        return all(
+            (v1 := info.get(key)) == (v2 := dsn.get(key))
+            or str(v1) == str(v2)
+            for key in keys
+        )
+
 
 class ConnectionPool:
     """ The pool of connections to database(s)
@@ -652,7 +668,7 @@ class ConnectionPool:
             if cnx.closed:
                 self._free_connections.pop(i)
                 self._debug('Removing closed connection at index %d: %r', i, cnx.dsn)
-            elif selected_cnx is None and self._dsn_equals(cnx.dsn, connection_info):
+            elif selected_cnx is None and cnx._matches_dsn(connection_info):
                 self._debug('Borrow existing connection to %r at index %d', cnx.dsn, i)
                 self._free_connections.pop(i)
                 self._used_connections[cnx] = None
@@ -711,13 +727,15 @@ class ConnectionPool:
     def close_all(self, dsn: dict | str | None = None):
         count = 0
         last = None
+        if isinstance(dsn, str):
+            dsn = psycopg2.extensions.parse_dsn(dsn)
         for i, cnx in tools.reverse_enumerate(self._free_connections):
-            if dsn is None or self._dsn_equals(cnx.dsn, dsn):
+            if dsn is None or cnx._matches_dsn(dsn):
                 cnx.close()
                 last = self._free_connections.pop(i)
                 count += 1
         for cnx in list(self._used_connections):
-            if dsn is None or self._dsn_equals(cnx.dsn, dsn):
+            if dsn is None or cnx._matches_dsn(dsn):
                 cnx.close()
                 last = cnx
                 del self._used_connections[cnx]
@@ -725,16 +743,6 @@ class ConnectionPool:
         if count:
             _logger.info('%r: Closed %d connections %s', self, count,
                         (dsn and last and 'to %r' % last.dsn) or '')
-
-    def _dsn_equals(self, dsn1: dict | str, dsn2: dict | str) -> bool:
-        alias_keys = {'dbname': 'database'}
-        ignore_keys = ['password']
-        dsn1, dsn2 = ({
-            alias_keys.get(key, key): str(value)
-            for key, value in (psycopg2.extensions.parse_dsn(dsn) if isinstance(dsn, str) else dsn).items()
-            if key not in ignore_keys
-        } for dsn in (dsn1, dsn2))
-        return dsn1 == dsn2
 
 
 class Connection:

@@ -501,6 +501,44 @@ class TestPoSBasicConfig(TestPoSCommon):
             },
         })
 
+    def test_refund_ship_later_cancels_picking(self):
+        self.config.write({
+            'ship_later': True,
+            'payment_method_ids': [(6, 0, self.cash_pm1.ids)],
+        })
+        self.open_new_session()
+
+        shipping_date = fields.Date.today() + relativedelta(days=1)
+        orders_map = self._create_orders([
+            {
+                'pos_order_lines_ui_args': [(self.product1, 2)],
+                'payments': [(self.cash_pm1, 20)],
+                'uuid': 'SHIP-LATER-REFUND',
+                'customer': self.customer,
+                'pos_order_ui_args': {
+                    'shipping_date': fields.Date.to_string(shipping_date),
+                },
+            }
+        ])
+        order = orders_map['SHIP-LATER-REFUND']
+        self.assertEqual(order.state, 'paid')
+        self.assertTrue(order.picking_ids)
+        self.assertTrue(order.picking_ids.filtered(lambda p: p.state not in ('done', 'cancel')))
+
+        refund_action = order.refund()
+        refund_order = self.env['pos.order'].browse(refund_action['res_id'])
+        payment_context = {"active_ids": [refund_order.id], "active_id": refund_order.id}
+        make_payment = self.env['pos.make.payment'].with_context(**payment_context).create({
+            'payment_method_id': self.cash_pm1.id,
+            'amount': -20,
+        })
+        make_payment.check()
+        self.assertEqual(refund_order.state, 'paid')
+
+        order._invalidate_cache()
+        self.assertEqual(set(order.picking_ids.mapped('state')), {'cancel'})
+        self.assertFalse(refund_order.picking_ids)
+
     def test_split_cash_payments(self):
         self._run_test({
             'payment_methods': self.cash_split_pm1 | self.bank_pm1,

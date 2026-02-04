@@ -67,21 +67,23 @@
             />
         </body>
         <head position="inside">
-            <!-- Company markup data, in all pages. -->
-            <t t-set="base_url" t-value="website.get_base_url()"/>
-            <script t-if="res_company and website" type="application/ld+json" >
-{
-    "@context": "http://schema.org",
-    "@type": "Organization",
-    "name": "<t t-out="res_company.name"/>",
-    "logo": "<t t-out="'%s/logo.png?company=%s' % (base_url, res_company.id)"/>",
-    "url": "<t t-out="base_url"/>"
-}
-            </script>
-
+             <!-- Main page markup data, in all shop category non-product pages. -->
+            <script 
+                t-if="category_markup_data"
+                type="application/ld+json"
+                t-out="category_markup_data"
+            />
              <!-- Product markup data, on product pages. -->
             <script
-                t-if="product_markup_data" type="application/ld+json" t-out="product_markup_data"
+                t-elif="product_markup_data"
+                type="application/ld+json"
+                t-out="product_markup_data"
+            />
+            <!-- Company markup data, on homepage and main shop page. -->
+            <script 
+                t-elif="res_company and website"
+                type="application/ld+json"
+                t-out="website.get_company_markup_json()"
             />
         </head>
     </template>

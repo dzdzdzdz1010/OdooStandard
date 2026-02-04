@@ -1023,7 +1023,9 @@ class ProductTemplate(models.Model):
         self.ensure_one()
 
         if self.product_variant_count == 1:
-            return self.product_variant_id._to_markup_data(website)
+            product_markup_data = self.product_variant_id._to_markup_data(website)
+            product_markup_data['owner'] = website._get_company_markup_data()
+            return product_markup_data
 
         # perf: temporal solution to avoid slowness when product have many variants and pricelist rules
         limit = self.env['ir.config_parameter'].sudo().get_int('website_sale.markup_data_limit_variants') or None
@@ -1039,6 +1041,7 @@ class ProductTemplate(models.Model):
             'name': self.name,
             'image': f'{base_url}{website.image_url(self, "image_1920")}',
             'url': f'{base_url}{self.website_url}',
+            'owner': website._get_company_markup_data(),
             'hasVariant': [product._to_markup_data(website) for product in product_variant_ids]
         }
         if self.description_ecommerce:

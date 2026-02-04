@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections.abc import Mapping
 from datetime import date, datetime
+import dataclasses
 import json as json_
 import re
 
@@ -60,6 +61,7 @@ scriptsafe = JSON()
 
 def json_default(obj):
     from odoo import fields  # noqa: PLC0415
+
     if isinstance(obj, datetime):
         return fields.Datetime.to_string(obj)
     if isinstance(obj, date):
@@ -72,4 +74,9 @@ def json_default(obj):
         return obj.decode()
     if isinstance(obj, fields.Domain):
         return list(obj)
+    if dataclasses.is_dataclass(obj):
+        as_dict_func = getattr(obj, 'as_dict', None)
+        if callable(as_dict_func):
+            return as_dict_func()
+        return dataclasses.asdict(obj)
     return str(obj)

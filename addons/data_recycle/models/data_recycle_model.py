@@ -207,3 +207,10 @@ class Data_RecycleModel(models.Model):
         if self.recycle_mode == 'manual':
             return self.open_records()
         return
+
+    def refresh_recycle_records(self):
+        self.sudo().search([])._recycle_records(batch_commits=True)
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }

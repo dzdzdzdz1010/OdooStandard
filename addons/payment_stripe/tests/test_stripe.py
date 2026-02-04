@@ -214,7 +214,6 @@ class StripeTest(StripeCommon, PaymentHttpCommon):
         )
         data = self.notification_data['data']
         data['payment_intent'] = self._mock_payment_intent_request()
-        tx._compare_notification_data(data)
         self._assert_does_not_raise(ValidationError, tx._compare_notification_data, data)
 
     def test_compare_notification_data_succeeds_for_currencies_with_non_standard_decimals(self):

@@ -15,6 +15,7 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.tools import email_normalize_all, float_round, format_amount
 
 from odoo.addons.payment import utils as payment_utils
+from odoo.addons.payment.const import CURRENCY_MINOR_UNITS
 
 
 _logger = logging.getLogger(__name__)
@@ -190,6 +191,15 @@ class PaymentTransaction(models.Model):
             values.update(self._get_specific_create_values(provider.code, values))
 
         txs = super().create(vals_list)
+
+        # Enforce rounding the amount down to the currency's minor units to ensure consistent
+        # behavior across payment providers
+        precision_digits = CURRENCY_MINOR_UNITS.get(
+            txs.currency_id.name, txs.currency_id.decimal_places
+        )
+        txs.amount = float_round(
+            txs.amount, precision_digits=precision_digits, rounding_method='DOWN'
+        )
 
         # Monetary fields are rounded with the currency at creation time by the ORM. Sometimes, this
         # can lead to inconsistent string representation of the amounts sent to the providers.

@@ -31,6 +31,7 @@ export class SearchBar extends Interaction {
         this.menuEl = null;
         this.searchType = this.inputEl.dataset.searchType;
         const orderByEl = this.el.querySelector(".o_search_order_by");
+        console.log(orderByEl);
         const form = orderByEl.closest("form");
         this.order = orderByEl.value;
         this.limit = parseInt(this.inputEl.dataset.limit) || 5;
@@ -99,6 +100,7 @@ export class SearchBar extends Interaction {
                 Math.max(this.autocompleteMinWidth, parseInt(this.el.clientWidth)) * 0.22
             ),
             options: this.options,
+            better_sort: true,
         });
         const fieldNames = this.getFieldsNames();
         res.results.forEach((record) => {

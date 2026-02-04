@@ -587,8 +587,118 @@ class Website(Home):
         order = order or 'name ASC'
         return 'is_published desc, %s, id desc' % order
 
+    def _sort_results_by_match_priority(self, results, phrase):
+        # Order of priority right now:
+        # name > tags > body
+        # The lower the score, the higher it will be in the results
+        # 0 is the best score
+        def find_all(result_str, term):
+            if not term:
+                return
+            start = 0
+            while True:
+                start = result_str.find(term, start)
+                if start == -1: return
+                yield start
+                start += len(term)
+
+        def get_best_distance_between_two_words(size_a, list_index_a, size_b, list_index_b):
+            best_distance = None
+            for index_a in list_index_a:
+                goal_after = index_a + size_a
+                goal_before = index_a - size_b
+                for index_b in list_index_b:
+                    if index_b < index_a:
+                        distance = goal_before - index_b
+                    else:
+                        distance = index_b - goal_after
+                    if best_distance is None or best_distance > distance:
+                        best_distance = distance
+            return best_distance
+
+        def get_url(result):
+            return result.get("website_url") or result.get("url") or ""
+
+        NAME_MATCH_PENALTY = 0
+        TAG_MATCH_PENALTY = 10
+        DESC_MATCH_PENALTY = 20
+        MISSING_TERM_PENALTY = 80
+        # The name has the priority over the description,
+        # so at the same distance the name should have a better score
+        DESC_DISTANCE_OFFSET = 1
+        NO_PROXIMITY_MATCH_PENALTY = 30
+
+        score_dict = {}
+        term_list = [t for t in phrase.split() if t]
+
+        for result in results:
+            url = get_url(result)
+            desc = ""
+            if 'arch' in result:
+                desc = result['arch']
+            elif 'content' in result:
+                desc = result['content']
+            if not desc:
+                desc = ""
+            score_dict[url] = {
+                'score': NAME_MATCH_PENALTY,
+                'name': result['name'],
+                'desc': desc,
+            }
+            score_dict[url]['terms_pos_in_name'] = {}
+            score_dict[url]['terms_pos_in_desc'] = {}
+            for i, term in enumerate(term_list):
+                has_tag_match = False
+                if 'tag_ids' in result:
+                    matching_tags = []
+                    for tag in result['tag_ids']:
+                        matching_tags += list(find_all(tag['name'].lower(), term))
+                    has_tag_match = bool(matching_tags)
+                
+                index_in_name = list(find_all(score_dict[url]['name'].lower(), term))
+                score_dict[url]['terms_pos_in_name'][term] = index_in_name
+                index_in_desc = list(find_all(score_dict[url]['desc'].lower(), term))
+                score_dict[url]['terms_pos_in_desc'][term] = index_in_desc
+
+                if index_in_name:
+                    score_dict[url]['score'] += NAME_MATCH_PENALTY
+                elif has_tag_match:
+                    score_dict[url]['score'] += TAG_MATCH_PENALTY
+                elif index_in_desc:
+                    score_dict[url]['score'] += DESC_MATCH_PENALTY
+                else:
+                    score_dict[url]['score'] += MISSING_TERM_PENALTY
+
+                if i > 0:
+                    previous_term = term_list[i - 1]
+                    best_distance_in_name = get_best_distance_between_two_words(
+                        len(previous_term),
+                        score_dict[url]['terms_pos_in_name'][previous_term],
+                        len(term),
+                        score_dict[url]['terms_pos_in_name'][term]
+                    )
+                    best_distance_in_desc = get_best_distance_between_two_words(
+                        len(previous_term),
+                        score_dict[url]['terms_pos_in_desc'][previous_term],
+                        len(term),
+                        score_dict[url]['terms_pos_in_desc'][term]
+                    )
+                    if best_distance_in_desc:
+                        best_distance_in_desc += DESC_DISTANCE_OFFSET
+                    candidates = [v for v in (best_distance_in_name, best_distance_in_desc) if v is not None]
+                    if candidates:
+                        score_dict[url]['score'] += min(candidates)
+                    else:
+                        score_dict[url]['score'] += NO_PROXIMITY_MATCH_PENALTY
+        def get_score(item, score_dict):
+            url = get_url(item)
+            return score_dict[url]["score"]
+
+        results = sorted(results, key=lambda x: get_score(x, score_dict))
+        return results
+
     @http.route('/website/snippet/autocomplete', type='jsonrpc', auth='public', website=True, readonly=True)
-    def autocomplete(self, search_type=None, term=None, order=None, limit=5, max_nb_chars=999, options=None):
+    def autocomplete(self, search_type=None, term=None, order=None, limit=5, max_nb_chars=999, options=None, better_sort=False):
         """
         Returns list of results according to the term and options
 
@@ -621,7 +731,6 @@ class Website(Home):
             }
         term = fuzzy_term or term
         search_results = request.website._search_render_results(search_results, limit)
-
         mappings = []
         results_data = []
         for search_result in search_results:
@@ -632,6 +741,8 @@ class Website(Home):
         if search_type == 'all':
             # Only supported order for 'all' is on name
             results_data.sort(key=lambda r: r.get('name', ''), reverse='name desc' in order)
+        if better_sort:
+            results_data = self._sort_results_by_match_priority(results_data, term)
         results_data = results_data[:limit]
         result = []
         for record in results_data:

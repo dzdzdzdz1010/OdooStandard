@@ -215,6 +215,64 @@ class TestAutoComplete(TransactionCase):
             "Should center around first token 'fox' when exact phrase 'fox runs' not found"
         )
 
+    def test_sort_results_by_match_priority(self):
+        """Ensure most relevant autocomplete results are sorted first."""
+        sort_results = self.WebsiteController._sort_results_by_match_priority
+
+        # Single term: entries with the term in their name must be prioritized.
+        single_term_results = [
+            {'name': 'Garden Salad', 'content': 'burger mentioned only in the description', 'url': '/desc-hit'},
+            {'name': 'Burger Bonanza', 'arch': 'no extra data here', 'website_url': '/name-hit'},
+            {'name': 'Burger Feast', 'content': 'burger inside both fields', 'website_url': '/extra-hit'},
+            {'name': 'Veggie Combo', 'arch': 'burger is hinted in the arch', 'url': '/arch-only'},
+        ]
+        ordered_single = sort_results(list(reversed(single_term_results)), 'burger')
+        def _urls(records):
+            return [item.get('website_url') or item.get('url') for item in records]
+        self.assertEqual(
+            ['/extra-hit', '/name-hit', '/arch-only', '/desc-hit'],
+            _urls(ordered_single),
+            "Entries with the search term in their name should rank before description-only matches",
+        )
+
+        # Tag match: entries with matching tags should outrank description-only hits.
+        tag_priority_results = [
+            {'name': 'Seasonal Menu', 'content': 'rotating dishes', 'tag_ids': [{'name': 'Burger Specials'}], 'url': '/tag-hit'},
+            {'name': 'Soup of the Day', 'content': 'burger only here', 'url': '/desc-hit'},
+        ]
+        ordered_tag = sort_results(list(reversed(tag_priority_results)), 'burger')
+        self.assertEqual(
+            ['/tag-hit', '/desc-hit'],
+            _urls(ordered_tag),
+            "Results matching through tags should rank before description-only matches",
+        )
+
+        # Name still outranks tags when both match.
+        name_vs_tag_results = [
+            {'name': 'Burger Corner', 'content': 'anything else', 'url': '/name-hit'},
+            {'name': 'Daily Specials', 'content': 'misc', 'tag_ids': [{'name': 'Burger Corner'}], 'website_url': '/tag-hit'},
+        ]
+        ordered_name_vs_tag = sort_results(list(reversed(name_vs_tag_results)), 'burger')
+        self.assertEqual(
+            ['/name-hit', '/tag-hit'],
+            _urls(ordered_name_vs_tag),
+            "Entries with the term in their name must outrank pure tag matches",
+        )
+
+        # Multi-term: results with the tightest match distance should appear first.
+        multi_term_results = [
+            {'name': 'Cheese ' + 'x' * 30 + ' Burger', 'content': '', 'url': '/far-name'},
+            {'name': 'Menu Page', 'content': 'cheese ' + 'x' * 10 + ' burger', 'website_url': '/desc-match'},
+            {'name': 'Cheese Burger Deluxe', 'arch': '', 'website_url': '/close-name'},
+            {'name': 'Burger and Cheese Spread', 'content': 'cheese burger pairing', 'url': '/combo'},
+        ]
+        ordered_multi = sort_results(list(reversed(multi_term_results)), 'cheese burger')
+        self.assertEqual(
+            ['/close-name', '/combo', '/desc-match', '/far-name'],
+            _urls(ordered_multi),
+            "Results with closer multi-word matches should keep higher priority",
+        )
+
     def test_01_few_results(self):
         """ Tests an autocomplete with exact match and less than the maximum number of results """
         suggestions = self._autocomplete("few")

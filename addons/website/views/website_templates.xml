@@ -3348,7 +3348,8 @@ Sitemap: <t t-out="url_root"/>sitemap.xml
         display_image.f="true"
         display_description.f="true"
         display_extra_link.f="true"
-        display_detail.f="true"/>
+        display_detail.f="true"
+        order_by.f="name asc"/>
 </template>
 
 <!-- Extra element : Search -->

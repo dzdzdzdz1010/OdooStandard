@@ -10,7 +10,7 @@ class StockPickingBatch(models.Model):
     _name = 'stock.picking.batch'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _description = "Batch Transfer"
-    _order = "name desc"
+    _order = "priority desc, name desc"
 
     name = fields.Char(
         string='Batch Transfer', default='New',
@@ -44,6 +44,9 @@ class StockPickingBatch(models.Model):
         ('cancel', 'Cancelled')], default='draft',
         store=True, compute='_compute_state',
         copy=False, tracking=True, required=True, readonly=True, index=True)
+    priority = fields.Selection([
+        ('0', 'Normal'),
+        ('1', 'Urgent')], string='Priority', default='0')
     picking_type_id = fields.Many2one(
         'stock.picking.type', 'Operation Type', check_company=True, copy=False,
         index=True)
@@ -84,7 +87,7 @@ class StockPickingBatch(models.Model):
             estimated_shipping_volume = 0
             done_package_ids = set()
             # packs
-            for pack in self.move_line_ids.result_package_id:
+            for pack in batch.move_line_ids.result_package_id:
                 p_type = pack.package_type_id
                 if pack.shipping_weight:
                     # shipping_weight was computed, so base_weight should be included.
@@ -94,7 +97,7 @@ class StockPickingBatch(models.Model):
                     estimated_shipping_weight += p_type.base_weight or 0
                     estimated_shipping_volume += (p_type.packaging_length * p_type.width * p_type.height) / 1000.0**3
             # move without packs
-            for move_line in self.picking_ids.move_ids.move_line_ids:
+            for move_line in batch.picking_ids.move_ids.move_line_ids:
                 if move_line.result_package_id.id in done_package_ids:
                     continue
                 estimated_shipping_weight += move_line.product_id.weight * move_line.quantity_product_uom

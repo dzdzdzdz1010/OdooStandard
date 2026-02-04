@@ -6292,10 +6292,12 @@
     exports.batched = batched;
     exports.blockDom = blockDom;
     exports.htmlEscape = htmlEscape;
+    exports.KEYCHANGES = KEYCHANGES;
     exports.loadFile = loadFile;
     exports.markRaw = markRaw;
     exports.markup = markup;
     exports.mount = mount;
+    exports.notifyReactives = notifyReactives;
     exports.onError = onError;
     exports.onMounted = onMounted;
     exports.onPatched = onPatched;

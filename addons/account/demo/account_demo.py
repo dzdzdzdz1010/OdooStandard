@@ -127,7 +127,7 @@ class AccountChartTemplate(models.AbstractModel):
         income_account = self.env['account.account'].search([
             *self.env['account.account']._check_company_domain(self.env.company),
             ('account_type', '=', 'income'),
-            ('id', '!=', self.env.company.account_journal_early_pay_discount_gain_account_id.id)
+            ('id', '!=', self.env.company.account_journal_early_pay_discount_gain_account_id.id),
         ], limit=1)
         return {
             self.company_xmlid('demo_invoice_1'): {

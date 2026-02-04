@@ -197,11 +197,6 @@ registry.category("web_tour.tours").add("mail/static/tests/tours/mail_composer_t
             run: "click",
         },
         {
-            content: "Click on Send Message",
-            trigger: "button:contains(Send message)",
-            run: "click",
-        },
-        {
             content: "Check full composer text is kept",
             trigger: ".o-mail-Composer-input",
             run() {
@@ -236,11 +231,6 @@ registry.category("web_tour.tours").add("mail/static/tests/tours/mail_composer_t
         {
             content: "Close full composer",
             trigger: ".btn-close",
-            run: "click",
-        },
-        {
-            content: "Click on Send Message",
-            trigger: "button:contains(Send message)",
             run: "click",
         },
         {

@@ -8,3 +8,4 @@ from . import hr_leave_type
 from . import hr_leave
 from . import res_company
 from . import res_users
+from . import resource

@@ -280,6 +280,7 @@ registry.category("web_tour.tours").add("PoSDownPaymentLinesPerTax", {
             PaymentScreen.clickInvoiceButton(),
             PaymentScreen.clickValidate(),
             FeedbackScreen.isShown(),
+            FeedbackScreen.clickNextOrder(),
         ].flat(),
 });
 

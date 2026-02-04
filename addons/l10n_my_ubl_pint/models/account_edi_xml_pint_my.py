@@ -162,17 +162,17 @@ class AccountEdiXmlUBLPINTMY(models.AbstractModel):
     def _ubl_add_accounting_supplier_party_tax_scheme_nodes(self, vals):
         # EXTENDS account.edi.ubl_bis3
         super()._ubl_add_accounting_supplier_party_tax_scheme_nodes(vals)
-        nodes = vals['party_node']['cac:PartyTaxScheme']
+        vals['party_node']['cac:PartyTaxScheme']
         partner = vals['party_vals']['partner']
         commercial_partner = partner.commercial_partner_id
 
         if commercial_partner.country_code == 'MY':
-            nodes.append({
+            vals['party_node']['cac:PartyTaxScheme'] = [{
                 'cbc:CompanyID': {'_text': commercial_partner.vat or 'NA'},
                 'cac:TaxScheme': {
-                    'cbc:ID': {'_text': 'GST'},
+                    'cbc:ID': {'_text': 'TAX'},
                 },
-            })
+            }]
 
     def _export_invoice_constraints_new(self, invoice, vals):
         # EXTENDS account_edi_ubl_cii

@@ -5,6 +5,11 @@ from odoo.tools.misc import formatLang, str2bool, NON_BREAKING_SPACE
 from odoo.addons.account.tools import dict_to_xml
 from odoo.addons.account_edi_ubl_cii.models.account_edi_common import FloatFmt
 from odoo.addons.account_edi_ubl_cii.models.account_edi_xml_ubl_20 import UBL_NAMESPACES
+from odoo.addons.account_edi_ubl_cii.models.res_partner import (
+    GST_COUNTRY_CODES,
+    EU_VAT_COUNTRY_CODES,
+    NON_EU_VAT_COUNTRY_CODES,
+)
 
 from stdnum.no import mva
 
@@ -792,8 +797,6 @@ class AccountEdiXmlUBLBIS3(models.AbstractModel):
         self._ubl_add_values_currency(vals, invoice.currency_id)
         self._ubl_add_values_customer(vals, invoice.partner_id)
         self._ubl_add_values_delivery(vals, invoice.partner_shipping_id or invoice.partner_id)
-        self._ubl_add_values_partner_bank(vals, invoice.partner_bank_id)
-        self._ubl_add_values_payment_term(vals, invoice.invoice_payment_term_id)
 
     def _setup_base_lines(self, vals):
         # OVERRIDE
@@ -975,16 +978,15 @@ class AccountEdiXmlUBLBIS3(models.AbstractModel):
         commercial_partner = partner.commercial_partner_id
 
         if commercial_partner.vat and commercial_partner.vat != '/':
-            # TaxScheme based on partner's VAT.
-            # [BR-CO-09] if the PartyTaxScheme/TaxScheme/ID == 'VAT', CompanyID must start with a country code prefix.
-            # In some countries however, the CompanyID can be with or without country code prefix and still be perfectly
-            # valid (RO, HU, non-EU countries).
-            # We have to handle their cases by changing the TaxScheme/ID to 'something other than VAT',
-            # preventing the trigger of the rule.
-            if commercial_partner.country_id and not commercial_partner.vat[:2].isalpha():
+            country_code = commercial_partner.country_id.code
+            if country_code in GST_COUNTRY_CODES:
+                tax_scheme_id = 'GST'
+            elif country_code in NON_EU_VAT_COUNTRY_CODES:
                 tax_scheme_id = 'NOT_EU_VAT'
-            else:
+            elif country_code in EU_VAT_COUNTRY_CODES:
                 tax_scheme_id = 'VAT'
+            else:
+                tax_scheme_id = None
 
             nodes.append({
                 'cbc:CompanyID': {'_text': commercial_partner.vat},

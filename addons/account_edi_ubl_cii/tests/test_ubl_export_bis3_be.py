@@ -520,7 +520,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         self._generate_invoice_ubl_file(invoice)
         self._assert_invoice_ubl_file(invoice, 'test_invoice_negative_discount_upsell')
 
-    def _test_invoice_partner_party_identifiers(self, partner, test_file):
+    def _assert_invoice_partner_party_identifiers(self, partner, test_file):
         tax_21 = self.percent_tax(21.0)
         product = self._create_product(lst_price=100.0, taxes_id=tax_21)
         invoice = self._create_invoice_one_line(
@@ -536,7 +536,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyIdentification is filled using the company registry.
         # PartyTaxScheme is filled using the VAT.
         # PartyLegalEntity is filled using the company registry.
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_be,
             test_file='test_invoice_customer_party_identifiers_partner_be_vat_and_company_registry',
         )
@@ -545,7 +545,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyIdentification is not there.
         # PartyTaxScheme / PartyLegalEntity are filled using the VAT.
         self.partner_be.company_registry = None
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_be,
             test_file='test_invoice_customer_party_identifiers_partner_be_vat',
         )
@@ -554,7 +554,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyIdentification is filled using the reference.
         # PartyTaxScheme / PartyLegalEntity are filled using the VAT.
         self.partner_be.ref = 'PARTNER_BE'
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_be,
             test_file='test_invoice_customer_party_identifiers_partner_be_vat_and_ref',
         )
@@ -565,7 +565,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyLegalEntity is filled using the Endpoint only.
         self.partner_be.vat = None
         self.partner_be.ref = None
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_be,
             test_file='test_invoice_customer_party_identifiers_partner_be_only_eas_endpoint',
         )
@@ -581,16 +581,16 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
             type='invoice',
             parent_id=self.partner_be.id,
         )
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=partner_be_invoice_address,
             test_file='test_invoice_customer_party_identifiers_partner_be_invoice_address',
         )
 
     def test_invoice_customer_party_identifiers_partner_outside_eu(self):
-        partner_il = self.env['res.partner'].create({
-            'name': 'partner_il',
-            'vat': '523656783',
-            'country_id': self.env.ref('base.il').id,
+        partner_al = self.env['res.partner'].create({
+            'name': 'partner_al',
+            'vat': 'ALK12345678L',
+            'country_id': self.env.ref('base.al').id,
             'invoice_sending_method': 'manual',
             'invoice_edi_format': 'ubl_bis3',
         })
@@ -598,8 +598,8 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyIdentification is not there.
         # PartyTaxScheme is filled using the VAT + NOT_EU_VAT.
         # PartyLegalEntity is filled using the VAT.
-        self._test_invoice_partner_party_identifiers(
-            partner=partner_il,
+        self._assert_invoice_partner_party_identifiers(
+            partner=partner_al,
             test_file='test_invoice_customer_party_identifiers_partner_outside_eu',
         )
 
@@ -608,7 +608,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyIdentification is not there.
         # PartyTaxScheme is filled using EAS/Endpoint.
         # PartyTaxScheme is filled using the Endpoint only.
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_lu_dig,
             test_file='test_invoice_customer_party_identifiers_partner_lu_only_eas_endpoint',
         )
@@ -618,7 +618,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyTaxScheme is filled using EAS/Endpoint.
         # PartyLegalEntity is filled using the company registry.
         self.partner_lu_dig.company_registry = "123456789"
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_lu_dig,
             test_file='test_invoice_customer_party_identifiers_partner_lu_company_registry',
         )
@@ -628,7 +628,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyIdentification is not there.
         # PartyTaxScheme is filled using VAT.
         # PartyLegalEntity is filled using the EAS/Endpoint.
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_nl,
             test_file='test_invoice_customer_party_identifiers_partner_nl_vat_kvk_eas',
         )
@@ -639,7 +639,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyLegalEntity is filled using the EAS/Endpoint.
         self.partner_nl.peppol_eas = '0190'
         self.partner_nl.peppol_endpoint = '00000001822477348000'
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_nl,
             test_file='test_invoice_customer_party_identifiers_partner_nl_vat_oin_eas',
         )
@@ -651,7 +651,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         self.partner_nl.company_registry = '77777677'
         self.partner_nl.peppol_eas = '9944'
         self.partner_nl.peppol_endpoint = 'NL000099998B57'
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_nl,
             test_file='test_invoice_customer_party_identifiers_partner_nl_vat_eas_kvk_company_registry',
         )
@@ -661,7 +661,9 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         # PartyTaxScheme is filled using VAT.
         # PartyLegalEntity is filled using the EAS/Endpoint.
         self.partner_nl.company_registry = '00000001822477348000'
-        self._test_invoice_partner_party_identifiers(
+        self.partner_nl.peppol_eas = '9944'
+        self.partner_nl.peppol_endpoint = 'NL000099998B57'
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_nl,
             test_file='test_invoice_customer_party_identifiers_partner_nl_vat_eas_oin_company_registry',
         )
@@ -672,7 +674,7 @@ class TestUblExportBis3BE(TestUblBis3Common, TestUblCiiBECommon):
         self.partner_nl.company_registry = None
         self.partner_nl.peppol_eas = None
         self.partner_nl.peppol_endpoint = None
-        self._test_invoice_partner_party_identifiers(
+        self._assert_invoice_partner_party_identifiers(
             partner=self.partner_nl,
             test_file='test_invoice_customer_party_identifiers_partner_nl_only_vat',
         )

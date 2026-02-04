@@ -7,6 +7,39 @@ from odoo.exceptions import ValidationError
 from odoo.addons.account_edi_ubl_cii.models.account_edi_common import EAS_MAPPING
 from odoo.addons.account.models.company import PEPPOL_DEFAULT_COUNTRIES
 
+GST_COUNTRY_CODES = {
+    'AU', 'NZ', 'IN', 'SG', 'MY', 'PK', 'BD', 'LK', 'NP', 'BT', 'PG', 'SA',
+    'AG', 'BS', 'BB', 'DM', 'GD', 'JM', 'KN', 'LC', 'VC', 'TT',
+}
+
+EU_VAT_COUNTRY_CODES = {
+    'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR',
+    'HU', 'IE', 'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK',
+    'SI', 'ES', 'SE',
+}
+
+NON_EU_VAT_COUNTRY_CODES = {
+    # Europe (non-EU)
+    'AL', 'AD', 'AM', 'AZ', 'BA', 'BY', 'GE', 'IS', 'MD', 'ME', 'MK',
+    'NO', 'RS', 'TR', 'UA', 'GB',
+
+    # Africa
+    'DZ', 'AO', 'BJ', 'BF', 'BI', 'CM', 'CV', 'CF', 'CG', 'CI', 'DJ', 'EG',
+    'ET', 'GA', 'GN', 'KE', 'MG', 'ML', 'MR', 'MA', 'MU', 'NE', 'RW', 'SN',
+    'TD', 'TG', 'TN', 'UG',
+
+    # Americas
+    'AR', 'BO', 'BR', 'CL', 'CO', 'DO', 'EC', 'MX', 'PE', 'PY', 'UY', 'VE',
+
+    # Middle East
+    'BH', 'IL', 'JO', 'LB', 'OM', 'PS', 'QA', 'SA', 'TR', 'YE',
+
+    # Asia
+    'CN', 'ID', 'JP', 'KH', 'KR', 'LA', 'MN', 'PH', 'TH', 'VN',
+}
+
+VAT_COUNTRY_CODES = EU_VAT_COUNTRY_CODES | NON_EU_VAT_COUNTRY_CODES
+
 
 class ResPartner(models.Model):
     _inherit = 'res.partner'

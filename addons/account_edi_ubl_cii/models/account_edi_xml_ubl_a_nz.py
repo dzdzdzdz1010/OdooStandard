@@ -98,15 +98,6 @@ class AccountEdiXmlUBLANZ(models.AbstractModel):
     # EXPORT: New (dict_to_xml) helpers
     # -------------------------------------------------------------------------
 
-    def _ubl_default_tax_category_grouping_key(self, base_line, tax_data, vals, currency):
-        # EXTENDS account.edi.xml.ubl_bis3
-        grouping_key = super()._ubl_default_tax_category_grouping_key(base_line, tax_data, vals, currency)
-        if not grouping_key:
-            return
-
-        grouping_key['scheme_id'] = 'GST'
-        return grouping_key
-
     def _ubl_get_line_allowance_charge_discount_node(self, vals, discount_values):
         # EXTENDS account.edi.xml.ubl_bis3
         discount_node = super()._ubl_get_line_allowance_charge_discount_node(vals, discount_values)

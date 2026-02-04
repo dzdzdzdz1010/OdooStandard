@@ -49,26 +49,27 @@
 	</cac:AccountingSupplierParty>
 	<cac:AccountingCustomerParty>
 		<cac:Party>
+			<cbc:EndpointID schemeID="9923">ALK12345678L</cbc:EndpointID>
 			<cac:PartyName>
-				<cbc:Name>partner_il</cbc:Name>
+				<cbc:Name>partner_al</cbc:Name>
 			</cac:PartyName>
 			<cac:PostalAddress>
 				<cac:Country>
-					<cbc:IdentificationCode>IL</cbc:IdentificationCode>
+					<cbc:IdentificationCode>AL</cbc:IdentificationCode>
 				</cac:Country>
 			</cac:PostalAddress>
 			<cac:PartyTaxScheme>
-				<cbc:CompanyID>523656783</cbc:CompanyID>
+				<cbc:CompanyID>ALK12345678L</cbc:CompanyID>
 				<cac:TaxScheme>
 					<cbc:ID>NOT_EU_VAT</cbc:ID>
 				</cac:TaxScheme>
 			</cac:PartyTaxScheme>
 			<cac:PartyLegalEntity>
-				<cbc:RegistrationName>partner_il</cbc:RegistrationName>
-				<cbc:CompanyID>523656783</cbc:CompanyID>
+				<cbc:RegistrationName>partner_al</cbc:RegistrationName>
+				<cbc:CompanyID>ALK12345678L</cbc:CompanyID>
 			</cac:PartyLegalEntity>
 			<cac:Contact>
-				<cbc:Name>partner_il</cbc:Name>
+				<cbc:Name>partner_al</cbc:Name>
 			</cac:Contact>
 		</cac:Party>
 	</cac:AccountingCustomerParty>
@@ -76,13 +77,13 @@
 		<cac:DeliveryLocation>
 			<cac:Address>
 				<cac:Country>
-					<cbc:IdentificationCode>IL</cbc:IdentificationCode>
+					<cbc:IdentificationCode>AL</cbc:IdentificationCode>
 				</cac:Country>
 			</cac:Address>
 		</cac:DeliveryLocation>
 		<cac:DeliveryParty>
 			<cac:PartyName>
-				<cbc:Name>partner_il</cbc:Name>
+				<cbc:Name>partner_al</cbc:Name>
 			</cac:PartyName>
 		</cac:DeliveryParty>
 	</cac:Delivery>

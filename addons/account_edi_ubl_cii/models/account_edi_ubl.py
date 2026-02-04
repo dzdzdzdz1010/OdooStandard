@@ -1,5 +1,9 @@
 from odoo import _, models
 from odoo.addons.account_edi_ubl_cii.models.account_edi_common import FloatFmt
+from odoo.addons.account_edi_ubl_cii.models.res_partner import (
+    GST_COUNTRY_CODES,
+    VAT_COUNTRY_CODES,
+)
 from odoo.tools import frozendict, html2plaintext
 
 
@@ -61,28 +65,36 @@ class AccountEdiUBL(models.AbstractModel):
             or self._ubl_is_excise_tax(tax_data)
         ):
             return
-        elif tax_data:
-            tax = tax_data['tax']
-            return {
-                'tax_category_code': self._get_tax_category_code(customer.commercial_partner_id, supplier, tax),
-                **self._get_tax_exemption_reason(customer.commercial_partner_id, supplier, tax),
-                # Reverse-charge taxes with +100/-100% repartition lines are used in vendor bills.
-                # In a self-billed invoice, we report them from the seller's perspective, so
-                # we change their percentage to 0%.
-                'percent': tax.amount if not tax.has_negative_factor else 0.0,
-                'scheme_id': 'VAT',
-                'is_withholding': tax.amount < 0.0,
-                'currency': currency,
-            }
         else:
-            return {
-                'tax_category_code': self._get_tax_category_code(customer.commercial_partner_id, supplier, self.env['account.tax']),
-                **self._get_tax_exemption_reason(customer.commercial_partner_id, supplier, self.env['account.tax']),
-                'percent': 0.0,
-                'scheme_id': 'VAT',
-                'is_withholding': False,
-                'currency': currency,
-            }
+            supplier_country_code = supplier.commercial_partner_id.country_id.code
+            if supplier_country_code in GST_COUNTRY_CODES:
+                scheme_id = 'GST'
+            elif supplier_country_code in VAT_COUNTRY_CODES:
+                scheme_id = 'VAT'
+            else:
+                scheme_id = None
+            if tax_data:
+                tax = tax_data['tax']
+                return {
+                    'tax_category_code': self._get_tax_category_code(customer.commercial_partner_id, supplier, tax),
+                    **self._get_tax_exemption_reason(customer.commercial_partner_id, supplier, tax),
+                    # Reverse-charge taxes with +100/-100% repartition lines are used in vendor bills.
+                    # In a self-billed invoice, we report them from the seller's perspective, so
+                    # we change their percentage to 0%.
+                    'percent': tax.amount if not tax.has_negative_factor else 0.0,
+                    'scheme_id': scheme_id,
+                    'is_withholding': tax.amount < 0.0,
+                    'currency': currency,
+                }
+            else:
+                return {
+                    'tax_category_code': self._get_tax_category_code(customer.commercial_partner_id, supplier, self.env['account.tax']),
+                    **self._get_tax_exemption_reason(customer.commercial_partner_id, supplier, self.env['account.tax']),
+                    'percent': 0.0,
+                    'scheme_id': scheme_id,
+                    'is_withholding': False,
+                    'currency': currency,
+                }
 
     def _ubl_default_tax_subtotal_tax_category_grouping_key(self, tax_grouping_key, vals):
         """ Give the values about how taxes are grouped together in TaxTotal -> TaxSubtotal -> TaxCategory
@@ -234,13 +246,6 @@ class AccountEdiUBL(models.AbstractModel):
 
     def _ubl_add_values_delivery(self, vals, delivery):
         vals['delivery'] = delivery
-
-    def _ubl_add_values_partner_bank(self, vals, partner_bank):
-        vals['partner_bank'] = partner_bank
-
-    def _ubl_add_values_payment_term(self, vals, payment_term):
-        vals['payment_term'] = payment_term
-        vals['payment_term_node'] = html2plaintext(payment_term.note) if payment_term else None
 
     def _ubl_add_base_line_ubl_values_allowance_charges_recycling_contribution(self, vals):
         """ Extract recycling contribution taxes such as RECUPEL, AUVIBEL, etc from the current base lines.

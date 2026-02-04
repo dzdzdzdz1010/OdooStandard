@@ -196,8 +196,6 @@ class AccountEdiXmlUBLPINTANZ(models.AbstractModel):
         if not grouping_key:
             return
 
-        grouping_key['scheme_id'] = 'GST'
-
         # A business not registered for GST cannot issue tax invoices.
         # In this case, the tax category code should be O (Outside scope of tax).
         # See https://docs.peppol.eu/poac/aunz/pint-aunz/bis/#_tax_category_code
@@ -222,24 +220,6 @@ class AccountEdiXmlUBLPINTANZ(models.AbstractModel):
         # see https://docs.peppol.eu/poac/aunz/pint-aunz/bis/#_identifying_the_a_nz_billing_specialisation
         document_node['cbc:CustomizationID'] = {'_text': self._get_customization_ids()['pint_anz']}
         document_node['cbc:ProfileID'] = {'_text': 'urn:peppol:bis:billing'}
-
-    def _ubl_add_party_tax_scheme_nodes(self, vals):
-        # EXTENDS
-        super()._ubl_add_party_tax_scheme_nodes(vals)
-        partner = vals['party_vals']['partner']
-        commercial_partner = partner.commercial_partner_id
-
-        if (
-            commercial_partner.country_code in ('AU', 'NZ')
-            and commercial_partner.vat
-            and commercial_partner.vat != '/'
-        ):
-            vals['party_node']['cac:PartyTaxScheme'] = [{
-                'cbc:CompanyID': {'_text': commercial_partner.vat},
-                'cac:TaxScheme': {
-                    'cbc:ID': {'_text': 'GST'},
-                },
-            }]
 
     def _ubl_add_party_legal_entity_nodes(self, vals):
         # EXTENDS

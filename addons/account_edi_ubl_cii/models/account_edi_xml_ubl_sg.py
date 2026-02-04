@@ -94,7 +94,6 @@ class AccountEdiXmlUBLSG(models.AbstractModel):
         if not grouping_key:
             return
 
-        grouping_key['scheme_id'] = 'GST'
         grouping_key['tax_exemption_reason'] = None
         grouping_key['tax_exemption_reason_code'] = None
 
@@ -137,13 +136,3 @@ class AccountEdiXmlUBLSG(models.AbstractModel):
             '_text': 54,
             'name': 'Credit Card',
         }
-
-    def _ubl_add_party_tax_scheme_nodes(self, vals):
-        # EXTENDS
-        super()._ubl_add_party_tax_scheme_nodes(vals)
-        nodes = vals['party_node']['cac:PartyTaxScheme']
-        partner = vals['party_vals']['partner']
-        commercial_partner = partner.commercial_partner_id
-
-        if commercial_partner.country_code == 'SG':
-            nodes[0]['cac:TaxScheme']['cbc:ID']['_text'] = 'GST'

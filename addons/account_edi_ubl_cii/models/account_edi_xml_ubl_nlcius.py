@@ -158,7 +158,7 @@ class AccountEdiXmlUBLNL(models.AbstractModel):
             vals['party_node']['cac:PartyIdentification'] = [{
                 'cbc:ID': {
                     '_text': commercial_partner.peppol_endpoint,
-                    'schemeID': None,
+                    'schemeID': commercial_partner.peppol_eas if commercial_partner.peppol_eas in ('0106', '0190') else None,
                 },
             }]
 

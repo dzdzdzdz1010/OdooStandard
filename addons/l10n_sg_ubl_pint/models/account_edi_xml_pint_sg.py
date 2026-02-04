@@ -128,15 +128,6 @@ class AccountEdiXmlUBLPINTSG(models.AbstractModel):
     # EXPORT: New (dict_to_xml) helpers
     # -------------------------------------------------------------------------
 
-    def _ubl_default_tax_category_grouping_key(self, base_line, tax_data, vals, currency):
-        # EXTENDS account.edi.xml.ubl_bis3
-        grouping_key = super()._ubl_default_tax_category_grouping_key(base_line, tax_data, vals, currency)
-        if not grouping_key:
-            return
-
-        grouping_key['scheme_id'] = 'GST'
-        return grouping_key
-
     def _add_invoice_header_nodes(self, document_node, vals):
         # EXTENDS account.edi.xml.ubl_bis3
         super()._add_invoice_header_nodes(document_node, vals)
@@ -163,27 +154,6 @@ class AccountEdiXmlUBLPINTSG(models.AbstractModel):
                 }
                 for code, amount in amounts_in_accounting_currency
             ]
-
-    def _ubl_add_party_tax_scheme_nodes(self, vals):
-        # EXTENDS
-        super()._ubl_add_party_tax_scheme_nodes(vals)
-        partner = vals['party_vals']['partner']
-        commercial_partner = partner.commercial_partner_id
-
-        if (
-            commercial_partner.country_code == 'SG'
-            and commercial_partner.vat
-            and commercial_partner.vat != '/'
-        ):
-            vals['party_node']['cac:PartyTaxScheme'] = [{
-                'cbc:CompanyID': {
-                    '_text': commercial_partner.vat,
-                    'schemeID': None,
-                },
-                'cac:TaxScheme': {
-                    'cbc:ID': {'_text': 'GST'},
-                },
-            }]
 
     def _export_invoice_constraints_new(self, invoice, vals):
         # EXTENDS account_edi_ubl_cii

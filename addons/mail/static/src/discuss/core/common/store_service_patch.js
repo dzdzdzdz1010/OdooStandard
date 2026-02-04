@@ -29,14 +29,15 @@ const storeServicePatch = {
     /**
      * @param {Object} param0
      * @param {string} param0.default_display_mode
+     * @param {string} [param0.display_name_mode]
      * @param {number[]} param0.partners_to
      * @param {string} param0.name
      * @returns {Promise<import("models").DiscussChannel>}
      */
-    async createGroupChat({ default_display_mode, partners_to, name }) {
+    async createGroupChat({ default_display_mode, display_name_mode, partners_to, name }) {
         const { channel } = await this.fetchStoreData(
             "/discuss/create_group",
-            { default_display_mode, partners_to, name },
+            { default_display_mode, display_name_mode, partners_to, name },
             { readonly: false, requestData: true }
         );
         channel.open({ focus: true });

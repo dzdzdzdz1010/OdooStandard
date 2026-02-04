@@ -25,7 +25,7 @@ import {
 } from "@mail/discuss/call/common/rtc_service";
 import { ChannelMember } from "@mail/discuss/core/common/channel_member_model";
 
-import { beforeEach, describe, expect, getFixture, test } from "@odoo/hoot";
+import { beforeEach, describe, expect, getFixture, mockDate, test } from "@odoo/hoot";
 import { advanceTime, hover, manuallyDispatchProgrammaticEvent, queryFirst } from "@odoo/hoot-dom";
 import { mockSendBeacon, mockUserAgent } from "@odoo/hoot-mock";
 import {
@@ -271,7 +271,9 @@ test("Camera video stream stays in focus when on/off", async () => {
 });
 
 test("Create a direct message channel when clicking on start a meeting", async () => {
+    mockDate("2026-01-01 10:00:00");
     const pyEnv = await startServer();
+    pyEnv["res.partner"].write([serverState.partnerId], { tz: "Europe/Brussels" });
     const channelId = pyEnv["discuss.channel"].create({ name: "Slytherin" });
     pyEnv["mail.message"].create({
         author_id: serverState.partnerId,
@@ -285,7 +287,7 @@ test("Create a direct message channel when clicking on start a meeting", async (
     await contains(".o-mail-Thread:contains('Welcome to #Slytherin!')");
     await contains(".o-mail-Message");
     await click("button[title='New Meeting']");
-    await contains(".o-mail-DiscussSidebarChannel-itemName:text('Mitchell Admin')");
+    await contains(".o-mail-DiscussSidebarChannel-itemName:text('Meeting - Jan 1, 2026')");
     await contains(".o-discuss-Call");
     await contains(".o-mail-Meeting .o-mail-ActionPanel:contains('Invite people')");
 });

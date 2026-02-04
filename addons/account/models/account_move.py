@@ -6888,6 +6888,9 @@ class AccountMove(models.Model):
 
         return move
 
+    def _should_attach_to_record(self, attachment):
+        return attachment == self.message_main_attachment_id or super()._should_attach_to_record(attachment)
+
     def _message_post_after_hook(self, new_message, message_values):
         """ This method processes the attachments of a new mail.message. It handles the 3 following situations:
             (1) receiving an e-mail from a mail alias. In that case, we potentially want to split the attachments into several invoices.

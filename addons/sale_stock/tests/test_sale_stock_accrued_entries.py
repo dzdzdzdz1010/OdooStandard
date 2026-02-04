@@ -145,3 +145,60 @@ class TestAccruedStockSaleOrders(TestSaleCommon):
         wizard.date = fields.Date.to_date('2020-01-09')
         with self.assertRaises(UserError):
             wizard.create_entries()
+
+    def test_accrued_order_in_anglo_saxon_perpetual(self):
+        """ Ensure the COGS accrual lines are correctly computed."""
+        # Create a product using anglox-saxon valuation.
+        product_category = self.env['product.category'].create({
+            'name': 'Test Category',
+            'property_account_income_categ_id': self.account_revenue.id,
+            'property_account_expense_categ_id': self.account_expense.id,
+            'property_valuation': 'real_time',
+        })
+        account_variation = product_category.property_stock_valuation_account_id.account_stock_variation_id
+        anglo_saxon_product = self.env['product.product'].create({
+            'name': "Saxy Product",
+            'categ_id': product_category.id,
+            'invoice_policy': 'order',
+            'is_storable': True,
+            'list_price': 120,
+            'standard_price': 80,
+            'uom_id': self.uom_unit.id,
+        })
+        # Create a sale order and invoice some qty (with no deliver.)
+        sale_order = self.env['sale.order'].with_context(tracking_disable=True).create({
+            'partner_id': self.partner_a.id,
+            'order_line': [
+                Command.create({
+                    'product_id': anglo_saxon_product.id,
+                    'product_uom_qty': 1,
+                    'price_unit': 135,  # Must be different than standard cost.
+                    'tax_ids': False,
+                })
+            ]
+        })
+        sale_order.action_confirm()
+        sale_order.picking_ids.move_ids.write({'quantity': 1, 'picked': True})
+        sale_order.picking_ids.button_validate()
+        # Use accrued order wizard and check generated values.
+        wizard = self.env['account.accrued.orders.wizard'].with_context({
+            'active_model': 'sale.order',
+            'active_ids': sale_order.ids,
+        }).create({
+            'account_id': self.account_expense.id,
+            'date': fields.Date.today(),
+        })
+        account_move_domain = wizard.create_entries()['domain']
+        account_move = self.env['account.move'].search(account_move_domain)
+        self.assertRecordValues(account_move.line_ids.sorted('id'), [
+            # Accrued revenues entries.
+            {'account_id': self.account_revenue.id, 'debit': 0, 'credit': 135},
+            {'account_id': self.account_expense.id, 'debit': 135, 'credit': 0},
+            {'account_id': account_variation.id, 'debit': 0, 'credit': 80},
+            {'account_id': self.account_expense.id, 'debit': 80, 'credit': 0},
+            # Reversal of accrued revenues entries.
+            {'account_id': self.account_revenue.id, 'debit': 135, 'credit': 0},
+            {'account_id': self.account_expense.id, 'debit': 0, 'credit': 135},
+            {'account_id': account_variation.id, 'debit': 80, 'credit': 0},
+            {'account_id': self.account_expense.id, 'debit': 0, 'credit': 80},
+        ])

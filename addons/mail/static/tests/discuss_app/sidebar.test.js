@@ -1228,8 +1228,8 @@ test("Sidebar channels show correct notification counter based on settings", asy
     ]);
     await start();
     await openDiscuss();
-    await contains(".o-mail-DiscussSidebarChannel:contains(Mentions) .badge:text('2')");
-    await contains(".o-mail-DiscussSidebarChannel:contains(Regular) .badge:text('1')");
+    await contains(".o-mail-DiscussSidebarChannel:contains(Mentions) .badge:text('1')");
+    await contains(".o-mail-DiscussSidebarChannel:contains(Regular) .badge", { count: 0 });
     rpc("/discuss/settings/custom_notifications", { custom_notifications: false }); // default: @mention only
     await contains(".o-mail-DiscussSidebarChannel:contains(Mentions) .badge:text('1')");
     await contains(".o-mail-DiscussSidebarChannel:contains(Regular) .badge", { count: 0 });

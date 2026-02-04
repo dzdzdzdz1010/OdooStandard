@@ -93,14 +93,39 @@ export class ComboPage extends Component {
     }
 
     shouldShowMissingDetails() {
-        const el = this.scrollContainerRef?.el;
-        if (!el) {
+        const product = this.currentChoiceState.displayAttributesOfItem?.product_id;
+        if (!product || !product.attribute_line_ids.length) {
             return false;
         }
-        return (
-            el.scrollHeight > el.clientHeight &&
-            this.currentChoiceState.displayAttributesOfItem.product_id.attribute_line_ids.length > 1
+
+        const headerEl = document.querySelector(".o_self_combo_page_header");
+        if (!headerEl) {
+            return false;
+        }
+
+        const selection = this.state.selectedValues[product.id];
+
+        const requiredAttributes = product.attribute_line_ids.filter(
+            (attr) => attr.attribute_id?.display_type !== "multi"
         );
+
+        for (const attribute of requiredAttributes) {
+            const hasSelection = selection?.hasValueSelected(attribute);
+
+            if (!hasSelection) {
+                const attributeEl = document.getElementById(attribute.attribute_id.id);
+                if (attributeEl) {
+                    if (
+                        attributeEl.getBoundingClientRect().top <
+                        headerEl.getBoundingClientRect().bottom
+                    ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     selectItem(item) {

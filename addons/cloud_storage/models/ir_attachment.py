@@ -21,6 +21,18 @@ class CloudStorageAttachment(models.Model):
         ondelete={'cloud_storage': 'set url'}
     )
 
+    def _fetch_content(self):
+        self.ensure_one()
+
+        if self.type != 'cloud_storage':
+            return super()._fetch_content()
+
+        info = self._generate_cloud_storage_download_info()
+        response = requests.get(info['url'], timeout=10)
+        response.raise_for_status()
+
+        return response.content
+
     def _to_http_stream(self):
         if (self.type == 'cloud_storage' and
               self.env['res.config.settings']._get_cloud_storage_configuration()):

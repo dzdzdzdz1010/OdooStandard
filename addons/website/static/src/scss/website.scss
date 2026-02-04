@@ -975,9 +975,16 @@ table.table_desc tr td {
     }
 }
 
+.s_list_group {
+    --s_list_group-icon-color: var(--o-cc1-btn-primary);
+}
+
 @for $index from 1 through 5 {
     .o_cc#{$index} .o_dot {
         color: var(--o-cc#{$index}-btn-primary);
+    }
+    .o_cc#{$index} .s_list_group {
+        --s_list_group-icon-color: var(--o-cc#{$index}-btn-primary);
     }
 }
 

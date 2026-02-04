@@ -7,6 +7,7 @@ from odoo.exceptions import UserError
 class HrWorkEntryType(models.Model):
     _name = 'hr.work.entry.type'
     _description = 'HR Work Entry Type'
+    _order = 'sequence'
 
     name = fields.Char(required=True, translate=True)
     display_code = fields.Char(string="Display Code", size=3, translate=True, help="This code can be changed, it is only for a display purpose (3 letters max)")

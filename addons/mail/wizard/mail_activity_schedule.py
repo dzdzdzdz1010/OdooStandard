@@ -438,7 +438,12 @@ class MailActivitySchedule(models.TransientModel):
         if model and activity_user:
             try:
                 thread = self.with_user(activity_user).env[model].browse(self._evaluate_res_ids())
-                thread.check_access(thread._mail_get_operation_for_mail_message_operation('create')[thread])
+                for domain, operation in thread._mail_get_operation_for_mail_message_operation('create'):
+                    if thread.filtered_domain(domain):
+                        thread.check_access(operation)
+                        break
+                else:
+                    raise AccessError(_("No applicable operation"))  # noqa: TRY301
             except AccessError:
                 raise UserError(_("Selected user '%(user)s' cannot upload documents on model '%(model)s'",
                                     model=model,

@@ -7,7 +7,7 @@
             <Composer
                 composer="channel.composer"
                 autofocus="!isMobileOS"
-                onDiscardCallback="() => (channel.composer.replyToMessage = undefined)"
+                onDiscardCallback="() => channel.composer.replyToMessage ? ((channel.composer.replyToMessage = undefined), true) : false"
                 onPostCallback.bind="() => this.state.jumpPresent++"
                 dropzoneRef="panelContentRef"
            />

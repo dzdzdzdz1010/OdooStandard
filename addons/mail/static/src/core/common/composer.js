@@ -559,8 +559,10 @@ export class Composer extends Component {
                     return;
                 }
                 if (this.props.onDiscardCallback) {
-                    this.props.onDiscardCallback();
-                    markEventHandled(ev, "Composer.discard");
+                    const handled = this.props.onDiscardCallback();
+                    if (handled !== false) {
+                        markEventHandled(ev, "Composer.discard");
+                    }
                 }
                 break;
         }

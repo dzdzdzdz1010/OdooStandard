@@ -48,6 +48,24 @@ export class DynamicSnippetProducts extends DynamicSnippetCarousel {
         return searchDomain;
     }
 
+    getRibbonSearchDomain() {
+        const productRibbonIds = JSON.parse(this.el.dataset.productRibbonIds || '[]');
+
+        if (!productRibbonIds.length) {
+            return [];
+        }
+
+        const ribbonIds = productRibbonIds.map(productRibbon => productRibbon.id);
+
+        return [
+            '|',
+            ['variant_ribbon_id', 'in', ribbonIds],
+            '&',
+            ['variant_ribbon_id', '=', false],
+            ['product_tmpl_id.website_ribbon_id', 'in', ribbonIds],
+        ];
+    }
+
     /**
      * @override
      */
@@ -55,6 +73,7 @@ export class DynamicSnippetProducts extends DynamicSnippetCarousel {
         const searchDomain = super.getSearchDomain(...arguments);
         searchDomain.push(...this.getCategorySearchDomain());
         searchDomain.push(...this.getTagSearchDomain());
+        searchDomain.push(...this.getRibbonSearchDomain());
         const productNames = this.el.dataset.productNames;
         if (productNames) {
             const nameDomain = [];

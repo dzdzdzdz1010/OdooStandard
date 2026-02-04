@@ -9,7 +9,7 @@ export class QRPopup extends Component {
         confirm: { type: Function, optional: true, default: false },
         cancel: { type: Function, optional: true, default: false },
         close: { type: Function, optional: true, default: false },
-        isCustomerDisplay: { type: Boolean, optional: true, default: false },
+        isConfirmBtnShown: { type: Boolean, optional: true, default: true },
         paymentMethod: { type: Object, optional: true, default: {} },
         qrCode: { type: String },
         line: { type: Object, optional: true, default: null },

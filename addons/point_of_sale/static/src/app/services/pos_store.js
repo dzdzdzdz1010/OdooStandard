@@ -2649,6 +2649,7 @@ export class PosStore extends WithLazyGetterTrap {
             {
                 ...payment.qrPaymentData,
                 line: payment,
+                isConfirmBtnShown: true,
             },
             {},
             QRPopup

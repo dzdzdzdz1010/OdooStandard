@@ -142,6 +142,7 @@ export class WebsiteBuilderClientAction extends Component {
         onMounted(() => {
             this.addListeners(document);
             this.addSystrayItems();
+            this.websiteService.context.newInstalledModule = router.current.module_installed;
             const edition = !!(this.enableEditor || this.editTranslations);
             if (edition) {
                 this.onEditPage();
@@ -576,13 +577,15 @@ export class WebsiteBuilderClientAction extends Component {
         this.ui.unblock();
     }
 
-    reloadWebClient() {
+    reloadWebClient(snippetTitle) {
         const currentPath = encodeURIComponent(window.location.pathname);
         const websiteId = this.websiteService.currentWebsite.id;
+        const data = { snippetTitle: snippetTitle };
+        const encodedData = encodeURIComponent(JSON.stringify(data));
         redirect(
             `/odoo/action-website.website_preview?website_id=${encodeURIComponent(
                 websiteId
-            )}&path=${currentPath}&enable_editor=1`
+            )}&path=${currentPath}&enable_editor=1&module_installed=${encodedData}`
         );
     }
 
@@ -594,7 +597,7 @@ export class WebsiteBuilderClientAction extends Component {
             await this.orm.call("ir.module.module", "button_immediate_install", [
                 [parseInt(snippet.moduleId)],
             ]);
-            this.reloadWebClient();
+            this.reloadWebClient(snippet.title);
         } catch (e) {
             if (e instanceof RPCError) {
                 const message = _t("Could not install module %s", snippet.moduleDisplayName);

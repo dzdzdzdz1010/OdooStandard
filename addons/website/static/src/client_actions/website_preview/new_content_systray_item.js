@@ -1,4 +1,4 @@
-import { Component, useState, xml } from "@odoo/owl";
+import { Component, onMounted, useState, xml } from "@odoo/owl";
 import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { useDropdownState } from "@web/core/dropdown/dropdown_hooks";
@@ -106,6 +106,17 @@ export class NewContentSystrayItem extends Component {
         useHotkey("escape", () => this.dropdown.close(), {
             isAvailable: () => this.dropdown.isOpen,
         });
+
+        onMounted(() => {
+            if (this.website.context?.newInstalledModule) {
+                const { moduleXmlId } = JSON.parse(
+                    decodeURIComponent(this.website.context.newInstalledModule)
+                );
+                if (moduleXmlId) {
+                    this.handlePostModuleInstall(moduleXmlId);
+                }
+            }
+        });
     }
 
     get newPageAttrs() {
@@ -211,7 +222,8 @@ export class NewContentSystrayItem extends Component {
             .filter((el) => ("isDisplayed" in el ? el.isDisplayed : user.isSystem));
     }
 
-    async installModule(id, redirectUrl) {
+    async installModule(id, element) {
+        const { redirectUrl, moduleXmlId } = element;
         await this.orm.silent.call("ir.module.module", "button_immediate_install", [id]);
         if (redirectUrl) {
             this.website.prepareOutLoader();
@@ -229,7 +241,11 @@ export class NewContentSystrayItem extends Component {
             // the feature with patches from the installed module.
             this.website.prepareOutLoader();
             const encodedPath = encodeURIComponent(url.toString());
-            redirect(`/odoo/action-website.website_preview?website_id=${id}&path=${encodedPath}`);
+            const data = { moduleXmlId: moduleXmlId };
+            const encodedData = encodeURIComponent(JSON.stringify(data));
+            redirect(
+                `/odoo/action-website.website_preview?website_id=${id}&path=${encodedPath}&module_installed=${encodedData}`
+            );
         }
     }
 
@@ -254,7 +270,7 @@ export class NewContentSystrayItem extends Component {
                 });
                 this.website.showLoader({ title: _t("Building your %s", name) });
                 try {
-                    await this.installModule(id, element.redirectUrl);
+                    await this.installModule(id, element);
                 } catch (error) {
                     this.website.hideLoader();
                     // Update the NewContentElement with failure icon and text.
@@ -300,5 +316,21 @@ export class NewContentSystrayItem extends Component {
                 },
             },
         });
+    }
+
+    /**
+     * Opens the corresponding snippet new content dialog after the installation
+     * of a newly installed snippet module.
+     *
+     * @param {string} moduleXmlId - The XML ID of the installed module.
+     */
+    async handlePostModuleInstall(moduleXmlId) {
+        delete this.website.context.newInstalledModule;
+        const newContentElement = this.state.newContentElements.find(
+            (el) => el.moduleXmlId === moduleXmlId
+        );
+        if (newContentElement && newContentElement.createNewContent) {
+            return newContentElement.createNewContent();
+        }
     }
 }

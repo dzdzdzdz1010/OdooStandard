@@ -27,6 +27,14 @@
         <field name="work_entry_type_id" ref="hr_work_entry.l10n_be_work_entry_type_small_unemployment_birth"/>
     </record>
 
+    <record id="hr_holidays.l10n_be_leave_type_postponed_paid_time_off_n1" model="hr.leave.type">
+        <field name="work_entry_type_id" ref="hr_work_entry.l10n_be_work_entry_type_postponed_paid_time_off_n1"/>
+    </record>
+
+    <record id="hr_holidays.l10n_be_leave_type_postponed_paid_time_off_n2" model="hr.leave.type">
+        <field name="work_entry_type_id" ref="hr_work_entry.l10n_be_work_entry_type_postponed_paid_time_off_n2"/>
+    </record>
+
     <record id="hr_holidays.l10n_be_leave_type_maternity" model="hr.leave.type">
         <field name="work_entry_type_id" ref="hr_work_entry.l10n_be_work_entry_type_maternity"/>
     </record>

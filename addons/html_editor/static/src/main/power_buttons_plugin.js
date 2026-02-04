@@ -60,6 +60,7 @@ export class PowerButtonsPlugin extends Plugin {
         "userCommand",
         "history",
     ];
+    static smallWidthCutoff = 400;
     /** @type {import("plugins").EditorResources} */
     resources = {
         layout_geometry_change_handlers: this.updatePowerButtons.bind(this),
@@ -89,7 +90,7 @@ export class PowerButtonsPlugin extends Plugin {
         };
         const renderButton = ({ description, icon, text, run }) => {
             const btn = this.document.createElement("button");
-            let className = "power_button btn px-2 py-1 cursor-pointer";
+            let className = "power_button btn py-1 cursor-pointer";
             if (icon) {
                 const iconLibrary = icon.includes("fa-") ? "fa" : "oi";
                 className += ` ${iconLibrary} ${icon}`;
@@ -130,6 +131,11 @@ export class PowerButtonsPlugin extends Plugin {
         const element = closestElement(editableSelection.anchorNode);
         const blockRect = block.getBoundingClientRect();
         const editableRect = this.editable.getBoundingClientRect();
+        if (blockRect.width < PowerButtonsPlugin.smallWidthCutoff) {
+            this.powerButtonsContainer.classList.add("o_we_packed_power_buttons");
+        } else {
+            this.powerButtonsContainer.classList.remove("o_we_packed_power_buttons");
+        }
         if (
             editableSelection.isCollapsed &&
             block?.matches(baseContainerGlobalSelector) &&
@@ -180,7 +186,9 @@ export class PowerButtonsPlugin extends Plugin {
         overlayStyles.top = "0px";
         overlayStyles.left = "0px";
         const buttonsRect = this.powerButtonsContainer.getBoundingClientRect();
-        const placeholderWidth = this.getPlaceholderWidth(block) + 20;
+        const placeholderWidth =
+            this.getPlaceholderWidth(block) +
+            (blockRect.width < PowerButtonsPlugin.smallWidthCutoff ? 5 : 20);
         if (direction === "rtl") {
             overlayStyles.left =
                 blockRect.right - buttonsRect.width - buttonsRect.x - placeholderWidth + "px";

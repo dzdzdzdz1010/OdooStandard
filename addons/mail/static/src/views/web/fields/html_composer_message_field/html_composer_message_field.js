@@ -4,6 +4,7 @@ import { registry } from "@web/core/registry";
 import { useBus } from "@web/core/utils/hooks";
 import { HtmlMailField, htmlMailField } from "../html_mail_field/html_mail_field";
 import { MentionPlugin } from "./mention_plugin";
+import { CommandLessBannerPlugin } from "./command_less_banner_plugin";
 import { ContentExpandablePlugin } from "./content_expandable_plugin";
 import { fillEmpty } from "@html_editor/utils/dom";
 import { markup } from "@odoo/owl";
@@ -39,7 +40,10 @@ export class HtmlComposerMessageField extends HtmlMailField {
 
     getConfig() {
         const config = super.getConfig(...arguments);
-        config.Plugins = [...config.Plugins, MentionPlugin];
+        config.Plugins = config.Plugins.filter((plugin) => plugin.id !== "banner").concat([
+            CommandLessBannerPlugin,
+            MentionPlugin,
+        ]);
         if (this.props.record.data.composition_comment_option === "reply_all") {
             config.Plugins.push(ContentExpandablePlugin);
         }

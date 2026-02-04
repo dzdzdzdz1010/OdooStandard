@@ -496,6 +496,27 @@ export class DiscussChannel extends Record {
         super.delete(...arguments);
     }
 
+    /**
+     * Copies this channel's invitation link to the clipboard.
+     * @param {Clipboard} [clipboard] - Clipboard to use (default: navigator.clipboard).
+     * @returns {Promise<void>}
+     */
+    async copyInvitationLink({ clipboard = navigator.clipboard } = {}) {
+        const notification = this.store.env.services.notification;
+        if (!this.invitationLink) {
+            notification.add(_t("Invitation link is not available."), { type: "danger" });
+            return;
+        }
+        try {
+            await clipboard.writeText(this.invitationLink);
+            notification.add(_t("Invitation link copied!"), { type: "success" });
+        } catch {
+            notification.add(_t("Permission denied: invitation link copy failed!"), {
+                type: "danger",
+            });
+        }
+    }
+
     async executeCommand(command, body = "") {
         await command.onExecute?.(this);
         if (command.methodName) {

@@ -148,6 +148,9 @@ registerThreadAction("invite-people", {
         channel,
     }),
     actionPanelOpen({ owner, store, channel }) {
+        if (owner.env.pipWindow) {
+            return this.actionPanelClose();
+        }
         if (owner.isDiscussSidebarChannelActions) {
             store.env.services.dialog?.add(ChannelActionDialog, {
                 title: channel.displayName,
@@ -172,9 +175,17 @@ registerThreadAction("invite-people", {
     condition: ({ channel, owner }) =>
         channel &&
         (!owner.props.chatWindow || owner.props.chatWindow.isOpen) &&
+        (!owner.env.pipWindow || channel.invitationLink) &&
         !(owner.isDiscussContent && channel?.hasMemberList),
     icon: "oi oi-fw oi-user-plus",
-    name: _t("Invite People"),
+    name: ({ owner }) => (owner.env.pipWindow ? _t("Copy Invite Link") : _t("Invite People")),
+    onSelected: async ({ channel, owner }) => {
+        if (owner.env.pipWindow) {
+            await channel.copyInvitationLink({
+                clipboard: owner.env.pipWindow.navigator.clipboard,
+            });
+        }
+    },
     sequence: 20,
     sequenceGroup: ({ owner }) => (owner.isDiscussContent ? 10 : 20),
     setup({ owner }) {

@@ -20,9 +20,16 @@ export class ProductPage extends Interaction {
         'a.js_add_cart_json': { 't-on-click.prevent': this.incOrDecQuantity },
         '.o_wsale_product_page_variants': { 't-on-change': this.onChangeVariant },
         '.o_product_page_reviews_link': { 't-on-click': this.onClickReviewsLink },
-        '.css_attribute_color input': { 't-on-change': this.onChangeColorAttribute },
+        '.css_attribute_color input': {
+            't-on-change': this.onChangeAttribute.bind(this, '.css_attribute_color')
+        },
         'label[name="o_wsale_attribute_image_selector"] input': {
-            't-on-change': this.onChangeImageAttribute,
+            't-on-change': this.onChangeAttribute.bind(this,
+                'label[name="o_wsale_attribute_image_selector"]'),
+        },
+        'label[name="o_wsale_attribute_thumbnail_selector"] input': {
+            't-on-change': this.onChangeAttribute.bind(this,
+                'label[name="o_wsale_attribute_thumbnail_selector"]'),
         },
         '.o_variant_pills': { 't-on-click': this.onChangePillsAttribute },
     };
@@ -117,42 +124,25 @@ export class ProductPage extends Interaction {
     }
 
     /**
-     * Highlight the selected color.
-     *
-     * @param {MouseEvent} ev
+     * Highlight the selected attributes (Color, Image, or Thumbnail).
+     * @param {String} itemSelector - The CSS selector used to find the group of items to toggle.
+     * @param {MouseEvent} ev - The event object.
      */
-    onChangeColorAttribute(ev) {
-        const eventTarget = ev.target;
-        const parent = eventTarget.closest('.js_product');
-        parent.querySelectorAll('.css_attribute_color').forEach(
-            el => el.classList.toggle('active', el.matches(':has(input:checked)'))
-        );
-        const attrValueEl = eventTarget.closest('.variant_attribute')
-            ?.querySelector('.attribute_value');
-        if (attrValueEl) {
-            attrValueEl.innerText = eventTarget.dataset.valueName;
-        }
-    }
+    onChangeAttribute(itemSelector, ev) {
+        const target = ev.target;
+        const parent = target.closest('.js_product');
 
-    /**
-     * Highlight the selected image.
-     *
-     * @param {MouseEvent} ev
-     */
-    onChangeImageAttribute(ev) {
-        const parent = ev.target.closest('.js_product');
-        const images = parent.querySelectorAll('label[name="o_wsale_attribute_image_selector"]');
-        images.forEach(el => el.classList.remove('active'));
-        images.forEach(el => {
+        parent.querySelectorAll(itemSelector).forEach(el => {
             const input = el.querySelector('input');
-            if (input && input.checked) {
-                el.classList.add('active');
-            }
+            el.classList.toggle('active', input && input.checked);
         });
-        const attrValueEl = ev.target
-            .closest('[name="variant_attribute"]')?.querySelector('[name="attribute_value"]');
+
+        const attrValueEl = target
+            .closest('.variant_attribute, [name="variant_attribute"]')
+            ?.querySelector('.attribute_value, [name="attribute_value"]');
+
         if (attrValueEl) {
-            attrValueEl.innerText = ev.target.dataset.valueName;
+            attrValueEl.innerText = target.dataset.valueName;
         }
     }
 
@@ -208,7 +198,10 @@ export class ProductPage extends Interaction {
             });
             if (combinationChanged) {
                 this._changeAttribute(
-                    '.css_attribute_color, [name="o_wsale_attribute_image_selector"], .o_variant_pills'
+                    '.css_attribute_color,' +
+                    '[name="o_wsale_attribute_image_selector"],' +
+                    '[name="o_wsale_attribute_thumbnail_selector"],' +
+                    '.o_variant_pills'
                 );
             }
         }
@@ -346,7 +339,12 @@ export class ProductPage extends Interaction {
             'context': this.context,
             ...this._getOptionalCombinationInfoParams(parent),
         }));
-        this._onChangeCombination(ev, parent, combinationInfo);
+        const attributeValueImages = await this.waitFor(rpc('/website_sale/get_attribute_images', {
+            'product_template_id': parseInt(addToCart?.dataset?.productTemplateId),
+            'combination': combination,
+        }));
+
+        this._onChangeCombination(ev, parent, combinationInfo, attributeValueImages);
         this._checkExclusions(parent, combination);
     }
 
@@ -548,8 +546,9 @@ export class ProductPage extends Interaction {
      * @param {Event} ev
      * @param {Element} parent
      * @param {Object} combination
+     * @param {Object} attributeValueImages
      */
-    async _onChangeCombination(ev, parent, combination) {
+    async _onChangeCombination(ev, parent, combination, attributeValueImages) {
         const isCombinationPossible = !!combination.is_combination_possible;
         const precision = combination.currency_precision;
         const productPrice = parent.querySelector('.product_price');
@@ -618,6 +617,18 @@ export class ProductPage extends Interaction {
         }
         if (comparePrice) {
             comparePrice.classList.toggle('d-none', combination.has_discounted_price);
+        }
+
+        if (attributeValueImages) {
+            Object.entries(attributeValueImages).forEach(([valueId, imageUrl]) => {
+                const input = parent.querySelector(`input[data-value-id="${valueId}"]`);
+                if (input) {
+                    const label = input.closest('label[name="o_wsale_attribute_thumbnail_selector"]');
+                    if (label) {
+                        label.style.backgroundImage = `url(${imageUrl})`;
+                    }
+                }
+            });
         }
 
         this._toggleDisable(parent, isCombinationPossible);

@@ -2,7 +2,7 @@
 
 import pprint
 
-from odoo import _, models
+from odoo import _, api, models
 
 from odoo.addons.payment import utils as payment_utils
 from odoo.addons.payment.logging import get_payment_logger
@@ -171,11 +171,100 @@ class PaymentTransaction(models.Model):
             'currency_code': currency.name,
         }
 
+    def _authorize_get_transaction_status(self, transaction_data=None):
+        """Get transaction status from Authorize.Net.
+
+        :param dict transaction_data: The transaction data from Authorize.Net webhook payload.
+        :return: The normalized transaction status data.
+        :rtype: dict
+        """
+        if not transaction_data:
+            tx_details = AuthorizeAPI(self.provider_id).get_transaction_details(
+                self.provider_reference
+            )
+            if tx_details.get('err_code'):
+                _logger.warning(
+                    "Could not retrieve transaction status for %s: %s",
+                    self.provider_reference, tx_details.get('err_msg')
+                )
+                return {}
+            transaction_data = tx_details.get('transaction', {})
+
+        return {
+            'x_response_code': str(transaction_data.get('responseCode', '0')),
+            'x_trans_id': self.provider_reference,
+            'x_type': const.TRANSACTION_TYPE_MAPPING.get(
+                transaction_data.get('transactionType'), 'auth_capture'
+            ),
+            'x_response_reason_text': transaction_data.get('responseReasonDescription', ''),
+            'payment_method_code': (
+                transaction_data.get('payment', {}).get('creditCard', {}).get('cardType', '')
+            ),
+        }
+
+    @api.model
+    def _search_by_reference(self, provider_code, payment_data):
+        """Override of `payment` to search by provider_reference for webhook notifications.
+
+        :param str provider_code: The code of the provider handling the transaction.
+        :param dict payment_data: The payment data sent by the provider.
+        :return: The transaction, if found.
+        :rtype: payment.transaction
+        """
+        if provider_code != 'authorize':
+            return super()._search_by_reference(provider_code, payment_data)
+
+        # For webhooks, search by provider_reference.
+        trans_id = payment_data.get('payload', {}).get('id')
+        if trans_id:
+            return self.search([
+                ('provider_code', '=', 'authorize'),
+                ('provider_reference', '=', trans_id),
+            ], limit=1)
+
+        return super()._search_by_reference(provider_code, payment_data)
+
+    @api.model
+    def _extract_reference(self, provider_code, payment_data):
+        """Override of `payment` to extract the reference from Authorize.Net payment data.
+
+        :param str provider_code: The code of the provider handling the transaction.
+        :param dict payment_data: The payment data sent by the provider.
+        :return: The transaction reference.
+        :rtype: str
+        """
+        if provider_code != 'authorize':
+            return super()._extract_reference(provider_code, payment_data)
+
+        return payment_data.get('referenceId')
+
     def _apply_updates(self, payment_data):
         """Override of `payment` to update the transaction based on the payment data."""
         if self.provider_code != 'authorize':
             return super()._apply_updates(payment_data)
 
+        if not payment_data:
+            self._set_canceled(state_message=_("The customer left the payment page."))
+            return
+
+        event_type = payment_data.get('eventType')
+        if event_type:
+            if event_type == 'net.authorize.payment.fraud.held':
+                self._set_pending(state_message=_("Transaction held for fraud review"))
+            elif event_type == 'net.authorize.payment.fraud.declined':
+                self._set_canceled(state_message=_("Transaction declined after fraud review"))
+            elif event_type in const.WEBHOOK_HANDLED_EVENTS:
+                payload = payment_data.get('payload', {})
+                response_content = self._authorize_get_transaction_status(payload)
+                self._process_authorize_updates({'response': response_content})
+        else:
+            self._process_authorize_updates(payment_data)
+
+    def _process_authorize_updates(self, payment_data):
+        """Process the authorize payment data.
+
+        :param dict payment_data: The payment data.
+        """
         response_content = payment_data.get('response')
 
         # Update the provider reference.

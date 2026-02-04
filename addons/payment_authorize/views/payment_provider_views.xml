@@ -18,6 +18,26 @@
                                 name="action_update_merchant_details"
                                 string="Generate Client Key"/>
                     </div>
+                    <label for="authorize_webhook_id"/>
+                    <div class="o_row">
+                        <field name="authorize_webhook_id" readonly="1"/>
+                        <button
+                            string="Create Webhook"
+                            name="action_create_webhook"
+                            type="object"
+                            class="btn-primary"
+                            invisible="authorize_webhook_id or state == 'disabled'"
+                            title="Create a webhook in Authorize.Net to receive payment notifications"
+                        />
+                        <button
+                            string="Update Webhook"
+                            name="action_create_webhook"
+                            type="object"
+                            class="btn-primary"
+                            invisible="not authorize_webhook_id or state == 'disabled'"
+                            title="Update the webhook in Authorize.Net"
+                        />
+                    </div>
                     <widget colspan="2" name="documentation_link" path="/applications/finance/payment_providers/authorize.html" label="How to get paid with Authorize.Net"/>
                 </group>
             </group>

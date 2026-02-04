@@ -22,11 +22,11 @@ passed to the Accept.js SDK, the solution qualifies for SAQ A-EP.
 - Tokenization with or without payment
 - Full manual capture
 - Full refunds
+- Webhook notifications
 
 ## Missing features
 
 - Partial manual capture
-- Webhook notifications: not available
 
 ## Module history
 

@@ -189,6 +189,7 @@ class EventSponsor(models.Model):
             'mapping': mapping,
             'icon': 'fa-black-tie',
             'order': order,
+            'group_name': self.env._("Sponsors"),
         }
 
     # ------------------------------------------------------------

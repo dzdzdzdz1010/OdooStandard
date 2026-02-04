@@ -13,6 +13,7 @@ export class Composer extends Record {
     clear() {
         this.attachments.length = 0;
         this.replyToMessage = undefined;
+        this.shouldAddEmailSignature = undefined;
         this.composerHtml = markup("<div class='o-paragraph'><br></div>");
         Object.assign(this.selection, {
             start: 0,
@@ -40,6 +41,8 @@ export class Composer extends Record {
     }
 
     attachments = fields.Many("ir.attachment");
+    /** @type {boolean|undefined} */
+    shouldAddEmailSignature;
     /** @type {boolean} */
     emailAddSignature = true;
     message = fields.One("mail.message");

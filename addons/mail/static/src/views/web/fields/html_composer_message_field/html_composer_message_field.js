@@ -17,11 +17,8 @@ export class HtmlComposerMessageField extends HtmlMailField {
                 ev.detail.onAccidentalDiscard(isEmpty(elContent));
             });
             useBus(this.env.fullComposerBus, "SAVE_CONTENT", (ev) => {
-                const emailAddSignature = Boolean(
-                    this.editor.editable.querySelector(".o-signature-container")
-                );
-                const composerHtml = markup(this.getNoSignatureElContent().innerHTML);
-                ev.detail.onSaveContent({ composerHtml, emailAddSignature });
+                const composerHtml = markup(this.editor.getElContent().innerHTML);
+                ev.detail.onSaveContent({ composerHtml });
             });
             useBus(this.env.fullComposerBus, "ATTACHMENT_REMOVED", (ev) => {
                 const attachmentElements = this.editor.editable.querySelectorAll(

@@ -51,6 +51,7 @@ export class Navbar extends Component {
         });
         useExternalListener(document, "keydown", this.handleKeydown.bind(this));
         this.openPresetTiming = useAsyncLockedMethod(this.openPresetTiming);
+        this.isNativeApp = Boolean(window?.isNativeApp);
     }
 
     openLnaPopup() {

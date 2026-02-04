@@ -442,7 +442,7 @@ class FleetVehicle(models.Model):
         return {
             'vehicle_id': self.id,
             'driver_id': vals['driver_id'],
-            'date_start': fields.Date.today(),
+            'date_start': self.contract_date_start if self.contract_date_start else fields.Date.today()
         }
 
     def create_driver_history(self, vals):

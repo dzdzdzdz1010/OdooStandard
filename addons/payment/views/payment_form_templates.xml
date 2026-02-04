@@ -45,11 +45,6 @@
         <t t-set="display_submit_button"
            t-value="True if display_submit_button is None else display_submit_button"
         />
-        <t t-set="pay_label">Pay</t> <!-- Allow translating the label. -->
-        <t t-set="save_label">Save</t> <!-- Allow translating the label. -->
-        <t t-set="submit_button_label"
-           t-value="submit_button_label or (pay_label if mode == 'payment' else save_label)"
-        />
         <form t-if="payment_methods_sudo or tokens_sudo" id="o_payment_form"
               class="o_payment_form"
               t-att-data-mode="mode"

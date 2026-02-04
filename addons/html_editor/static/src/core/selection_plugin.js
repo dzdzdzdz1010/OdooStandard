@@ -497,7 +497,17 @@ export class SelectionPlugin extends Plugin {
             nodeSize(this.activeSelection.anchorNode) >= this.activeSelection.anchorOffset &&
             nodeSize(this.activeSelection.focusNode) >= this.activeSelection.focusOffset;
         if (documentSelectionIsInEditable) {
-            this.activeSelection = this.makeActiveSelection(selection);
+            // check that the selection is still valid in the document, can happen
+            // in collaboration when resetting from the peer's history and Safari
+            // can return a selection with invalid offsets.
+            const isDocumentSelectionValid =
+                selection.anchorNode.isConnected &&
+                nodeSize(selection.anchorNode) >= selection.anchorOffset &&
+                nodeSize(selection.focusNode) >= selection.focusOffset;
+
+            if (isDocumentSelectionValid) {
+                this.activeSelection = this.makeActiveSelection(selection);
+            }
         } else if (!isSelectionConnected) {
             this.activeSelection = this.makeActiveSelection();
         }

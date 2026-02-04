@@ -120,9 +120,32 @@ class SaleOrder(models.Model):
                 'card_id': coupon.id,
                 'used': cost,
                 'issued': issued,
+                'available_issued_points': issued,
             })
 
-        self.env['loyalty.history'].create(create_values)
+        loyalty_history = self.env['loyalty.history']
+        created_lines = loyalty_history.create(create_values)
+
+        issuer_lines = loyalty_history
+        reward_values = []
+
+        for history_line in created_lines:
+            coupon = history_line.card_id
+
+            if history_line.used:
+                reward_values.append({
+                    'card_id': coupon.id,
+                    'redeemer_history_line_id': history_line.id,
+                    'points_to_redeem': history_line.used,
+                })
+
+            if history_line.issued and coupon.points < 0:
+                issuer_lines |= history_line
+
+        if reward_values:
+            loyalty_history.redeem_loyalty_points(reward_values)
+        if issuer_lines:
+            issuer_lines.compensate_existing_debts()
 
     def _get_no_effect_on_threshold_lines(self):
         """Return the lines that have no effect on the minimum amount to reach."""
@@ -182,28 +205,137 @@ class SaleOrder(models.Model):
         return res
 
     def _action_cancel(self):
+        """
+        Cancel orders and revert their loyalty point effects.
+
+        - Cancel related loyalty history entries
+        - Recompute balances for affected loyalty cards
+        - Remove reward lines and coupon point links
+        """
         previously_confirmed = self.filtered(lambda s: s.state == 'sale')
         res = super()._action_cancel()
 
-        order_history_lines = self.env['loyalty.history'].search([
+        cancelled_history_lines = self.env['loyalty.history'].with_context(active_test=False).search([
             ('order_model', '=', self._name),
             ('order_id', 'in', previously_confirmed.ids),
         ])
-        if order_history_lines:
-            order_history_lines.sudo().unlink()
 
-        # Add/remove the points to our coupons
-        for coupon, changes in previously_confirmed.filtered(
-            lambda s: s.state != 'sale'
-        )._get_point_changes().items():
-            coupon.points -= changes
-        # Remove any rewards
-        self.order_line.filtered(lambda l: l.is_reward_line).unlink()
+        affected_coupons = previously_confirmed.filtered(
+            lambda s: s.state != 'sale',
+        )._get_point_changes().keys()
+
+        for coupon in affected_coupons:
+            coupon_history_lines = cancelled_history_lines.filtered(
+                lambda line: line.card_id == coupon,
+            )
+            self._cancel_loyalty_history_for_coupon(coupon_history_lines)
+            cancelled_history_lines -= coupon_history_lines
+
+        # Recalculate balance for all affected cards
+        self._recompute_loyalty_card_balances(affected_coupons)
+
+        self.order_line.filtered(lambda line: line.is_reward_line).unlink()
         self.coupon_point_ids.coupon_id.sudo().filtered(
-            lambda c: not c.program_id.is_nominative and c.order_id in self and not c.use_count)\
-            .unlink()
+            lambda c: not c.program_id.is_nominative and c.order_id in self and not c.use_count,
+        ).unlink()
         self.coupon_point_ids.unlink()
         return res
+
+    def _cancel_loyalty_history_for_coupon(self, coupon_history_lines):
+        """
+        Rollback loyalty history for a single coupon when orders are cancelled.
+
+        1. Group all point tracks by issuer and redeemer relationships
+        2. Refund points back to issuers whose points were used by cancelled lines
+        3. Reallocate redeemers who were using points from cancelled issuer lines
+        4. Clean up tracks and history records
+
+        :param coupon_history_lines: Cancelled history lines for this coupon
+        """
+        today = fields.Date.today()
+        point_tracks = self.env['loyalty.point.track'].sudo()
+
+        # Find all tracks involving the cancelled history lines in a single search.
+        all_tracks = point_tracks.search([
+            '|',
+            ('issuer_line_id', 'in', coupon_history_lines.ids),
+            ('redeemer_line_id', 'in', coupon_history_lines.ids),
+        ])
+
+        consumption_tracks = {}  # Tracks from which this line consumed points
+        issuance_tracks = {}  # Tracks to which this line issued points
+
+        for track in all_tracks:
+            if track.redeemer_line_id:
+                consumption_tracks.setdefault(track.redeemer_line_id.id, []).append(track)
+            if track.issuer_line_id:
+                issuance_tracks.setdefault(track.issuer_line_id.id, []).append(track)
+
+        issuers_to_compensate = self.env['loyalty.history'].sudo()
+        reallocation_values = []
+
+        for history_line in coupon_history_lines:
+            # Refund points back to issuers if this line redeemed points
+            if history_line.used > 0:
+                for track in consumption_tracks.get(history_line.id, []):
+                    issuer = track.issuer_line_id
+                    if (
+                        track.points > 0
+                        and issuer not in coupon_history_lines
+                        and (not issuer.expiration_date or issuer.expiration_date >= today)
+                    ):
+                        issuer.available_issued_points += track.points
+                        issuers_to_compensate |= issuer
+
+            # Shift dependent redeemers to other valid issuers when this line can't fully cover them
+            if history_line.available_issued_points < history_line.issued:
+                affected_redeemers = defaultdict(float)
+
+                # Collect points used by each redeemer from this issuer
+                for track in issuance_tracks.get(history_line.id, []):
+                    redeemer = track.redeemer_line_id
+                    if redeemer not in coupon_history_lines:
+                        affected_redeemers[redeemer] += track.points
+
+                for redeemer, points_to_redeem in affected_redeemers.items():
+                    if points_to_redeem > 0:
+                        reallocation_values.append({
+                            'card_id': history_line.card_id.id,
+                            'points_to_redeem': points_to_redeem,
+                            'redeemer_history_line_id': redeemer.id,
+                            'exclude_issuer_ids': coupon_history_lines.ids,
+                        })
+
+        # Re-redeem points from other valid issuers if needed
+        if reallocation_values:
+            self.env['loyalty.history'].redeem_loyalty_points(reallocation_values)
+
+        all_tracks.unlink()
+        coupon_history_lines.sudo().unlink()
+
+        # Settle debts(if any) and update issuer state after compensation
+        for issuer in issuers_to_compensate.exists():
+            issuer.compensate_existing_debts()
+            issuer.active = (issuer.available_issued_points > 0)
+
+    def _recompute_loyalty_card_balances(self, coupons):
+        """
+        Recalculate the total point balance for loyalty cards after cancellations.
+        Formula: sum(available_issued_points) - sum(debts)
+
+        :param coupons: loyalty cards which needs a balance recomputation.
+        """
+        for coupon in coupons:
+            available = sum(coupon.history_ids.mapped('available_issued_points'))
+
+            debts = self.env['loyalty.point.track'].sudo().search([
+                ('issuer_line_id', '=', False),
+                ('points', '<', 0),
+                ('redeemer_line_id.card_id', '=', coupon.id),
+            ])
+            total_debt = sum(abs(debt.points) for debt in debts)
+
+            coupon.points = available - total_debt
 
     def action_open_reward_wizard(self):
         self.ensure_one()
@@ -809,7 +941,7 @@ class SaleOrder(models.Model):
 
     def _update_loyalty_history(self, coupon_id, points):
         self.ensure_one()
-        order_coupon_history = self.env['loyalty.history'].search([
+        order_coupon_history = self.env['loyalty.history'].with_context(active_test=False).search([
             ('card_id', '=', coupon_id.id),
             ('order_model', '=', self._name),
             ('order_id', '=', self.id),
@@ -817,6 +949,11 @@ class SaleOrder(models.Model):
         order_coupon_history.update({
             'used': order_coupon_history.used + points,
         })
+        order_coupon_history.redeem_loyalty_points([{
+            'card_id': coupon_id.id,
+            'points_to_redeem': points,
+            'redeemer_history_line_id': order_coupon_history.id,
+        }])
 
     def _remove_program_from_points(self, programs):
         self.coupon_point_ids.filtered(lambda p: p.coupon_id.program_id in programs).sudo().unlink()

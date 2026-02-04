@@ -55,6 +55,7 @@ export const CONSOLE_COLOR = "#F5B427";
 export class PosStore extends WithLazyGetterTrap {
     loadingSkipButtonIsShown = false;
     mainScreen = { name: null, component: null };
+    orderReceiptComponent = OrderReceipt;
 
     static serviceDependencies = [
         "bus_service",
@@ -174,8 +175,7 @@ export class PosStore extends WithLazyGetterTrap {
         }
 
         window.addEventListener("pos-network-online", () => {
-            // Sync should be done before websocket connection when going online
-            this.syncAllOrdersDebounced();
+            this.posBackOnline();
         });
 
         this.lnaState = {
@@ -185,6 +185,11 @@ export class PosStore extends WithLazyGetterTrap {
         initLNA(this.notification, (type, message) => {
             this.lnaState = { type, message };
         });
+    }
+
+    async posBackOnline() {
+        // Sync should be done before websocket connection when going online
+        this.syncAllOrdersDebounced();
     }
 
     navigate(routeName, routeParams = {}) {
@@ -288,11 +293,12 @@ export class PosStore extends WithLazyGetterTrap {
 
     setCashier(user) {
         if (!user) {
-            return;
+            return false;
         }
 
         this.cashier = user;
         this._storeConnectedCashier(user);
+        return true;
     }
 
     _getConnectedCashier() {
@@ -409,9 +415,6 @@ export class PosStore extends WithLazyGetterTrap {
 
         await this.deviceSync.readDataFromServer();
 
-        // Check cashier
-        this.checkPreviousLoggedCashier();
-
         // Add Payment Interface to Payment Method
         for (const pm of this.models["pos.payment.method"].getAll()) {
             const PaymentInterface = this.electronic_payment_interfaces[pm.use_payment_terminal];
@@ -443,8 +446,11 @@ export class PosStore extends WithLazyGetterTrap {
         await this.processProductAttributes();
         await this.config.cacheReceiptLogo();
     }
+    async openCashbox(action) {
+        this.hardwareProxy.openCashbox(action);
+    }
     cashMove() {
-        this.hardwareProxy.openCashbox(_t("Cash in / out"));
+        this.openCashbox(_t("Cash in / out"));
         return makeAwaitable(this.dialog, CashMovePopup);
     }
     async closeSession() {
@@ -683,6 +689,9 @@ export class PosStore extends WithLazyGetterTrap {
     }
 
     async afterProcessServerData() {
+        // Check cashier
+        this.checkPreviousLoggedCashier();
+
         // Adding the not synced paid orders to the pending orders
         const paidUnsyncedOrderIds = this.models["pos.order"]
             .filter((order) => order.isUnsyncedPaid)
@@ -1422,6 +1431,7 @@ export class PosStore extends WithLazyGetterTrap {
         for (const order of orders) {
             order.setOrderPrices();
         }
+        return orders;
     }
 
     postSyncAllOrders(orders) {}
@@ -1462,7 +1472,10 @@ export class PosStore extends WithLazyGetterTrap {
 
         for (const order of orders) {
             const context = this.getSyncAllOrdersContext([order], options);
-            await this.preSyncAllOrders([order]);
+            const preSyncOrder = await this.preSyncAllOrders([order]);
+            if (!preSyncOrder) {
+                continue;
+            }
             this.syncingOrders.add(order.id);
 
             try {
@@ -1836,6 +1849,11 @@ export class PosStore extends WithLazyGetterTrap {
         }
 
         return this.sendOrderInPreparation(order, opts);
+    }
+    // Used to override inside `l10n_be_pos_blackbox`
+    async getSelfOrderToPrint(orderId) {
+        const result = await this.data.callRelated("pos.order", "get_order_to_print", [orderId]);
+        return result["pos.order"][0];
     }
     // Now the printer should work in PoS without restaurant
     async sendOrderInPreparation(order, opts = {}) {
@@ -2242,7 +2260,7 @@ export class PosStore extends WithLazyGetterTrap {
         this.dialog.add(FormViewDialog, this.orderDetailsProps(order));
     }
     async closePos() {
-        this._resetConnectedCashier();
+        this.resetCashier();
         // If pos is not properly loaded, we just go back to /web without
         // doing anything in the order data.
         if (!this) {

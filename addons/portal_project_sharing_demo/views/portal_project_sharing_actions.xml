@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="hr_applicant_portal_kanban_action" model="ir.actions.act_window">
+        <field name="name">Applicants (Portal)</field>
+        <field name="res_model">hr.applicant</field>
+        <field name="path">portal_hr_applicants</field>
+        <field name="view_mode">kanban,list,form</field>
+        <field name="search_view_id" ref="hr_recruitment.hr_applicant_view_search_bis"/>
+        <field name="context">{
+            'delete': false,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No applications yet.
+            </p>
+            <p>
+                Track applicants through your recruitment pipeline from the portal.
+            </p>
+        </field>
+    </record>
+
+    <record id="hr_applicant_portal_kanban_action_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="10"/>
+        <field name="view_mode">kanban</field>
+        <field name="act_window_id" ref="portal_project_sharing_demo.hr_applicant_portal_kanban_action"/>
+        <field name="view_id" ref="hr_recruitment.hr_kanban_view_applicant"/>
+    </record>
+
+    <record id="hr_applicant_portal_tree_action_view" model="ir.actions.act_window.view">
+        <field name="sequence" eval="20"/>
+        <field name="view_mode">list</field>
+        <field name="act_window_id" ref="portal_project_sharing_demo.hr_applicant_portal_kanban_action"/>
+        <field name="view_id" ref="hr_recruitment.hr_applicant_view_tree_activity"/>
+    </record>
+
+    <record id="hr_applicant_portal_form_action_view" model="ir.actions.act_window.view">
+        <field name="view_mode">form</field>
+        <field name="act_window_id" ref="portal_project_sharing_demo.hr_applicant_portal_kanban_action"/>
+        <field name="view_id" ref="hr_recruitment.hr_applicant_view_form"/>
+    </record>
+</odoo>
